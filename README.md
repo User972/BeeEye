@@ -78,6 +78,7 @@ cd ml && PYTHONPATH=. python tests/test_metrics.py
 | Backend tests | `dotnet test BeeEye.slnx` | 242 passed (209 analytics + 18 kernel + 4 architecture + 11 integration) |
 | Analytics coverage | coverlet | calc engines 98–100% (Risk 98.6%, Forecaster 99.1%, Metrics/Demand 100%) |
 | API runtime (UC2/UC5) | `dotnet run` vs Postgres | reproduces documented profile: 291 units, SAR 46.75M, risk 147/118/24/2 |
+| Web lint | `npm run lint` | 0 errors (ESLint 9 flat config, type-aware) |
 | Web typecheck/build | `npm run build` | 0 errors, code-split per use case |
 | Web tests | `npm run test` | 12 passed |
 | ML | seed test runners | 11 passed |

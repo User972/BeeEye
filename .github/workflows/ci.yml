@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   backend:
-    name: Backend (.NET)
+    name: Backend (.NET · unit/arch)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,7 +19,24 @@ jobs:
           dotnet-version: '10.0.x'
       - run: dotnet restore BeeEye.slnx
       - run: dotnet build BeeEye.slnx -c Release --no-restore
-      - run: dotnet test BeeEye.slnx -c Release --no-build --verbosity normal
+      # Fast suite: unit, analytics and architecture tests. The Testcontainers
+      # integration suite runs in its own job so a Docker outage or a slow
+      # container pull never blocks the fast feedback path.
+      - run: >
+          dotnet test BeeEye.slnx -c Release --no-build --verbosity normal
+          --filter "FullyQualifiedName!~BeeEye.IntegrationTests"
+
+  integration:
+    name: Backend (.NET · integration)
+    runs-on: ubuntu-latest # provides a Docker daemon for Testcontainers
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - run: >
+          dotnet test tests/integration/BeeEye.IntegrationTests/BeeEye.IntegrationTests.csproj
+          -c Release --verbosity normal
 
   web:
     name: Web (React/TS)
@@ -35,9 +52,51 @@ jobs:
           cache: npm
           cache-dependency-path: src/web/package-lock.json
       - run: npm ci
+      - run: npm run lint
       - run: npm run typecheck
       - run: npm run build
       - run: npm run test
+
+  openapi:
+    name: OpenAPI contract
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: src/web/package-lock.json
+      - run: dotnet build src/api/BeeEye.Api/BeeEye.Api.csproj -c Release
+      # Serve the OpenAPI document (Program.cs maps /openapi/v1.json in Development)
+      # and capture it. No database is needed — startup DB init is best-effort.
+      - name: Export OpenAPI document
+        env:
+          ASPNETCORE_ENVIRONMENT: Development
+          ASPNETCORE_URLS: http://localhost:5080
+          Database__AutoMigrateAndSeed: 'false'
+        run: |
+          dotnet run --project src/api/BeeEye.Api/BeeEye.Api.csproj --no-build -c Release &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID 2>/dev/null || true' EXIT
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:5080/openapi/v1.json -o src/web/openapi/openapi.json; then
+              echo "OpenAPI document captured after ${i}s"; break
+            fi
+            sleep 1
+          done
+          test -s src/web/openapi/openapi.json
+      # Assert the published contract is well-formed and exposes the wired
+      # bounded-context endpoints, then prove it is consumable by the typed client.
+      - name: Validate contract and regenerate types
+        working-directory: src/web
+        run: |
+          node -e "const d=require('./openapi/openapi.json'); const p=Object.keys(d.paths||{}); for (const want of ['/api/v1/forecasting','/api/v1/inventory','/api/v1/platform/modules']) { if(!p.some(k=>k.startsWith(want))) throw new Error('OpenAPI contract missing '+want); } console.log('contract OK —', p.length, 'paths');"
+          npm ci
+          npm run gen:api
 
   ml:
     name: ML (Python)

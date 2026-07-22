@@ -5,3 +5,7 @@ dist/
 coverage/
 playwright-report/
 test-results/
+
+# Generated from the API's OpenAPI document by the `openapi` CI job / `npm run gen:api`.
+openapi/openapi.json
+src/lib/api/schema.d.ts
