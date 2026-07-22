@@ -5,13 +5,13 @@ automotive distribution and marketing organisation. BeeEye turns Oracle Fusion E
 explainable, auditable recommendations across eight business use cases — from sales-forecast accuracy
 to inventory-aging risk to an executive decision cockpit.
 
-> **Status: foundation + UC2/UC5 live.** The full monorepo, all 19 bounded-context modules, the
+> **Status: foundation + UC1–UC5 live.** The full monorepo, all 19 bounded-context modules, the
 > React shell, the ML baselines, the Azure IaC, and the planning/architecture documentation are in
-> place and **build green**. The two wireframed use cases — **UC2 Sales Forecasting** and **UC5
-> Inventory Aging & Overstock Risk** — are now implemented **end-to-end**: real PostgreSQL
-> persistence, an idempotent sample-data importer, a faithful C# port of the wireframe analytics
-> engine, live `/api/v1` endpoints, and working React screens. Remaining use cases follow the
-> [roadmap](#delivery-roadmap).
+> place and **build green**. Five use cases are implemented **end-to-end** on real PostgreSQL with a
+> faithful C# port of the wireframe analytics engine, live `/api/v1` endpoints and working React
+> screens: **UC2 Sales Forecasting**, **UC5 Inventory Aging & Overstock Risk** (both wireframed),
+> **UC1 Order Optimisation**, **UC3 Configuration Demand** and **UC4 Procurement**. UC6–UC8 follow
+> the [roadmap](#delivery-roadmap).
 
 The design language and two of the eight use cases (Sales Forecasting, Inventory Aging) come from the
 interactive **Meridian BI** wireframe under [`docs/wireframes/`](docs/wireframes/). The remaining six
@@ -75,12 +75,12 @@ cd ml && PYTHONPATH=. python tests/test_metrics.py
 | Stack | Command | Result |
 |-------|---------|--------|
 | Backend build | `dotnet build BeeEye.slnx` | 0 errors |
-| Backend tests | `dotnet test BeeEye.slnx` | 242 passed (209 analytics + 18 kernel + 4 architecture + 11 integration) |
-| Analytics coverage | coverlet | calc engines 98–100% (Risk 98.6%, Forecaster 99.1%, Metrics/Demand 100%) |
-| API runtime (UC2/UC5) | `dotnet run` vs Postgres | reproduces documented profile: 291 units, SAR 46.75M, risk 147/118/24/2 |
+| Backend tests | `dotnet test BeeEye.slnx` | 307 passed (266 analytics + 18 kernel + 4 architecture + 19 integration) |
+| Analytics coverage | coverlet | calc engines 98–100%; overall 91% line-rate |
+| API runtime (UC1–UC5) | `dotnet run` vs Postgres | UC5: 291 units / SAR 46.75M; UC3: 288 configs / 24,130 units |
 | Web lint | `npm run lint` | 0 errors (ESLint 9 flat config, type-aware) |
 | Web typecheck/build | `npm run build` | 0 errors, code-split per use case |
-| Web tests | `npm run test` | 12 passed |
+| Web tests | `npm run test` | 13 passed |
 | ML | seed test runners | 11 passed |
 | Infra | `bicep build infra/main.bicep` | 0 errors |
 
@@ -90,8 +90,8 @@ Run the UC2/UC5 stack locally with `docker compose up -d` then `dotnet run --pro
 ## Delivery roadmap
 
 1. **Foundation** (this scaffold) — shell, design system, modules, contracts, IaC, docs. ✅
-2. **UC2 + UC5** (wireframed) — Sales Forecasting and Inventory Aging, wired end-to-end.
-3. **UC1, UC3, UC4** — sales/demand/procurement intelligence.
+2. **UC2 + UC5** (wireframed) — Sales Forecasting and Inventory Aging, wired end-to-end. ✅
+3. **UC1, UC3, UC4** — order optimisation, configuration demand and procurement intelligence. ✅
 4. **UC6, UC7** — after-sales and spare-parts intelligence.
 5. **UC8** — executive cockpit, once modules produce trusted outputs.
 

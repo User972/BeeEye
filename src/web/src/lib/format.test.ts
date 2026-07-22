@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fmtInt, fmtNum, fmtPct, fmtSar, fmtSignPct } from './format';
+import { fmtInt, fmtNum, fmtPct, fmtSar, fmtSignPct, riskWordClass, rotationClass } from './format';
 
 describe('format', () => {
   it('abbreviates SAR amounts like the engine', () => {
@@ -20,5 +20,13 @@ describe('format', () => {
     expect(fmtSignPct(5)).toBe('+5.0%');
     expect(fmtSignPct(-9.3)).toBe('-9.3%');
     expect(fmtSignPct(null)).toBe('—');
+  });
+
+  it('maps rotation and risk words to badge classes', () => {
+    expect(rotationClass('Fast')).toBe('risk-low');
+    expect(rotationClass('Dead')).toBe('risk-crit');
+    expect(rotationClass('unknown')).toBe('badge');
+    expect(riskWordClass('High')).toBe('risk-high');
+    expect(riskWordClass('Low')).toBe('risk-low');
   });
 });

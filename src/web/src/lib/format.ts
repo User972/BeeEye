@@ -41,3 +41,20 @@ const riskClassMap: Record<string, string> = {
 export function riskClass(band: string): string {
   return riskClassMap[band] ?? 'risk-low';
 }
+
+const rotationClassMap: Record<string, string> = {
+  Fast: 'risk-low',
+  Medium: 'badge',
+  Slow: 'risk-med',
+  Dead: 'risk-crit',
+};
+
+/** Badge class for a UC3 rotation class (Fast/Medium/Slow/Dead). */
+export function rotationClass(rotation: string): string {
+  return rotationClassMap[rotation] ?? 'badge';
+}
+
+/** Badge class for a Low/Medium/High risk word. */
+export function riskWordClass(word: string): string {
+  return word === 'High' ? 'risk-high' : word === 'Medium' ? 'risk-med' : 'risk-low';
+}
