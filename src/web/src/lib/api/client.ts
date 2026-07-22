@@ -13,6 +13,27 @@ export class ApiError extends Error {
   }
 }
 
+type QueryValue = string | number | boolean | null | undefined | ReadonlyArray<string>;
+
+/** Builds a query string, repeating keys for array values and dropping empties. */
+export function buildQuery(params: Record<string, QueryValue>): string {
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value === null || value === undefined || value === '') {
+      continue;
+    }
+    if (Array.isArray(value)) {
+      for (const v of value) {
+        search.append(key, v);
+      }
+    } else {
+      search.append(key, String(value));
+    }
+  }
+  const qs = search.toString();
+  return qs ? `?${qs}` : '';
+}
+
 /** Typed GET against the platform API. Supports cancellation via an AbortSignal. */
 export async function apiGet<T>(path: string, signal?: AbortSignal): Promise<T> {
   const response = await fetch(`${BASE_URL}${path}`, {

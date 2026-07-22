@@ -5,10 +5,13 @@ automotive distribution and marketing organisation. BeeEye turns Oracle Fusion E
 explainable, auditable recommendations across eight business use cases — from sales-forecast accuracy
 to inventory-aging risk to an executive decision cockpit.
 
-> **Status: foundation scaffold.** The full monorepo, all 19 bounded-context modules, the React
-> shell routing every use case, the ML baselines, the Azure IaC, and the planning/architecture
-> documentation are in place and **build green**. Use-case analytics are wired module-by-module in
-> later increments (see [roadmap](#delivery-roadmap)); endpoints currently return scaffolded fixtures.
+> **Status: foundation + UC2/UC5 live.** The full monorepo, all 19 bounded-context modules, the
+> React shell, the ML baselines, the Azure IaC, and the planning/architecture documentation are in
+> place and **build green**. The two wireframed use cases — **UC2 Sales Forecasting** and **UC5
+> Inventory Aging & Overstock Risk** — are now implemented **end-to-end**: real PostgreSQL
+> persistence, an idempotent sample-data importer, a faithful C# port of the wireframe analytics
+> engine, live `/api/v1` endpoints, and working React screens. Remaining use cases follow the
+> [roadmap](#delivery-roadmap).
 
 The design language and two of the eight use cases (Sales Forecasting, Inventory Aging) come from the
 interactive **Meridian BI** wireframe under [`docs/wireframes/`](docs/wireframes/). The remaining six
@@ -71,13 +74,17 @@ cd ml && PYTHONPATH=. python tests/test_metrics.py
 
 | Stack | Command | Result |
 |-------|---------|--------|
-| Backend build | `dotnet build BeeEye.slnx` | 0 errors (23 projects) |
-| Backend tests | `dotnet test BeeEye.slnx` | 22 passed (18 unit + 4 architecture) |
-| API runtime | `dotnet run` → smoke test | 19 modules mounted, health + OpenAPI OK |
+| Backend build | `dotnet build BeeEye.slnx` | 0 errors |
+| Backend tests | `dotnet test BeeEye.slnx` | 242 passed (209 analytics + 18 kernel + 4 architecture + 11 integration) |
+| Analytics coverage | coverlet | calc engines 98–100% (Risk 98.6%, Forecaster 99.1%, Metrics/Demand 100%) |
+| API runtime (UC2/UC5) | `dotnet run` vs Postgres | reproduces documented profile: 291 units, SAR 46.75M, risk 147/118/24/2 |
 | Web typecheck/build | `npm run build` | 0 errors, code-split per use case |
-| Web tests | `npm run test` | 6 passed |
+| Web tests | `npm run test` | 12 passed |
 | ML | seed test runners | 11 passed |
 | Infra | `bicep build infra/main.bicep` | 0 errors |
+
+The integration tests use **Testcontainers** (real PostgreSQL) via `WebApplicationFactory`.
+Run the UC2/UC5 stack locally with `docker compose up -d` then `dotnet run --project src/api/BeeEye.Api`.
 
 ## Delivery roadmap
 

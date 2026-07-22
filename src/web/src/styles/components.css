@@ -208,6 +208,74 @@
 }
 .capability-list .material-symbols-outlined { color: var(--primary); font-size: 19px; }
 
+/* ---------------- Filter bar ---------------- */
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+  margin-bottom: 18px;
+}
+.filter-select { display: flex; flex-direction: column; gap: 4px; }
+.filter-select > span { font-size: 11px; color: var(--text-muted); font-weight: 600; }
+.filter-select select {
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  min-width: 140px;
+}
+
+/* ---------------- Analytical table ---------------- */
+.grid-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); }
+table.data-table { border-collapse: collapse; width: 100%; font-size: 13px; }
+.data-table thead th {
+  position: sticky; top: 0;
+  background: var(--surface-2);
+  text-align: left;
+  padding: 9px 12px;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.data-table th.sortable { cursor: pointer; user-select: none; }
+.data-table th.sortable:hover { color: var(--text); }
+.data-table tbody td { padding: 8px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.data-table tbody tr { cursor: pointer; }
+.data-table tbody tr:hover { background: var(--surface-2); }
+.data-table .num { text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+.pager { display: flex; align-items: center; gap: 12px; justify-content: flex-end; margin-top: 12px; font-size: 12.5px; color: var(--text-muted); }
+.pager button { padding: 5px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; }
+.pager button:disabled { opacity: 0.5; cursor: default; }
+
+/* ---------------- Drawer ---------------- */
+.drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.35); display: flex; justify-content: flex-end; z-index: 50; }
+.drawer {
+  width: min(480px, 92vw);
+  background: var(--surface);
+  height: 100%;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+  border-left: 1px solid var(--border);
+}
+.drawer__header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 18px; border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; background: var(--surface);
+}
+.drawer__body { padding: 18px; display: grid; gap: 16px; }
+
+/* ---------------- Factor breakdown ---------------- */
+.factor { display: grid; gap: 4px; }
+.factor__head { display: flex; justify-content: space-between; font-size: 12.5px; }
+.factor__bar { height: 8px; background: var(--surface-2); border-radius: 4px; overflow: hidden; }
+.factor__fill { height: 100%; background: var(--primary); border-radius: 4px; }
+.factor__detail { font-size: 11.5px; color: var(--text-faint); }
+
 /* ---------------- Icons ---------------- */
 .material-symbols-outlined {
   font-family: 'Material Symbols Outlined', sans-serif;
