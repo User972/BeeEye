@@ -24,7 +24,7 @@ export function buildQuery(params: Record<string, QueryValue>): string {
     }
     if (Array.isArray(value)) {
       for (const v of value) {
-        search.append(key, v);
+        search.append(key, String(v));
       }
     } else {
       search.append(key, String(value));
