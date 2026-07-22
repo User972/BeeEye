@@ -74,6 +74,9 @@
   <Folder Name="/tests/architecture/">
     <Project Path="tests/architecture/BeeEye.ArchitectureTests/BeeEye.ArchitectureTests.csproj" />
   </Folder>
+  <Folder Name="/tests/integration/">
+    <Project Path="tests/integration/BeeEye.IntegrationTests/BeeEye.IntegrationTests.csproj" />
+  </Folder>
   <Folder Name="/tests/unit/">
     <Project Path="tests/unit/BeeEye.Analytics.Tests/BeeEye.Analytics.Tests.csproj" />
     <Project Path="tests/unit/BeeEye.UnitTests/BeeEye.UnitTests.csproj" />
