@@ -7,14 +7,16 @@ the `/code-review` conventions pass reads this file and flags changes that viola
 
 **BeeEye** — an AI decision-intelligence platform for **ADMC** (automotive distribution). A .NET
 modular monolith + React SPA + Python ML, deployable to Azure. The current implementation is
-**read-only analytics**: **UC2 (Sales Forecasting)** and **UC5 (Inventory Aging & Overstock Risk)**
-are live end-to-end; the other bounded contexts are scaffolded. See [README.md](README.md) and
+**read-only analytics**: **UC1–UC7 are live end-to-end** — UC1 Order Optimisation, UC2 Sales
+Forecasting, UC3 Configuration Demand, UC4 Procurement, UC5 Inventory Aging, and UC6/UC7 (Sales↔After-
+Sales Correlation and Spare Parts Demand) on a clearly-labelled **synthetic-demo** dataset derived from
+the real sales. The remaining bounded contexts are scaffolded. See [README.md](README.md) and
 [docs/architecture/overview.md](docs/architecture/overview.md).
 
 ## Repository map
 
 - `src/api/BeeEye.Api` — ASP.NET Core **minimal-API host** (composition root, OpenAPI, health). No business logic.
-- `src/modules/<Context>` — 19 bounded-context module libraries; each implements `IModule`. Live: Forecasting, Inventory.
+- `src/modules/<Context>` — 19 bounded-context module libraries; each implements `IModule`. Live: Forecasting, Inventory, SalesActuals, Recommendations, Procurement, AfterSales, SpareParts.
 - `src/shared/BeeEye.Analytics` — pure numeric engine (forecasting, demand, inventory risk). **Faithful C# port of `docs/wireframes/engine.js`.**
 - `src/shared/BeeEye.Shared` — dependency-free kernel (`Money`, `Result`, `Paging`, `MonthKey`, …).
 - `src/shared/BeeEye.Shared.Web` — the `IModule` contract.

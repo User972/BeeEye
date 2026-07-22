@@ -48,6 +48,19 @@ becomes possible once Oracle Fusion after-sales / parts feeds are integrated. Th
 that capability for the BeeEye platform and is explicit about every input that must be sourced, so
 scoping and effort estimation are grounded rather than assumed.
 
+> **Synthetic-demo implementation (current build).** So UC7 is exercisable end-to-end before the parts
+> feeds land, BeeEye ships a **deterministic synthetic generator** (`SyntheticAfterSalesImporter`) that
+> derives parts consumption from the synthetic service events (themselves derived from the real sales
+> history). It emits a fixed `Part` catalogue (~43 parts, model compatibility, supersession chains,
+> lead time / on-hand / inbound stock) and a `PartUsage` fact table. Forecasting runs at the
+> **part × location** grain, where demand is genuinely intermittent, so Croston/SBA/TSB are the chosen
+> methods; supersession rolls a predecessor's history onto its successor; and deliberately sparse/new
+> parts exercise the insufficient-data flag. All of it is tagged `source_system = "synthetic-demo"` and
+> surfaced as `provenance: "synthetic-demo"` — clearly labelled, never presented as real or as Oracle
+> Fusion (see
+> [data-integration-and-quality §4.1](../../architecture/data-integration-and-quality.md#41-synthetic-demo-data-uc6--uc7)).
+> The inputs below are the **real** feeds that replace it.
+
 ### Required inputs (via the Oracle Fusion anti-corruption layer)
 
 | Input | Source (Oracle Fusion / enterprise) | Used for |

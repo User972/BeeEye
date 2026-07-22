@@ -1,11 +1,15 @@
 """Tests for baselines, aging risk, procurement, order optimisation and parts."""
 
-from beeeye_ml.after_sales import service_intensity_index
+from beeeye_ml.after_sales import (
+    normalised_service_intensity,
+    pearson_correlation,
+    service_intensity_index,
+)
 from beeeye_ml.forecasting import moving_average, naive, seasonal_naive
 from beeeye_ml.inventory_aging import RiskFactors, score_risk
 from beeeye_ml.order_optimisation import OrderConstraints, net_requirement
 from beeeye_ml.procurement import safety_stock
-from beeeye_ml.spare_parts import croston
+from beeeye_ml.spare_parts import adi, classify, croston, sba, squared_cv, tsb
 
 
 def test_baselines() -> None:
@@ -47,13 +51,49 @@ def test_net_requirement_nets_off_inbound() -> None:
 
 def test_croston_handles_intermittent_demand() -> None:
     rate = croston([0.0, 0.0, 5.0, 0.0, 0.0, 5.0])
-    assert rate > 0
+    assert abs(rate - 5 / 3) < 1e-9
     assert croston([0.0, 0.0, 0.0]) == 0.0
+
+
+def test_sba_and_tsb_match_reference_values() -> None:
+    series = [0.0, 0.0, 5.0, 0.0, 0.0, 5.0]
+    # SBA = (1 - alpha/2) * Croston = 0.95 * 5/3
+    assert abs(sba(series, 0.1) - 0.95 * (5 / 3)) < 1e-9
+    assert sba(series, 0.1) < croston(series, 0.1)
+    # TSB reference value (see the C# IntermittentTests canonical example).
+    assert abs(tsb(series, 0.1, 0.1) - 1.750235) < 1e-5
+    assert tsb([0.0, 0.0, 0.0]) == 0.0
+
+
+def test_adi_cv2_and_classification() -> None:
+    assert adi([0.0, 0.0, 5.0, 0.0, 0.0, 5.0]) == 3.0
+    assert adi([0.0, 0.0, 0.0]) is None
+    assert squared_cv([0.0, 0.0, 5.0, 0.0, 0.0, 5.0]) == 0.0
+    assert classify([10.0, 11, 9, 10, 12, 10, 11, 9]) == "smooth"
+    assert classify([0.0, 0, 5, 0, 0, 5, 0, 0, 5, 0, 0, 5]) == "intermittent"
+    assert classify([0.0, 0, 2, 0, 0, 0, 25, 0, 0, 10, 0, 0]) == "lumpy"
 
 
 def test_service_intensity_guards_zero_fleet() -> None:
     assert service_intensity_index(100, 50) == 2.0
     assert service_intensity_index(100, 0) is None
+
+
+def test_normalised_intensity_has_fleet_mean_one() -> None:
+    # Fast: 200 events / 100 vehicles = 2.0; Slow: 100/100 = 1.0; fleet ratio = 300/200 = 1.5.
+    idx = normalised_service_intensity({"Fast": 200, "Slow": 100}, {"Fast": 100, "Slow": 100})
+    assert abs(idx["Fast"] - 2.0 / 1.5) < 1e-9
+    assert abs(idx["Slow"] - 1.0 / 1.5) < 1e-9
+    # Zero fleet -> None, never a divide-by-zero.
+    idx0 = normalised_service_intensity({"Ghost": 10}, {"Ghost": 0})
+    assert idx0["Ghost"] is None
+
+
+def test_pearson_correlation_edge_cases() -> None:
+    assert pearson_correlation([1, 2, 3, 4], [2, 4, 6, 8]) == 1.0
+    assert pearson_correlation([1, 2, 3, 4], [8, 6, 4, 2]) == -1.0
+    assert pearson_correlation([5, 5, 5], [1, 2, 3]) is None
+    assert pearson_correlation([1], [2]) is None
 
 
 if __name__ == "__main__":
