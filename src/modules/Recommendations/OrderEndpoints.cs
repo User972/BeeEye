@@ -16,7 +16,8 @@ internal static class OrderEndpoints
 
         group.MapGet("/", () => new ModuleInfo(
                 "Recommendations", "recommendations", "Order-optimisation recommendations balancing demand and constraints (UC1).", "operational"))
-            .WithName("Recommendations_Info");
+            .WithName("Recommendations_Info")
+            .WithSummary("Recommendations module information");
 
         group.MapGet("/order-optimisation", async (
                 OrderReadService svc, CancellationToken ct,
@@ -36,12 +37,9 @@ internal static class OrderEndpoints
 
         group.MapGet("/order-optimisation/filter-options", async (OrderReadService svc, CancellationToken ct) =>
             {
-                var all = await svc.RecommendAsync(OrderScenario.From(null, null, null, null, null, null, null), ct);
-                return Results.Ok(new
-                {
-                    models = all.Select(r => r.Model).Distinct().OrderBy(x => x).ToList(),
-                    variants = all.Select(r => r.Variant).Distinct().OrderBy(x => x).ToList(),
-                });
+                // Distinct dimension values only — must not run the (expensive) per-config forecast.
+                var (models, variants) = await svc.FilterOptionsAsync(ct);
+                return Results.Ok(new { models, variants });
             })
             .WithName("Recommendations_FilterOptions");
     }

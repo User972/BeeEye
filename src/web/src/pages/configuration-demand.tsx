@@ -109,7 +109,7 @@ export default function ConfigurationDemand() {
                         <th>Configuration</th>
                         <SortHeader label="Units" active={sort === 'units'} onClick={() => sortBy('units')} />
                         <SortHeader label="Velocity" active={sort === 'velocity'} onClick={() => sortBy('velocity')} />
-                        <SortHeader label="Decay" active={sort === 'decay'} onClick={() => sortBy('decay')} />
+                        <SortHeader label="Decay" active={sort === 'decay'} dir="ascending" onClick={() => sortBy('decay')} />
                         <th>Rotation</th>
                         <SortHeader label="Stock" active={sort === 'stock'} onClick={() => sortBy('stock')} />
                         <th>Flags</th>
@@ -148,11 +148,21 @@ export default function ConfigurationDemand() {
   );
 }
 
-function SortHeader({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+function SortHeader({
+  label,
+  active,
+  dir = 'descending',
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  dir?: 'ascending' | 'descending';
+  onClick: () => void;
+}) {
   return (
-    <th className="sortable num" onClick={onClick} aria-sort={active ? 'descending' : undefined}>
+    <th className="sortable num" onClick={onClick} aria-sort={active ? dir : undefined}>
       {label}
-      <span aria-hidden> {active ? '↓' : '↕'}</span>
+      <span aria-hidden> {active ? (dir === 'ascending' ? '↑' : '↓') : '↕'}</span>
     </th>
   );
 }

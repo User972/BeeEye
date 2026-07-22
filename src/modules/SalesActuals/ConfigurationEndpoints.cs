@@ -18,7 +18,8 @@ internal static class ConfigurationEndpoints
 
         group.MapGet("/", () => new ModuleInfo(
                 "Sales Actuals", "sales-actuals", "Configuration-level demand insights and dead-stock signals (UC3).", "operational"))
-            .WithName("SalesActuals_Info");
+            .WithName("SalesActuals_Info")
+            .WithSummary("Sales Actuals module information");
 
         group.MapGet("/config-demand/summary", async (
                 ConfigurationReadService svc, CancellationToken ct,
@@ -70,14 +71,10 @@ internal static class ConfigurationEndpoints
 
         group.MapGet("/config-demand/filter-options", async (ConfigurationReadService svc, CancellationToken ct) =>
             {
-                var all = await svc.AnalyseAsync(ConfigDemandSettings.Default, ct);
-                return Results.Ok(new ConfigFilterOptions(
-                    Distinct(all, c => c.Model), Distinct(all, c => c.Variant), Distinct(all, c => c.Colour),
-                    Distinct(all, c => c.Interior), ["Fast", "Medium", "Slow", "Dead"]));
+                // Distinct dimension values only — must not run the full demand analysis.
+                var (models, variants, colours, interiors) = await svc.FilterOptionsAsync(ct);
+                return Results.Ok(new ConfigFilterOptions(models, variants, colours, interiors, ["Fast", "Medium", "Slow", "Dead"]));
             })
             .WithName("SalesActuals_FilterOptions");
     }
-
-    private static IReadOnlyList<string> Distinct(IEnumerable<ConfigDemandResult> items, Func<ConfigDemandResult, string> selector)
-        => items.Select(selector).Distinct().OrderBy(x => x).ToList();
 }

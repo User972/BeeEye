@@ -58,6 +58,15 @@ public sealed class OrderReadService(BeeEyeDbContext db)
 
     public async Task<bool> HasDataAsync(CancellationToken ct) => await db.SalesFacts.AsNoTracking().AnyAsync(ct);
 
+    /// <summary>Distinct model/variant dimension values, without running the per-config forecast.</summary>
+    public async Task<(IReadOnlyList<string> Models, IReadOnlyList<string> Variants)> FilterOptionsAsync(CancellationToken ct)
+    {
+        var (rows, _) = await LoadAsync(ct);
+        return (
+            rows.Select(r => r.Model).Distinct().OrderBy(x => x).ToList(),
+            rows.Select(r => r.Variant).Distinct().OrderBy(x => x).ToList());
+    }
+
     private static string Confidence(double? wmape) => wmape is null ? "Low" : wmape < 15 ? "High" : wmape < 30 ? "Medium" : "Low";
 
     private static double[] BuildSeries(IReadOnlyList<Row> rows, IReadOnlyList<string> months)

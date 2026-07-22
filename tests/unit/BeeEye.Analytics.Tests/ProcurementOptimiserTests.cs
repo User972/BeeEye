@@ -95,6 +95,20 @@ public class ProcurementOptimiserTests
         Assert.True(r.RecommendedQuantity <= r.RangeHigh);
     }
 
+    [Theory]
+    [InlineData(0.80)] // Z below the 0.90 band lower bound
+    [InlineData(0.85)] // "
+    [InlineData(0.999)] // clamps to Z(0.99) upper bound
+    public void Recommend_ServiceLevelOutsideBand_PointStillWithinRange(double serviceLevel)
+    {
+        // For a service level whose z sits outside the fixed 0.90–0.99 range band, the range
+        // is widened to include it, so the point estimate never falls outside [low, high].
+        var r = ProcurementOptimiser.Recommend(10, 3, 5, 0, Defaults with { ServiceLevel = serviceLevel });
+
+        Assert.True(r.RangeLow <= r.RecommendedQuantity, $"low {r.RangeLow} > point {r.RecommendedQuantity}");
+        Assert.True(r.RecommendedQuantity <= r.RangeHigh, $"point {r.RecommendedQuantity} > high {r.RangeHigh}");
+    }
+
     [Fact]
     public void Recommend_SafetyStockFormula_MatchesZTimesSigma()
     {

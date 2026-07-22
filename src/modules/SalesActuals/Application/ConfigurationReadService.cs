@@ -20,6 +20,16 @@ public sealed class ConfigurationReadService(BeeEyeDbContext db)
 
     public async Task<bool> HasDataAsync(CancellationToken ct) => await db.SalesFacts.AsNoTracking().AnyAsync(ct);
 
+    /// <summary>Distinct dimension values, without running the full demand analysis.</summary>
+    public async Task<(IReadOnlyList<string> Models, IReadOnlyList<string> Variants, IReadOnlyList<string> Colours, IReadOnlyList<string> Interiors)> FilterOptionsAsync(CancellationToken ct)
+    {
+        var sales = await LoadSalesAsync(ct);
+        IReadOnlyList<string> SortedDistinct(Func<SalesRow, string> selector)
+            => sales.Select(selector).Distinct().OrderBy(x => x).ToList();
+
+        return (SortedDistinct(s => s.Model), SortedDistinct(s => s.Variant), SortedDistinct(s => s.Colour), SortedDistinct(s => s.Interior));
+    }
+
     private async Task<IReadOnlyList<SalesRow>> LoadSalesAsync(CancellationToken ct)
     {
         var rows = await db.SalesFacts.AsNoTracking()
