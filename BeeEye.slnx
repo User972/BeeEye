@@ -62,6 +62,8 @@
     <Project Path="src/modules/SpareParts/BeeEye.Modules.SpareParts.csproj" />
   </Folder>
   <Folder Name="/src/shared/">
+    <Project Path="src/shared/BeeEye.Analytics/BeeEye.Analytics.csproj" />
+    <Project Path="src/shared/BeeEye.Persistence/BeeEye.Persistence.csproj" />
     <Project Path="src/shared/BeeEye.Shared.Web/BeeEye.Shared.Web.csproj" />
     <Project Path="src/shared/BeeEye.Shared/BeeEye.Shared.csproj" />
   </Folder>
@@ -73,6 +75,7 @@
     <Project Path="tests/architecture/BeeEye.ArchitectureTests/BeeEye.ArchitectureTests.csproj" />
   </Folder>
   <Folder Name="/tests/unit/">
+    <Project Path="tests/unit/BeeEye.Analytics.Tests/BeeEye.Analytics.Tests.csproj" />
     <Project Path="tests/unit/BeeEye.UnitTests/BeeEye.UnitTests.csproj" />
   </Folder>
 </Solution>

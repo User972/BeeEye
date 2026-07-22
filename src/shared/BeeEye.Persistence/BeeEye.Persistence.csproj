@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Shared persistence kernel: EF Core DbContext + canonical entities for the
+       operational store (Azure Database for PostgreSQL Flexible Server). For
+       Priority 2 a single DbContext hosts the sales + inventory facts the wireframed
+       use cases need; module-owned schemas can be split out later (ADR 0003). -->
+  <PropertyGroup>
+    <RootNamespace>BeeEye.Persistence</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../BeeEye.Shared/BeeEye.Shared.csproj" />
+  </ItemGroup>
+
+  <!-- Sample datasets embedded for dev seeding and integration tests. Production
+       ingestion is the Integration module's Oracle Fusion anti-corruption layer. -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\..\docs\wireframes\data\sales.json">
+      <LogicalName>BeeEye.Persistence.SampleData.sales.json</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\..\..\docs\wireframes\data\inventory.json">
+      <LogicalName>BeeEye.Persistence.SampleData.inventory.json</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+</Project>

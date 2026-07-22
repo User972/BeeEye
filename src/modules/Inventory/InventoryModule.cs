@@ -1,7 +1,5 @@
-using BeeEye.Shared.Api;
+using BeeEye.Modules.Inventory.Application;
 using BeeEye.Shared.Modularity;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,16 +15,11 @@ public sealed class InventoryModule : IModule
 
     public void RegisterServices(IServiceCollection services, IConfiguration configuration)
     {
-        // Scaffolded: Inventory application, domain and persistence services register here.
+        services.AddScoped<InventoryReadService>();
     }
 
     public void MapEndpoints(IEndpointRouteBuilder endpoints)
     {
-        var group = endpoints.MapGroup($"{ApiRoutes.V1}/{RoutePrefix}");
-        group.WithTags(Name);
-
-        var info = group.MapGet("/", () => new ModuleInfo(Name, RoutePrefix, Description, "scaffolded"));
-        info.WithName("Inventory_Info");
-        info.WithSummary("Inventory module information");
+        InventoryEndpoints.Map(endpoints);
     }
 }

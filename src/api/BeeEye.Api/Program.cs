@@ -8,6 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // --- Cross-cutting services ------------------------------------------------
 builder.Services.AddSingleton<IClock, SystemClock>();
+builder.Services.AddBeeEyeDatabase(builder.Configuration);
 
 // RFC 7807 Problem Details for all error responses, enriched with a correlation id.
 builder.Services.AddProblemDetails(options =>
@@ -82,6 +83,7 @@ foreach (var module in modules)
     module.MapEndpoints(app);
 }
 
+await app.InitialiseDatabaseAsync();
 app.Run();
 
 /// <summary>Exposed so integration tests can spin up the host with WebApplicationFactory.</summary>
