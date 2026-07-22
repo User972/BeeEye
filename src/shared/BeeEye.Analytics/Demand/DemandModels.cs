@@ -31,12 +31,12 @@ public sealed class DemandAggregates
 
     private DemandAggregates(string lastMonth) => LastMonth = lastMonth;
 
-    public string LastMonth { get; }
+    public string LastMonth { get; private set; }
 
     public static DemandAggregates Build(IEnumerable<SalesRow> rows)
     {
         var lastMonth = "0000-00";
-        var agg = new DemandAggregates("0000-00");
+        var agg = new DemandAggregates(lastMonth);
         foreach (var r in rows)
         {
             if (string.CompareOrdinal(r.MonthKey, lastMonth) > 0)
@@ -58,19 +58,8 @@ public sealed class DemandAggregates
             set.Add(r.Location);
         }
 
-        // Immutable copy carrying the resolved last month.
-        var final = new DemandAggregates(lastMonth);
-        Copy(agg._lmv, final._lmv);
-        Copy(agg._mv, final._mv);
-        Copy(agg._mdl, final._mdl);
-        Copy(agg._mvTot, final._mvTot);
-        Copy(agg._lmvTot, final._lmvTot);
-        foreach (var kv in agg._modelLocs)
-        {
-            final._modelLocs[kv.Key] = kv.Value;
-        }
-
-        return final;
+        agg.LastMonth = lastMonth;
+        return agg;
     }
 
     public double Lmv(string loc, string model, string variant, string month) => Get(_lmv, $"{loc}|{model}|{variant}|{month}");
@@ -89,12 +78,4 @@ public sealed class DemandAggregates
         => map[key] = (map.TryGetValue(key, out var v) ? v : 0) + value;
 
     private static double Get(Dictionary<string, double> map, string key) => map.TryGetValue(key, out var v) ? v : 0;
-
-    private static void Copy(Dictionary<string, double> from, Dictionary<string, double> to)
-    {
-        foreach (var kv in from)
-        {
-            to[kv.Key] = kv.Value;
-        }
-    }
 }

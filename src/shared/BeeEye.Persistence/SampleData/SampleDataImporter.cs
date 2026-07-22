@@ -67,7 +67,7 @@ public sealed class SampleDataImporter(BeeEyeDbContext db)
                 DiscountPct = r.DiscountPct,
                 IsRamadan = Truthy(r.IsRamadan),
                 DateOfManufacture = ParseDate(r.DateOfManufacture),
-                RowHash = Sha256($"{i}|{r.SaleDate}|{r.Location}|{r.Model}|{r.Variant}|{r.Colour}|{r.Interior}|{r.UnitsSold}|{r.UnitPrice}|{r.Revenue}|{r.DiscountPct}|{r.IsRamadan}"),
+                RowHash = Sha256($"{batchId}|{i}|{r.SaleDate}|{r.Location}|{r.Model}|{r.Variant}|{r.Colour}|{r.Interior}|{r.UnitsSold}|{r.UnitPrice}|{r.Revenue}|{r.DiscountPct}|{r.IsRamadan}"),
                 IngestionBatchId = batchId,
                 IngestedAtUtc = now,
             });

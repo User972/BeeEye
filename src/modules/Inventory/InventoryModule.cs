@@ -12,6 +12,7 @@ public sealed class InventoryModule : IModule
     public string Name => "Inventory";
     public string RoutePrefix => "inventory";
     public string Description => "Inventory items, snapshots, aging and overstock-risk scoring (UC5).";
+    public string Status => "operational";
 
     public void RegisterServices(IServiceCollection services, IConfiguration configuration)
     {

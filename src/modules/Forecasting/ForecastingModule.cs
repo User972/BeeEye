@@ -12,6 +12,7 @@ public sealed class ForecastingModule : IModule
     public string Name => "Forecasting";
     public string RoutePrefix => "forecasting";
     public string Description => "Forecast plans, versions, snapshots and accuracy metrics (UC2).";
+    public string Status => "operational";
 
     public void RegisterServices(IServiceCollection services, IConfiguration configuration)
     {

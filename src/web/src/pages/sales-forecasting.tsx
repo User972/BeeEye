@@ -32,9 +32,18 @@ export default function SalesForecasting() {
     ...(model ? { model: [model] } : {}),
     ...(location ? { location: [location] } : {}),
   };
-  const forecastQuery: ForecastQuery = { ...base, holdout: Number(holdout), ci: Number(ci), horizon: 6 };
+  // The "All" option emits '' → Number('') is 0; fall back to the server defaults instead of
+  // sending holdout=0/ci=0 (which the backend would clamp to a degenerate 1-month back-test).
+  const effectiveHoldout = Number(holdout) || 6;
+  const effectiveCi = Number(ci) || 80;
+  const forecastQuery: ForecastQuery = { ...base, holdout: effectiveHoldout, ci: effectiveCi, horizon: 6 };
   const forecast = useForecast(forecastQuery);
-  const accuracy = useAccuracyBy('model', { ...base, holdout: Number(holdout) });
+  // "Accuracy by model" is a cross-model comparison, so it must not inherit the selected Model
+  // filter (that would collapse the table to a single row); only the Location filter applies.
+  const accuracy = useAccuracyBy('model', {
+    ...(location ? { location: [location] } : {}),
+    holdout: effectiveHoldout,
+  });
 
   const f = forecast.data?.forecast;
 
@@ -86,7 +95,7 @@ export default function SalesForecasting() {
           <div style={{ height: 'var(--gap)' }} />
 
           <Card>
-            <CardHeader title="Demand forecast" subtitle={`${f.totalN} months history · ${f.horizon}-month projection · ${ci}% confidence`} />
+            <CardHeader title="Demand forecast" subtitle={`${f.totalN} months history · ${f.horizon}-month projection · ${effectiveCi}% confidence`} />
             <ForecastChart history={f.history} backtest={f.backtest} future={f.future} />
           </Card>
 

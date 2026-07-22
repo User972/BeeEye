@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace BeeEye.Shared.Primitives;
 
 /// <summary>
@@ -48,5 +50,5 @@ public readonly record struct Money
         }
     }
 
-    public override string ToString() => $"{Amount:0.00} {Currency}";
+    public override string ToString() => $"{Amount.ToString("0.00", CultureInfo.InvariantCulture)} {Currency}";
 }

@@ -29,6 +29,12 @@ public interface IModule
     /// <summary>One-line description surfaced by the platform module registry.</summary>
     string Description { get; }
 
+    /// <summary>
+    /// Implementation status surfaced by the platform module registry, e.g. "scaffolded" or
+    /// "operational". Defaults to "scaffolded"; modules with live endpoints override it.
+    /// </summary>
+    string Status => "scaffolded";
+
     /// <summary>Register this module's services into the shared container.</summary>
     void RegisterServices(IServiceCollection services, IConfiguration configuration);
 

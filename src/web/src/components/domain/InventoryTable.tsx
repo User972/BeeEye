@@ -55,7 +55,13 @@ export function InventoryTable({ rows, onSelect, onSortChange }: InventoryTableP
     data: rows,
     columns,
     state: { sorting },
-    onSortingChange: setSorting,
+    // The API sorts each column descending only (riskiest / oldest / most-valuable first). Force
+    // descending so the ascending state — which never round-trips to the server — can't be shown.
+    onSortingChange: (updater) => {
+      const next = typeof updater === 'function' ? updater(sorting) : updater;
+      const first = next[0];
+      setSorting(first ? [{ id: first.id, desc: true }] : sorting);
+    },
     manualSorting: true,
     getCoreRowModel: getCoreRowModel(),
   });

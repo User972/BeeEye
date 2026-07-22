@@ -72,7 +72,7 @@ app.MapHealthChecks("/health/ready");
 
 // Platform discovery endpoint — lists every mounted module.
 app.MapGet($"{ApiRoutes.V1}/platform/modules", () =>
-        modules.Select(m => new ModuleInfo(m.Name, m.RoutePrefix, m.Description, "scaffolded")))
+        modules.Select(m => new ModuleInfo(m.Name, m.RoutePrefix, m.Description, m.Status)))
     .WithTags("Platform")
     .WithName("Platform_Modules")
     .WithSummary("List all mounted bounded-context modules");

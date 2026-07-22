@@ -28,6 +28,13 @@ public sealed class ForecastingReadService(BeeEyeDbContext db)
         }
 
         var filtered = rows.Where(r => Matches(r, filter)).ToList();
+        if (filtered.Count == 0)
+        {
+            // No rows match the filter: the month axis and history guard were computed over all
+            // sales, so without this the series would be all-zero and we'd return a bogus forecast.
+            return null;
+        }
+
         var series = BuildSeries(filtered, months);
         var result = Forecaster.Run(series, months, options, RamadanLift(filtered));
         return new ForecastResponse(result, new ForecastMeta(months.Count, Statistics.Sum(series), DateTimeOffset.UtcNow));

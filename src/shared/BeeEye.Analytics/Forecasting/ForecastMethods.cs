@@ -170,7 +170,7 @@ public static class ForecastMethods
     }
 
     /// <summary>JS-style Array.slice(start, end) — end exclusive, clamped to bounds.</summary>
-    private static IReadOnlyList<double> Slice(IReadOnlyList<double> y, int start, int end)
+    internal static IReadOnlyList<double> Slice(IReadOnlyList<double> y, int start, int end)
     {
         start = Math.Max(0, start);
         end = Math.Min(y.Count, end);

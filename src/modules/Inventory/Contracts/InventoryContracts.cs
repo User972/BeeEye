@@ -71,12 +71,14 @@ public static class InventoryMapping
         u.AccumulatedHoldingCost, u.Recommendation.Action);
 
     public static IReadOnlyList<InventoryUnitRisk> Sort(this IEnumerable<InventoryUnitRisk> units, string? sort)
+        // StockId is a stable, unique tie-breaker so paging is deterministic across requests
+        // (the underlying query has no ORDER BY, so ties would otherwise resolve to DB heap order).
         => (sort?.ToLowerInvariant()) switch
         {
-            "age" => units.OrderByDescending(u => u.InventoryAgeDays).ToList(),
-            "cover" => units.OrderByDescending(u => u.StockCover).ToList(),
-            "value" => units.OrderByDescending(u => u.PurchasePrice).ToList(),
-            "holding" => units.OrderByDescending(u => u.AccumulatedHoldingCost).ToList(),
-            _ => units.OrderByDescending(u => u.RiskScore).ToList(), // default: riskiest first
+            "age" => units.OrderByDescending(u => u.InventoryAgeDays).ThenBy(u => u.StockId, StringComparer.Ordinal).ToList(),
+            "cover" => units.OrderByDescending(u => u.StockCover).ThenBy(u => u.StockId, StringComparer.Ordinal).ToList(),
+            "value" => units.OrderByDescending(u => u.PurchasePrice).ThenBy(u => u.StockId, StringComparer.Ordinal).ToList(),
+            "holding" => units.OrderByDescending(u => u.AccumulatedHoldingCost).ThenBy(u => u.StockId, StringComparer.Ordinal).ToList(),
+            _ => units.OrderByDescending(u => u.RiskScore).ThenBy(u => u.StockId, StringComparer.Ordinal).ToList(), // default: riskiest first
         };
 }

@@ -20,8 +20,8 @@ public sealed record PageRequest
     public int Page { get; }
     public int PageSize { get; }
 
-    /// <summary>Zero-based row offset for the current page.</summary>
-    public int Offset => (Page - 1) * PageSize;
+    /// <summary>Zero-based row offset for the current page (saturating — never overflows to a negative).</summary>
+    public int Offset => (int)Math.Min((long)(Page - 1) * PageSize, int.MaxValue);
 }
 
 /// <summary>A page of results plus the paging metadata a client needs to navigate.</summary>

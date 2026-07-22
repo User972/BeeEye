@@ -46,10 +46,12 @@ class RiskResult:
 
 
 def risk_band(score: float) -> str:
-    for name, low, high in _BANDS:
-        if low <= score <= high:
+    # Contiguous upper-bound cascade so fractional scores in a band gap (e.g. 79.5) are not
+    # misclassified to "Low"; scores above 100 clamp to "Critical".
+    for name, _low, high in _BANDS:
+        if score <= high:
             return name
-    return "Critical" if score > 100 else "Low"
+    return "Critical"
 
 
 def _clamp01(value: float) -> float:
@@ -58,7 +60,8 @@ def _clamp01(value: float) -> float:
 
 def score_risk(factors: RiskFactors, weights: dict[str, float] | None = None) -> RiskResult:
     """Weighted-sum risk score with a per-factor contribution breakdown."""
-    w = weights or DEFAULT_WEIGHTS
+    # Merge onto the defaults so a partial (or empty) override does not raise KeyError below.
+    w = {**DEFAULT_WEIGHTS, **(weights or {})}
     values = {
         "stock_cover": _clamp01(factors.stock_cover),
         "holding_age": _clamp01(factors.holding_age),

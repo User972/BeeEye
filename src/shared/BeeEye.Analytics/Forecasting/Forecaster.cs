@@ -54,12 +54,12 @@ public static class Forecaster
 
         var y = series;
         var n = y.Count;
-        var h = options.Horizon;
+        var h = Math.Clamp(options.Horizon, 1, 36);
         var hold = Math.Min(options.Holdout, n - 12 > 0 ? n - 12 : 6);
         hold = Math.Max(1, Math.Min(hold, n - 1));
 
-        var trainY = Take(y, 0, n - hold);
-        var holdY = Take(y, n - hold, n);
+        var trainY = ForecastMethods.Slice(y, 0, n - hold);
+        var holdY = ForecastMethods.Slice(y, n - hold, n);
 
         var results = new Dictionary<string, (MethodResult Method, AccuracyMetrics Metrics)>();
         foreach (var key in Keys)
@@ -142,8 +142,8 @@ public static class Forecaster
         double? ramadanLiftPct)
     {
         var n = y.Count;
-        var recent3 = Statistics.Mean(Take(y, n - 3, n));
-        var prior12 = Statistics.Mean(Take(y, n - 15, n - 3));
+        var recent3 = Statistics.Mean(ForecastMethods.Slice(y, n - 3, n));
+        var prior12 = Statistics.Mean(ForecastMethods.Slice(y, n - 15, n - 3));
         var chg = prior12 != 0 ? (recent3 - prior12) / prior12 * 100 : 0;
 
         var points = new List<string>();
@@ -174,23 +174,5 @@ public static class Forecaster
         points.Add($"Back-test WMAPE is {(wm is null ? "n/a" : $"{wm:F1}%")}; confidence is {confidence}.");
 
         return new ForecastExplanation(points, recent3, prior12, chg);
-    }
-
-    private static IReadOnlyList<double> Take(IReadOnlyList<double> y, int start, int end)
-    {
-        start = Math.Max(0, start);
-        end = Math.Min(y.Count, end);
-        if (end <= start)
-        {
-            return [];
-        }
-
-        var outp = new double[end - start];
-        for (var i = start; i < end; i++)
-        {
-            outp[i - start] = y[i];
-        }
-
-        return outp;
     }
 }

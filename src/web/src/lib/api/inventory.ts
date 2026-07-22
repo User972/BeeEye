@@ -99,7 +99,9 @@ export interface InventoryRecommendation {
   discountPct?: number | null;
 }
 
-export interface InventoryItemDetail extends InventoryItemRow {
+// The detail endpoint returns the full risk record, which exposes `recommendation` (an object)
+// but not the flattened `recommendedAction` scalar the grid rows carry — so omit it here.
+export interface InventoryItemDetail extends Omit<InventoryItemRow, 'recommendedAction'> {
   chassisNo: string;
   interior: string;
   type: string;

@@ -12,6 +12,13 @@ public static class DemandCalculator
     public static DemandVelocityResult Velocity(
         DemandAggregates agg, string loc, string model, string variant, int nMonths = 3, string? endMonth = null)
     {
+        // Mirror engine.js `nMonths || 3`: a zero/negative window falls back to three months
+        // rather than collapsing to an empty trailing window (which would force every cell to Tier 4).
+        if (nMonths <= 0)
+        {
+            nMonths = 3;
+        }
+
         var window = MonthKey.Trailing(nMonths, endMonth ?? agg.LastMonth);
 
         // Tier 1 — location · model · variant.

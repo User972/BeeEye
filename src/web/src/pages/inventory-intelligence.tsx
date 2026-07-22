@@ -14,7 +14,7 @@ import {
   useInventoryFilterOptions,
   type InventoryQuery,
 } from '@/lib/api/inventory';
-import { fmtInt, fmtNum, fmtSar, fmtSignPct } from '@/lib/format';
+import { fmtInt, fmtNum, fmtSar, fmtSignPct, riskClass } from '@/lib/format';
 
 const PAGE_SIZE = 25;
 
@@ -160,8 +160,7 @@ export default function InventoryIntelligence() {
 
 function UnitDetail({ data }: { data: NonNullable<ReturnType<typeof useInventoryItem>['data']> }) {
   const maxPoints = Math.max(1, ...data.factors.map((f) => f.points));
-  const bandClass =
-    data.riskBand === 'Critical' ? 'risk-crit' : data.riskBand === 'High' ? 'risk-high' : data.riskBand === 'Medium' ? 'risk-med' : 'risk-low';
+  const bandClass = riskClass(data.riskBand);
   return (
     <>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
