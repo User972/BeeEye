@@ -1,2 +1,104 @@
-# BeeEye
-Ai Bi
+# BeeEye — AI Decision Intelligence Platform
+
+A production-grade, Azure-deployable AI decision-intelligence platform for **ADMC**, an
+automotive distribution and marketing organisation. BeeEye turns Oracle Fusion ERP/CRM data into
+explainable, auditable recommendations across eight business use cases — from sales-forecast accuracy
+to inventory-aging risk to an executive decision cockpit.
+
+> **Status: foundation scaffold.** The full monorepo, all 19 bounded-context modules, the React
+> shell routing every use case, the ML baselines, the Azure IaC, and the planning/architecture
+> documentation are in place and **build green**. Use-case analytics are wired module-by-module in
+> later increments (see [roadmap](#delivery-roadmap)); endpoints currently return scaffolded fixtures.
+
+The design language and two of the eight use cases (Sales Forecasting, Inventory Aging) come from the
+interactive **Meridian BI** wireframe under [`docs/wireframes/`](docs/wireframes/). The remaining six
+use-case workflows are specified under [`docs/product/use-cases/`](docs/product/use-cases/).
+
+## Architecture at a glance
+
+- **Backend** — .NET 10 modular monolith: an ASP.NET Core API host composing 19 bounded-context
+  module libraries with strict boundaries (enforced by architecture tests). Provider-neutral AI
+  abstraction; GenAI narrates validated metrics but never computes business values.
+- **Front end** — React 19 + TypeScript (strict) + Vite + TanStack (Query/Router/Table), a design
+  system derived from the wireframe (OKLCH tokens, light/dark), lazy-loaded per-use-case routes.
+- **ML** — Python 3.12 batch jobs; seed baselines every model must beat.
+- **Data** — Azure Database for PostgreSQL Flexible Server (operational) + ADLS Gen2 (data lake).
+- **Integration** — Oracle Fusion is the read-only system of record behind a versioned
+  anti-corruption layer.
+- **Cloud** — Azure Container Apps + Jobs, Service Bus, Key Vault, Entra ID, App Insights — all via
+  Bicep, deployable into the customer's tenant.
+
+See [`docs/architecture/overview.md`](docs/architecture/overview.md) and the
+[ADRs](docs/adr/) for the reasoning.
+
+## Repository layout
+
+```
+src/
+  api/        BeeEye.Api        ASP.NET Core host (composition root, OpenAPI, health)
+  modules/    19 bounded contexts (Identity, Forecasting, Inventory, Procurement, …)
+  shared/     BeeEye.Shared (pure kernel) + BeeEye.Shared.Web (IModule contract)
+  workers/    BeeEye.Workers    generic-host background service host
+  web/        React + Vite SPA
+ml/           beeeye_ml         Python ML/statistical packages + tests
+infra/        Bicep IaC (modules, environments, policies, scripts)
+tests/        unit, architecture (+ planned integration/contract/e2e/perf/security)
+docs/         wireframes, architecture, adr, product/use-cases
+```
+
+## Quick start
+
+Prerequisites: .NET 10 SDK, Node 22, Python 3.12+, Docker.
+
+```bash
+# 1. Local infra (PostgreSQL + Azurite)
+docker compose up -d
+
+# 2. Backend — build, test, run the API (http://localhost:5080)
+dotnet build BeeEye.slnx
+dotnet test  BeeEye.slnx
+dotnet run --project src/api/BeeEye.Api
+#   GET /health/ready · /api/v1/platform/modules · /openapi/v1.json
+
+# 3. Web — the SPA (http://localhost:5173, proxies /api to the host above)
+cd src/web && npm install && npm run dev
+
+# 4. ML — seed baselines and metrics
+cd ml && PYTHONPATH=. python tests/test_metrics.py
+```
+
+## Verified green in this scaffold
+
+| Stack | Command | Result |
+|-------|---------|--------|
+| Backend build | `dotnet build BeeEye.slnx` | 0 errors (23 projects) |
+| Backend tests | `dotnet test BeeEye.slnx` | 22 passed (18 unit + 4 architecture) |
+| API runtime | `dotnet run` → smoke test | 19 modules mounted, health + OpenAPI OK |
+| Web typecheck/build | `npm run build` | 0 errors, code-split per use case |
+| Web tests | `npm run test` | 6 passed |
+| ML | seed test runners | 11 passed |
+| Infra | `bicep build infra/main.bicep` | 0 errors |
+
+## Delivery roadmap
+
+1. **Foundation** (this scaffold) — shell, design system, modules, contracts, IaC, docs. ✅
+2. **UC2 + UC5** (wireframed) — Sales Forecasting and Inventory Aging, wired end-to-end.
+3. **UC1, UC3, UC4** — sales/demand/procurement intelligence.
+4. **UC6, UC7** — after-sales and spare-parts intelligence.
+5. **UC8** — executive cockpit, once modules produce trusted outputs.
+
+One coherent architecture throughout — no parallel stack per use case.
+
+## Documentation
+
+- Wireframe analysis: [screens](docs/architecture/wireframe-analysis/screen-inventory.md) ·
+  [design tokens](docs/architecture/wireframe-analysis/design-token-inventory.md) ·
+  [components](docs/architecture/wireframe-analysis/component-inventory.md) ·
+  [traceability](docs/architecture/wireframe-analysis/traceability-matrix.md) ·
+  [embedded assumptions](docs/architecture/wireframe-analysis/embedded-assumptions.md)
+- Use-case specs: [docs/product/use-cases/](docs/product/use-cases/)
+- Architecture: [docs/architecture/](docs/architecture/) · Decisions: [docs/adr/](docs/adr/)
+
+This repository contains proprietary vendor source. See
+[`docs/architecture/deployment-and-ip-protection.md`](docs/architecture/deployment-and-ip-protection.md)
+for the IP-protection release model.

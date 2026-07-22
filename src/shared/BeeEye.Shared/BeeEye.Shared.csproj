@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Pure shared kernel: domain primitives with no web/framework dependency, so
+       every host (API, workers, ML gateway, tests) can reference it cheaply.
+       The web-coupled module contract lives in BeeEye.Shared.Web. -->
+  <PropertyGroup>
+    <RootNamespace>BeeEye.Shared</RootNamespace>
+  </PropertyGroup>
+
+</Project>

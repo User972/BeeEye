@@ -1,0 +1,78 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/api/">
+    <Project Path="src/api/BeeEye.Api/BeeEye.Api.csproj" />
+  </Folder>
+  <Folder Name="/src/modules/" />
+  <Folder Name="/src/modules/AfterSales/">
+    <Project Path="src/modules/AfterSales/BeeEye.Modules.AfterSales.csproj" />
+  </Folder>
+  <Folder Name="/src/modules/Audit/">
+    <Project Path="src/modules/Audit/BeeEye.Modules.Audit.csproj" />
+  </Folder>
+  <Folder Name="/src/modules/DataQuality/">
+    <Project Path="src/modules/DataQuality/BeeEye.Modules.DataQuality.csproj" />
+  </Folder>
+  <Folder Name="/src/modules/DecisionsAndOutcomes/">
+    <Project Path="src/modules/DecisionsAndOutcomes/BeeEye.Modules.DecisionsAndOutcomes.csproj" />
+  </Folder>
+  <Folder Name="/src/modules/ExecutiveInsights/">
+    <Project Path="src/modules/ExecutiveInsights/BeeEye.Modules.ExecutiveInsights.csproj" />
+  </Folder>
+  <Folder Name="/src/modules/Forecasting/">
+    <Project Path="src/modules/Forecasting/BeeEye.Modules.Forecasting.csproj" />
+  </Folder>
+  <Folder Name="/src/modules/Identity/">
+    <Project Path="src/modules/Identity/BeeEye.Modules.Identity.csproj" />
+  </Folder>
+  <Folder Name="/src/modules/Integration/">
+    <Project Path="src/modules/Integration/BeeEye.Modules.Integration.csproj" />
+  </Folder>
+  <Folder Name="/src/modules/Inventory/">
+    <Project Path="src/modules/Inventory/BeeEye.Modules.Inventory.csproj" />
+  </Folder>
+  <Folder Name="/src/modules/MasterData/">
+    <Project Path="src/modules/MasterData/BeeEye.Modules.MasterData.csproj" />
+  </Folder>
+  <Folder Name="/src/modules/ModelsAndExperiments/">
+    <Project Path="src/modules/ModelsAndExperiments/BeeEye.Modules.ModelsAndExperiments.csproj" />
+  </Folder>
+  <Folder Name="/src/modules/Notifications/">
+    <Project Path="src/modules/Notifications/BeeEye.Modules.Notifications.csproj" />
+  </Folder>
+  <Folder Name="/src/modules/Organisation/">
+    <Project Path="src/modules/Organisation/BeeEye.Modules.Organisation.csproj" />
+  </Folder>
+  <Folder Name="/src/modules/PlatformAdministration/">
+    <Project Path="src/modules/PlatformAdministration/BeeEye.Modules.PlatformAdministration.csproj" />
+  </Folder>
+  <Folder Name="/src/modules/Predictions/">
+    <Project Path="src/modules/Predictions/BeeEye.Modules.Predictions.csproj" />
+  </Folder>
+  <Folder Name="/src/modules/Procurement/">
+    <Project Path="src/modules/Procurement/BeeEye.Modules.Procurement.csproj" />
+  </Folder>
+  <Folder Name="/src/modules/Recommendations/">
+    <Project Path="src/modules/Recommendations/BeeEye.Modules.Recommendations.csproj" />
+  </Folder>
+  <Folder Name="/src/modules/SalesActuals/">
+    <Project Path="src/modules/SalesActuals/BeeEye.Modules.SalesActuals.csproj" />
+  </Folder>
+  <Folder Name="/src/modules/SpareParts/">
+    <Project Path="src/modules/SpareParts/BeeEye.Modules.SpareParts.csproj" />
+  </Folder>
+  <Folder Name="/src/shared/">
+    <Project Path="src/shared/BeeEye.Shared.Web/BeeEye.Shared.Web.csproj" />
+    <Project Path="src/shared/BeeEye.Shared/BeeEye.Shared.csproj" />
+  </Folder>
+  <Folder Name="/src/workers/">
+    <Project Path="src/workers/BeeEye.Workers/BeeEye.Workers.csproj" />
+  </Folder>
+  <Folder Name="/tests/" />
+  <Folder Name="/tests/architecture/">
+    <Project Path="tests/architecture/BeeEye.ArchitectureTests/BeeEye.ArchitectureTests.csproj" />
+  </Folder>
+  <Folder Name="/tests/unit/">
+    <Project Path="tests/unit/BeeEye.UnitTests/BeeEye.UnitTests.csproj" />
+  </Folder>
+</Solution>

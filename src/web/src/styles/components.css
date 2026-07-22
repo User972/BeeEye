@@ -1,0 +1,227 @@
+/* Component styles for the BeeEye design system. Class-based (no CSS modules) so
+   the strict TS build stays simple. Tokens come from tokens.css. */
+
+/* ---------------- App shell ---------------- */
+.app-shell {
+  display: grid;
+  grid-template-columns: 264px 1fr;
+  min-height: 100vh;
+}
+@media (max-width: 900px) {
+  .app-shell { grid-template-columns: 1fr; }
+}
+
+.app-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.app-content {
+  padding: 24px;
+  max-width: 1440px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* ---------------- Navigation rail ---------------- */
+.nav-rail {
+  background: linear-gradient(180deg, var(--nav-bg), var(--nav-bg-2));
+  border-right: 1px solid var(--nav-border);
+  color: var(--nav-fg);
+  padding: 18px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+.nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px 16px;
+}
+.nav-brand__mark {
+  width: 30px; height: 30px;
+  border-radius: 9px;
+  display: grid; place-items: center;
+  background: linear-gradient(135deg, var(--ai-1), var(--ai-2));
+  color: white; font-weight: 700;
+}
+.nav-brand__name { font-weight: 700; font-size: 16px; letter-spacing: -0.02em; }
+.nav-brand__sub { color: var(--nav-muted); font-size: 11px; }
+
+.nav-section__label {
+  color: var(--nav-muted);
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 14px 10px 6px;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 8px 10px;
+  border-radius: 9px;
+  color: var(--nav-fg);
+  font-size: 13.5px;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+.nav-item:hover { background: color-mix(in oklab, var(--nav-active-bg) 55%, transparent); }
+.nav-item--active {
+  background: var(--nav-active-bg);
+  border-color: var(--nav-border);
+  font-weight: 600;
+}
+.nav-item__uc {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--nav-muted);
+  font-family: var(--font-mono);
+}
+
+/* ---------------- App header ---------------- */
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  position: sticky; top: 0; z-index: 10;
+}
+.app-header__spacer { flex: 1; }
+.icon-btn {
+  display: grid; place-items: center;
+  width: 36px; height: 36px;
+  border-radius: 9px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.icon-btn:hover { color: var(--text); border-color: var(--border-strong); }
+
+/* ---------------- Cards ---------------- */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--card-pad);
+  box-shadow: var(--shadow-sm);
+}
+.card__title { font-size: 14px; font-weight: 600; }
+.card__subtitle { color: var(--text-muted); font-size: 12.5px; margin-top: 2px; }
+
+.grid {
+  display: grid;
+  gap: var(--gap);
+}
+.grid--stats { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.grid--cards { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+
+/* ---------------- Stat card ---------------- */
+.stat-card { display: flex; flex-direction: column; gap: 6px; }
+.stat-card__label {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  display: flex; align-items: center; gap: 6px;
+}
+.stat-card__value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.stat-card__delta { font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 3px; }
+.stat-card__delta--pos { color: var(--pos); }
+.stat-card__delta--neg { color: var(--neg); }
+
+/* ---------------- Badges ---------------- */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-muted);
+}
+.badge__dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+
+.risk-low { color: var(--risk-low); background: color-mix(in oklab, var(--risk-low) 14%, transparent); border-color: color-mix(in oklab, var(--risk-low) 35%, transparent); }
+.risk-med { color: var(--risk-med); background: color-mix(in oklab, var(--risk-med) 16%, transparent); border-color: color-mix(in oklab, var(--risk-med) 38%, transparent); }
+.risk-high { color: var(--risk-high); background: color-mix(in oklab, var(--risk-high) 16%, transparent); border-color: color-mix(in oklab, var(--risk-high) 40%, transparent); }
+.risk-crit { color: var(--risk-crit); background: color-mix(in oklab, var(--risk-crit) 16%, transparent); border-color: color-mix(in oklab, var(--risk-crit) 42%, transparent); }
+
+/* ---------------- Page header ---------------- */
+.page-header { margin-bottom: 20px; }
+.page-header__top { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.page-header__title { font-size: 22px; }
+.page-header__summary { color: var(--text-muted); margin-top: 6px; font-size: 13.5px; }
+.page-header__meta {
+  display: flex; flex-wrap: wrap; gap: 16px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border);
+  font-size: 12px;
+  color: var(--text-faint);
+}
+.page-header__meta b { color: var(--text-muted); font-weight: 600; }
+
+/* ---------------- States ---------------- */
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--text-muted);
+}
+.state__icon { font-size: 34px; }
+.state--error .state__icon { color: var(--neg); }
+.skeleton {
+  background: linear-gradient(90deg, var(--surface-2), var(--surface-3), var(--surface-2));
+  background-size: 200% 100%;
+  animation: shimmer 1.3s infinite;
+  border-radius: 8px;
+}
+@keyframes shimmer { to { background-position: -200% 0; } }
+
+/* ---------------- Capability list ---------------- */
+.capability-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.capability-list li {
+  display: flex; gap: 10px; align-items: flex-start;
+  font-size: 13.5px;
+}
+.capability-list .material-symbols-outlined { color: var(--primary); font-size: 19px; }
+
+/* ---------------- Icons ---------------- */
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined', sans-serif;
+  font-weight: normal;
+  font-style: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: nowrap;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+}
+/* Fallback when the icon font is not installed: show nothing rather than raw text. */
+@supports not (font-family: 'Material Symbols Outlined') {
+  .material-symbols-outlined { font-size: 0; }
+}

@@ -1,0 +1,58 @@
+# ---------------------------------------------------------------------------
+# BeeEye platform .gitignore
+# ---------------------------------------------------------------------------
+
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+artifacts/
+TestResults/
+*.trx
+coverage/
+*.coverage
+*.cobertura.xml
+
+# Node / web
+node_modules/
+dist/
+.vite/
+*.tsbuildinfo
+playwright-report/
+test-results/
+.eslintcache
+
+# Python / ML
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+mlruns/
+.ipynb_checkpoints/
+
+# Secrets & local config (NEVER commit real secrets)
+.env
+.env.*
+!.env.example
+*.pfx
+*.key
+appsettings.Local.json
+appsettings.*.Local.json
+
+# Infra / Terraform (if used)
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.log

@@ -1,0 +1,34 @@
+<Project>
+
+  <!--
+    Shared MSBuild properties for every .NET project in the BeeEye platform.
+    Individual projects should NOT redeclare TargetFramework / Nullable etc.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+
+    <!-- Deterministic, reproducible builds (supports the IP-protection release model). -->
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+
+    <!-- Analysis. Warnings are surfaced but not fatal during scaffolding;
+         CI tightens this per-project for critical assemblies. -->
+    <AnalysisLevel>latest</AnalysisLevel>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+
+    <!-- Product / provenance metadata. -->
+    <Product>BeeEye AI Decision Intelligence Platform</Product>
+    <Company>BeeEye</Company>
+    <Authors>BeeEye</Authors>
+    <VersionPrefix>0.1.0</VersionPrefix>
+    <RepositoryUrl>https://example.invalid/beeeye</RepositoryUrl>
+  </PropertyGroup>
+
+</Project>

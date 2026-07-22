@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <!-- Reference every module so its assembly lands in the test output, where the
+       boundary tests inspect it by reflection. -->
+  <ItemGroup>
+    <ProjectReference Include="../../../src/shared/BeeEye.Shared/BeeEye.Shared.csproj" />
+    <ProjectReference Include="../../../src/shared/BeeEye.Shared.Web/BeeEye.Shared.Web.csproj" />
+    <ProjectReference Include="../../../src/modules/Identity/BeeEye.Modules.Identity.csproj" />
+    <ProjectReference Include="../../../src/modules/Organisation/BeeEye.Modules.Organisation.csproj" />
+    <ProjectReference Include="../../../src/modules/MasterData/BeeEye.Modules.MasterData.csproj" />
+    <ProjectReference Include="../../../src/modules/Integration/BeeEye.Modules.Integration.csproj" />
+    <ProjectReference Include="../../../src/modules/DataQuality/BeeEye.Modules.DataQuality.csproj" />
+    <ProjectReference Include="../../../src/modules/SalesActuals/BeeEye.Modules.SalesActuals.csproj" />
+    <ProjectReference Include="../../../src/modules/Forecasting/BeeEye.Modules.Forecasting.csproj" />
+    <ProjectReference Include="../../../src/modules/Inventory/BeeEye.Modules.Inventory.csproj" />
+    <ProjectReference Include="../../../src/modules/Procurement/BeeEye.Modules.Procurement.csproj" />
+    <ProjectReference Include="../../../src/modules/AfterSales/BeeEye.Modules.AfterSales.csproj" />
+    <ProjectReference Include="../../../src/modules/SpareParts/BeeEye.Modules.SpareParts.csproj" />
+    <ProjectReference Include="../../../src/modules/ModelsAndExperiments/BeeEye.Modules.ModelsAndExperiments.csproj" />
+    <ProjectReference Include="../../../src/modules/Predictions/BeeEye.Modules.Predictions.csproj" />
+    <ProjectReference Include="../../../src/modules/Recommendations/BeeEye.Modules.Recommendations.csproj" />
+    <ProjectReference Include="../../../src/modules/DecisionsAndOutcomes/BeeEye.Modules.DecisionsAndOutcomes.csproj" />
+    <ProjectReference Include="../../../src/modules/ExecutiveInsights/BeeEye.Modules.ExecutiveInsights.csproj" />
+    <ProjectReference Include="../../../src/modules/Notifications/BeeEye.Modules.Notifications.csproj" />
+    <ProjectReference Include="../../../src/modules/Audit/BeeEye.Modules.Audit.csproj" />
+    <ProjectReference Include="../../../src/modules/PlatformAdministration/BeeEye.Modules.PlatformAdministration.csproj" />
+  </ItemGroup>
+
+</Project>
