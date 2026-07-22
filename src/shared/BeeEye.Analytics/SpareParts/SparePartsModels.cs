@@ -1,6 +1,9 @@
+using System.Text.Json.Serialization;
+
 namespace BeeEye.Analytics.SpareParts;
 
 /// <summary>Syntetos–Boylan–Croston (SBC) demand class for a parts series.</summary>
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum DemandClass
 {
     /// <summary>Regular, low variability — reuse the smooth/seasonal forecasting family.</summary>
