@@ -65,6 +65,15 @@ public sealed class ProcurementReadService(BeeEyeDbContext db)
 
     public async Task<bool> HasDataAsync(CancellationToken ct) => await db.SalesFacts.AsNoTracking().AnyAsync(ct);
 
+    /// <summary>Distinct model/variant dimension values, without running the procurement optimiser.</summary>
+    public async Task<(IReadOnlyList<string> Models, IReadOnlyList<string> Variants)> FilterOptionsAsync(CancellationToken ct)
+    {
+        var (rows, _) = await LoadSalesAsync(ct);
+        return (
+            rows.Select(r => r.Model).Distinct().OrderBy(x => x).ToList(),
+            rows.Select(r => r.Variant).Distinct().OrderBy(x => x).ToList());
+    }
+
     private static double[] BuildSeries(IReadOnlyList<SalesRow> rows, IReadOnlyList<string> months)
     {
         var byMonth = new Dictionary<string, double>();
@@ -88,7 +97,8 @@ public sealed class ProcurementReadService(BeeEyeDbContext db)
             return (rows, []);
         }
 
-        return (rows, MonthKey.Range(rows.Min(r => r.MonthKey), rows.Max(r => r.MonthKey)));
+        // rows is non-empty here (guarded above), so Min/Max are never null.
+        return (rows, MonthKey.Range(rows.Min(r => r.MonthKey)!, rows.Max(r => r.MonthKey)!));
     }
 
     private async Task<IReadOnlyDictionary<string, LeadAgg>> LeadTimeAggregatesAsync(CancellationToken ct)
