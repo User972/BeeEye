@@ -39,7 +39,7 @@ public sealed class SyntheticAfterSalesImporter(BeeEyeDbContext db)
     private const string SourceObject = "after-sales-parts";
 
     /// <summary>Bump when the generation logic changes so existing synthetic data is regenerated.</summary>
-    private const string CatalogVersion = "v4";
+    private const string CatalogVersion = "v5";
     private const int InsertChunk = 10_000;
 
     private sealed record SalesRow(string Model, string Variant, string Location, string Colour, int Year, int Month, int UnitsSold);
@@ -53,7 +53,8 @@ public sealed class SyntheticAfterSalesImporter(BeeEyeDbContext db)
         [PartsCatalog.Es350] = 1250,
     };
 
-    // Service-intensity multiplier so UC6 shows genuine model differences (Haval H9 > Patrol > … > ES 350).
+    // Service-intensity multiplier for unplanned (repair/warranty) events so UC6 shows genuine model
+    // differences (Haval H9 > Patrol > … > ES 350).
     private static readonly Dictionary<string, double> ModelIntensity = new(StringComparer.Ordinal)
     {
         [PartsCatalog.HavalH9] = 1.5,
@@ -61,6 +62,17 @@ public sealed class SyntheticAfterSalesImporter(BeeEyeDbContext db)
         [PartsCatalog.Corolla] = 1.0,
         [PartsCatalog.Camry] = 0.9,
         [PartsCatalog.Es350] = 0.8,
+    };
+
+    // Routine service interval (km) per model. Service-heavy models need more frequent scheduled service,
+    // which — with the repair multiplier — separates the per-vehicle service-intensity index across models.
+    private static readonly Dictionary<string, int> ModelServiceIntervalKm = new(StringComparer.Ordinal)
+    {
+        [PartsCatalog.HavalH9] = 8_000,
+        [PartsCatalog.Patrol] = 8_500,
+        [PartsCatalog.Corolla] = 10_000,
+        [PartsCatalog.Camry] = 11_000,
+        [PartsCatalog.Es350] = 12_000,
     };
 
     public async Task<SyntheticImportResult> ImportAsync(SyntheticGenerationSettings? settings = null, CancellationToken ct = default)
@@ -170,6 +182,7 @@ public sealed class SyntheticAfterSalesImporter(BeeEyeDbContext db)
 
         var kmRng = DeterministicRandom.FromKey(settings.Seed, $"{vin}|km");
         var monthlyKm = Math.Max(400, monthlyKmBase + kmRng.NextInt(-250, 251));
+        var intervalKm = ModelServiceIntervalKm.GetValueOrDefault(row.Model, 10_000);
 
         var routineIndex = 0;
         var eventSeq = 0;
@@ -181,8 +194,8 @@ public sealed class SyntheticAfterSalesImporter(BeeEyeDbContext db)
             var serviceDate = saleMonth.AddMonths(m);
             var band = MileageBand(km);
 
-            // Routine: one per crossed 10,000 km boundary.
-            if (km / 10_000 > prevKm / 10_000)
+            // Routine: one per crossed service-interval boundary (interval varies by model).
+            if (km / intervalKm > prevKm / intervalKm)
             {
                 var laborRng = DeterministicRandom.FromKey(settings.Seed, $"{vin}|routine|{m}");
                 AddEvent(vin, row, "Routine", serviceDate, m, km, band, 1.0 + (0.5 * laborRng.NextDouble()),
