@@ -8,7 +8,9 @@ public sealed record SalesRow(
     string MonthKey,
     double Units,
     bool Discounted = false,
-    int DiscountPct = 0);
+    int DiscountPct = 0,
+    string Colour = "",
+    string Interior = "");
 
 /// <summary>Result of the demand-velocity fallback hierarchy.</summary>
 public sealed record DemandVelocityResult(double Value, string Basis, string Confidence, string Detail);
