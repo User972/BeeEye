@@ -97,7 +97,8 @@ public sealed class ProcurementReadService(BeeEyeDbContext db)
             return (rows, []);
         }
 
-        return (rows, MonthKey.Range(rows.Min(r => r.MonthKey), rows.Max(r => r.MonthKey)));
+        // rows is non-empty here (guarded above), so Min/Max are never null.
+        return (rows, MonthKey.Range(rows.Min(r => r.MonthKey)!, rows.Max(r => r.MonthKey)!));
     }
 
     private async Task<IReadOnlyDictionary<string, LeadAgg>> LeadTimeAggregatesAsync(CancellationToken ct)
