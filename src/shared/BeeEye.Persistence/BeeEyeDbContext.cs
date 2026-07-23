@@ -18,6 +18,11 @@ public class BeeEyeDbContext(DbContextOptions<BeeEyeDbContext> options) : DbCont
     public DbSet<PartSupersession> PartSupersessions => Set<PartSupersession>();
     public DbSet<PartUsage> PartUsages => Set<PartUsage>();
 
+    // Decision workflow (ADR 0006). Recommendations are frozen at generation; the status-event log is
+    // append-only and is the source of truth for a recommendation's current state.
+    public DbSet<Recommendation> Recommendations => Set<Recommendation>();
+    public DbSet<RecommendationStatusEvent> RecommendationStatusEvents => Set<RecommendationStatusEvent>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(BeeEyeDbContext).Assembly);

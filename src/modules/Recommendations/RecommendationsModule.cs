@@ -21,10 +21,14 @@ public sealed class RecommendationsModule : IModule
 
         // Contributes this context's material exceptions to the Executive Decision Cockpit (UC8).
         services.AddScoped<IDecisionSignalProvider, OrderDecisionSignalProvider>();
+
+        // Persists engine recommendations as frozen, append-only records (ADR 0006).
+        services.AddScoped<RecommendationRecordService>();
     }
 
     public void MapEndpoints(IEndpointRouteBuilder endpoints)
     {
         OrderEndpoints.Map(endpoints);
+        RecommendationRecordEndpoints.Map(endpoints);
     }
 }

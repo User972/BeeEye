@@ -12,9 +12,9 @@
 | **S1** | **Application shell & grouped navigation** | P1 | **Complete** |
 | **S2** | **UC8 Executive Decision Cockpit** | P1 | **Complete** |
 | S3 | Explainability drawer & AI label system | P1 | Ready |
-| S4 | Identity, roles & authorization | P0 | Analysing |
-| S5 | Recommendation records & write path | P0 | Ready |
-| S6 | Decision Log & human decisions | P1 | Blocked (needs S4, S5) |
+| **S4** | **Identity, roles & authorization** | P0 | **Complete** (backend) |
+| **S5** | **Recommendation records & write path** | P0 | **Complete** |
+| S6 | Decision Log & human decisions | P1 | Ready (unblocked) |
 | S7 | Data Health, Lineage & Settings | P2 | Not started |
 | S8 | Intelligence-screen alignment & performance | P2 | Not started |
 | S9 | Persona, accent, density | P3 | Not started |
@@ -29,10 +29,11 @@
 | Baseline | 387 | 17 | **404** |
 | After S1 | 387 | 45 | **432** |
 | After S2 (analytics complete) | 439 | 45 | 484 |
-| **After S2 (complete)** | **470** | **67** | **537** |
+| After S2 (complete) | 470 | 67 | 537 |
+| **After S4 + S5** | **615** | **67** | **682** |
 
-Backend breakdown after S2: `BeeEye.UnitTests` **36** (was 18) · `BeeEye.Analytics.Tests` **384**
-(was 332) · `BeeEye.ArchitectureTests` 4 · `BeeEye.IntegrationTests` **46** (was 33).
+Backend breakdown after S5: `BeeEye.UnitTests` **129** (was 18) · `BeeEye.Analytics.Tests` **384**
+(was 332) · `BeeEye.ArchitectureTests` 4 · `BeeEye.IntegrationTests` **98** (was 33).
 Web: 67 (was 17). All green, 0 failures, 0 skipped.
 
 ---
@@ -156,26 +157,142 @@ it, but the two slow underlying endpoints remain a S8 concern.
 
 **Next action.** None — slice closed.
 
-## S4 — Identity, roles & authorization · **Analysing**
+## S4 — Identity, roles & authorization · **Complete** (backend)
 
-- **Blocking finding.** The application has **no authentication whatsoever** — verified against the
-  live OpenAPI document: 44 endpoints, all anonymous `GET`. ADR-0006 requires a *named human* on every
-  decision, so S6 cannot proceed until this lands.
-- **Next action.** Author a new ADR covering authentication mechanism, session lifecycle and role
-  model. No existing ADR settles it.
+- **Requirements.** V3-AUTH-001/002/003/004.
+- **Decision record.** [ADR 0008 — Authentication & Permission-Based Authorization](../adr/0008-authentication-and-authorization.md),
+  ratifying the model `docs/architecture/security-threat-model.md` §2–§3 already specified but which
+  no ADR had made binding. The application previously had **no authentication whatsoever** — 44
+  endpoints, all anonymous.
 
-## S5 — Recommendation records & write path · **Ready**
+### What changed
 
-- **Blocking finding.** ADR-0006 is **Accepted but entirely unimplemented** — none of its five
-  entities exists. This is the largest documentation-vs-code divergence in the repository.
-- **Note.** This slice does **not** require identity: its actor is the system, so it may proceed in
-  parallel with S4.
-- **Next action.** Add `Recommendation` (frozen), `RecStatusEvent` (append-only) and `AuditEvent`
-  entities plus an additive migration; build the first write endpoint with idempotency (ADR-0007) and
-  optimistic concurrency.
+- `Permissions` — a 25-permission catalogue with an explicit `StateChanging` subset.
+- `RolePermissions` — Executive / Analyst / IT-Admin mapping. **The only place a role is interpreted**:
+  re-cutting ADMC's roles changes this table and no endpoint.
+- Entra ID JWT validation: exact issuer, pinned audience, asymmetric algorithms only (so `alg: none`
+  and symmetric downgrades are rejected), and lifetime validation with clock skew **capped at two
+  minutes regardless of configuration** — a generous skew is a replay window.
+- `LocalDevAuthenticationHandler` — issues a configured local principal so the stack runs with no
+  Entra tenant.
+- `PermissionAuthorizationHandler` — expands roles to permissions; nothing tests a role name.
+- `RequireReadPermission` / `RequirePermission` applied across all eight live modules.
 
-## S6 — Decision Log & human decisions · **Blocked**
+### Authorization is always evaluated
 
-- **Blocked on.** S4 (identity — for `decided_by`) and S5 (records — for the append-only substrate).
+There is deliberately **no "authorization disabled" mode** — such a mode inevitably reaches
+production. The development provider changes *who you are*, never *whether you are checked*.
+
+The rollout flag `Auth:RequireAuthenticatedReads` relaxes **reads only**, defaults off in Development
+and on everywhere else, and is implemented in exactly one place (the policy registration).
+`RequireReadPermission` **throws at start-up** if handed a state-changing permission, so a write can
+never be declared in a form that configuration could relax.
+
+### The three guards on the development provider
+
+1. Registration gated on `IsDevelopment()`.
+2. Explicit `Auth:Provider` opt-in; not the deployed default.
+3. A start-up assertion that **throws and aborts boot** if selected outside Development.
+
+Guard 3 fails the process rather than falling back: a misconfigured deployment does not quietly run
+with a fake identity — it does not run at all.
+
+### Tests — 82 added
+
+- **64 unit tests**: catalogue completeness by reflection (adding a permission without registering it
+  fails the build's tests), `resource.action` shape, state-changing classification, every role
+  granting only known permissions, **every permission reachable by some role** (an unreachable
+  permission is a dead endpoint), unknown roles ignored rather than failing the request, and the full
+  role→permission matrix asserted against the threat model.
+- **Segregation of duties is asserted, not assumed**: no role holds both sides of any author/approve
+  pair, and the IT-Admin holds no business-approval authority.
+- **18 integration tests**: 401 anonymous, 401 malformed token, 403 wrong role, 403 no roles, 403
+  unmapped role, 200 correct role, per-endpoint checks across all eight modules, health probes
+  reachable unauthenticated, the Development read posture preserved, and **three start-up assertions**
+  (dev provider in Production, Entra without authority, Entra without audience) each aborting the host.
+
+### Known gaps
+
+- **The SPA sign-in flow (MSAL, token acquisition, refresh, 401 handling) is not implemented.** The
+  backend is complete and enforced, but the browser cannot yet obtain a token — which is why
+  `RequireAuthenticatedReads` defaults off in Development. It is the named removal condition for that
+  flag.
+- Data-scope filtering (*which rows*, threat model §3.3) is a separate concern and is **not** delivered
+  here.
+
+**Next action.** None for the backend — slice closed. SPA sign-in is distinct work.
+
+## S5 — Recommendation records & the write path · **Complete**
+
+- **Requirements.** V3-GOV-002/003/005, V3-API-001/002/003. V3-GOV-011 and V3-GOV-012 **rejected** as
+  designed (below).
+- Closes the largest documentation-vs-code divergence in the repository: ADR 0006 was Accepted with
+  **no** implementing code.
+
+### What changed
+
+- `RecommendationLifecycle` — the ADR 0006 §3 state machine in the shared kernel: 9 states, 10 edges,
+  three guards, and typed refusal reasons with safe, non-technical explanations. Pure and
+  deterministic, so every edge and guard is exhaustively testable.
+- `Recommendation` entity — frozen engine output plus provenance (`RulesetVersion`, `DatasetVersion`,
+  `AnalysisDate`), `CurrentStatus` as a projection, `ValidUntilUtc`, `SupersededByRecommendationId`,
+  and an `xmin` row-version concurrency token.
+- `RecommendationStatusEvent` — the append-only log. `Restrict`, not `Cascade`, on the foreign key:
+  the audit trail must survive any attempt to remove its subject.
+- Migration `RecommendationRecords` — **additive only**; the nine existing entities are untouched.
+- `POST /api/v1/recommendations/records/generate` — the platform's **first write endpoint**.
+- `GET /api/v1/recommendations/records` — paged, status-filterable, page size clamped.
+
+### The three properties the ADR exists to guarantee
+
+1. **The original is immutable.** A record is inserted once and never updated by this service. A later
+   run supersedes; it does not overwrite.
+2. **Status lives in an append-only log.** Every record opens with a `Generated` event attributed to
+   `system` — the engine acted, not a person, and attributing it to a human would corrupt the
+   accountability trail.
+3. **Generation is idempotent.** The key is `ruleset | analysisDate | ruleId | subject`, enforced by a
+   unique index. The existence check is an optimisation; the index is the guarantee — a lost race
+   surfaces as SQLSTATE 23505 and is treated as a successful no-op.
+
+The analysis context is **anchored to the data** (latest sales month, newest ingestion checksum), not
+the wall clock, so the same database always yields the same idempotency keys.
+
+### Explicitly rejected, per ADR 0006
+
+- **V3-GOV-011** — `localStorage` persistence. The v3 prototype still stores decisions in the browser;
+  ADR 0006's `Supersedes` field names exactly that behaviour.
+- **V3-GOV-012** — hard delete. There is **no delete path**; terminal states end a record's life.
+
+### One design correction found by testing
+
+ADR 0006 expresses "expiry is suspended once under review" as a *missing* edge, so the dedicated guard
+was unreachable and a generic "not a valid next step" was returned instead. Since the expiry job
+legitimately attempts that transition on every unreviewed record, the edge was added and left
+permanently refused by the guard — the caller now gets "someone owns it" rather than a generic
+refusal. The transition matrix is unchanged.
+
+### Tests — 63 added
+
+- **29 unit tests** for the lifecycle, including a **full 9×9 transition matrix** asserted against an
+  independently written edge set, every state reachable from `Generated`, no self-transitions, every
+  terminal state refusing everything, all three guards, and every refusal carrying a safe explanation
+  that leaks no type names.
+- **23 integration tests**: authorization (an **Executive cannot generate** — segregation of duties),
+  the write refused unauthenticated even in the relaxed read posture, idempotency across repeated
+  runs, **four concurrent runs creating no duplicates**, unique keys, full provenance on every record,
+  the opening status event attributed to `system`, projected status agreeing with the log, validity
+  windows, ordering, status filtering, an unknown status returning 400 listing the valid values, and
+  page size clamped so an unbounded set never reaches the browser.
+
+### Known gaps
+
+- `ManagementDecision`, `ApprovalStep` and `ActionOutcome` (V3-GOV-004) are S6.
+- `AuditEvent` (V3-API-004) is not yet implemented; the status-event log currently carries the trail.
+
+**Next action.** None — slice closed. S6 is now unblocked.
+
+## S6 — Decision Log & human decisions · **Ready**
+
+- **Unblocked.** S4 supplied identity (`decided_by`) and S5 supplied the append-only substrate.
 - **Conflict to resolve on entry.** V3-CONFLICT-1/2 — implement ADR-0006's model, not the prototype's
   mutable/`localStorage` one, while preserving v3's visual design and status vocabulary.

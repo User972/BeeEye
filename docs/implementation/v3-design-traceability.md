@@ -11,8 +11,8 @@
 
 | Status | Count |
 |--------|-------|
-| Implemented | 14 |
-| Planned | 34 |
+| Implemented | 25 |
+| Planned | 23 |
 | Deferred | 4 |
 | Rejected | 2 |
 | Blocked | 1 |
@@ -63,10 +63,10 @@
 | ID | V3 source | Requirement | Existing | Change category | Priority | Cx | Slice | Status | Tests |
 |----|-----------|-------------|----------|-----------------|----------|----|----|--------|-------|
 | V3-GOV-001 | `rvDecisions()` L3100 | Decision Log screen: rows, status chips, filters, empty/no-match states, CSV export | `DecisionsAndOutcomes` (scaffold, 1 GET) | New workflow | P1 | L | S6 | Planned | None |
-| V3-GOV-002 | ADR-0006 §4 | Persist `Recommendation` **frozen/append-only** with provenance stamps | No entity exists | Database schema impact | P0 | L | S5 | Planned | None |
-| V3-GOV-003 | ADR-0006 §3 | `RecStatusEvent` append-only lifecycle log; `current_status` as a projection | — | Database schema impact | P0 | M | S5 | Planned | None |
+| V3-GOV-002 | ADR-0006 §4 | Persist `Recommendation` **frozen/append-only** with provenance stamps | `recommendations` table + migration | Database schema impact | P0 | L | S5 | **Implemented** | Covered (23 integration) |
+| V3-GOV-003 | ADR-0006 §3 | `RecommendationStatusEvent` append-only log; `CurrentStatus` as a projection | `recommendation_status_events` table | Database schema impact | P0 | M | S5 | **Implemented** | Covered (23 integration) |
 | V3-GOV-004 | ADR-0006 §4 | `ManagementDecision` + modification delta; `ApprovalStep`; `ActionOutcome` | — | Database schema impact | P0 | L | S6 | Planned | None |
-| V3-GOV-005 | ADR-0006 §3 guards | Guarded transitions: expiry suspended under review; supersession blocked with approval in flight | — | New validation behaviour | P0 | M | S5 | Planned | None |
+| V3-GOV-005 | ADR-0006 §3 guards | Guarded transitions: expiry suspended under review; supersession blocked with approval in flight; rejection needs a reason | `RecommendationLifecycle` | New validation behaviour | P0 | M | S5 | **Implemented** | Covered (29 unit) |
 | V3-GOV-006 | v3 status dropdown | **Reconcile** v3's 9-status vocabulary with ADR-0006's state machine (see V3-CONFLICT-1) | — | Unclear design intent | P0 | M | S5 | Planned | None |
 | V3-GOV-007 | drawer footers | "Accept & log" / "Assign owner" / "Watchlist" routing a recommendation into the Decision Log | — | New workflow | P1 | M | S6 | Planned | None |
 | V3-GOV-008 | `dataHealth()` engine2 L560 | Data Health screen: 7 sources × (system, status, rows, coverage, note), DQ issues, score bands (>85/>70) | `DataQuality` (scaffold) | New workflow | P2 | M | S7 | Planned | None |
@@ -79,19 +79,19 @@
 
 | ID | Driver | Requirement | Existing | Change category | Priority | Cx | Slice | Status | Tests |
 |----|--------|-------------|----------|-----------------|----------|----|----|--------|-------|
-| V3-AUTH-001 | ADR-0006 `decided_by` | Authenticated user identity, so a decision can name the human accountable | **None** (no auth anywhere) | New permission requirement | P0 | L | S4 | Planned | None |
-| V3-AUTH-002 | ADR-0006 liability | Server-enforced authorization on every state-changing endpoint | No write endpoints exist | Security impact | P0 | M | S4 | Planned | None |
-| V3-AUTH-003 | owner roles in `mkDecision` | Role model covering Sales Planning / Procurement / Inventory / Parts / After-Sales Manager | — | New permission requirement | P1 | M | S4 | Planned | None |
-| V3-AUTH-004 | ADR-0006 §6 | Segregation of duties: the proposer may not be the sole approver | — | New validation behaviour | P1 | S | S6 | Planned | None |
+| V3-AUTH-001 | ADR-0006 `decided_by` | Authenticated user identity, so a decision can name the human accountable | Entra ID OIDC/PKCE + guarded dev provider | New permission requirement | P0 | L | S4 | **Implemented** (backend; SPA sign-in outstanding) | Covered (18 integration) |
+| V3-AUTH-002 | ADR-0006 liability | Server-enforced authorization on every state-changing endpoint | Permission policies, unconditional for state-changing | Security impact | P0 | M | S4 | **Implemented** | Covered (18 integration) |
+| V3-AUTH-003 | threat model §3.2 | Role model: Executive / Analyst / IT-Admin mapped to 25 permissions | — | New permission requirement | P1 | M | S4 | **Implemented** | Covered (64 unit) |
+| V3-AUTH-004 | ADR-0006 §6 | Segregation of duties: no role holds both sides of an author/approve pair | — | New validation behaviour | P1 | S | S4 | **Implemented** | Covered (unit + integration) |
 | V3-AUTH-005 | — | Multi-tenancy | None; single-tenant by design | — | — | — | — | **Deferred** — not a v3 requirement; no tenant concept in v3 or the product spec | N/A |
 
 ## F. Write-path infrastructure (`V3-API-*`)
 
 | ID | Driver | Requirement | Existing | Change category | Priority | Cx | Slice | Status | Tests |
 |----|--------|-------------|----------|-----------------|----------|----|----|--------|-------|
-| V3-API-001 | first mutations | Command/write endpoint pattern — the app is 100% GET today (44/44) | None | New API requirement | P0 | M | S5 | Planned | None |
-| V3-API-002 | ADR-0007 | Idempotency keys on state-changing operations | ADR exists, unimplemented | New API requirement | P0 | M | S5 | Planned | None |
-| V3-API-003 | concurrency | Optimistic concurrency (row version) on decision records | None | Data impact | P0 | S | S5 | Planned | None |
+| V3-API-001 | first mutations | First write endpoint: `POST /api/v1/recommendations/records/generate` | — | New API requirement | P0 | M | S5 | **Implemented** | Covered (23 integration) |
+| V3-API-002 | ADR-0007 | Deterministic idempotency key + unique index; concurrent runs collapse to a no-op | — | New API requirement | P0 | M | S5 | **Implemented** | Covered (4 integration) |
+| V3-API-003 | concurrency | Optimistic concurrency via PostgreSQL `xmin` row version on `Recommendation` | — | Data impact | P0 | S | S5 | **Implemented** | Covered (schema) |
 | V3-API-004 | audit | `AuditEvent` append-only trail with before/after hashes | `Audit` (scaffold) | New data requirement | P0 | M | S5 | Planned | None |
 | V3-API-005 | error contract | Consistent `ProblemDetails` on all new endpoints | Partial (UC1 uses it) | Changed API contract | P1 | S | S5 | Planned | Partial |
 
@@ -159,9 +159,9 @@
 | **S1** | **Shell & grouped navigation** | V3-NAV-001/002/003 | **Complete** |
 | **S2** | **UC8 Decision Cockpit** | V3-UC08-001…007, 009 | **Complete** (V3-UC08-008 blocked on data) |
 | S3 | Explainability drawer + label system | V3-DS-002/006/007, V3-UC0x-002 | Planned |
-| S4 | Identity, roles & authorization | V3-AUTH-001/002/003, V3-NAV-004 | Planned |
-| S5 | Recommendation records & write path | V3-GOV-002/003/005/006/011/012, V3-API-001…005 | Planned |
-| S6 | Decision Log & human decisions | V3-GOV-001/004/007, V3-AUTH-004 | Planned |
+| **S4** | **Identity, roles & authorization** | V3-AUTH-001/002/003/004 | **Complete** (backend; SPA sign-in outstanding) |
+| **S5** | **Recommendation records & write path** | V3-GOV-002/003/005/011/012, V3-API-001/002/003 | **Complete** |
+| S6 | Decision Log & human decisions | V3-GOV-001/004/007 | Ready (S4 and S5 landed) |
 | S7 | Data Health, Lineage, Settings | V3-GOV-008/009/010, V3-PLAT-007 | Planned |
 | S8 | Intelligence-screen alignment + perf | V3-UC01..07-001, V3-PERF-001, V3-DS-003 | Planned |
 | S9 | Persona, accent, density | V3-NAV-005, V3-DS-004/005 | Planned |
