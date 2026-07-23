@@ -2,7 +2,7 @@
 
 > Living record of each vertical slice. Statuses: `Not started` · `Analysing` · `Ready` ·
 > `Implementing` · `In review` · `Blocked` · `Complete`.
-> Last updated: 2026-07-23.
+> Last updated: 2026-07-24.
 
 ## Summary
 
@@ -14,7 +14,7 @@
 | S3 | Explainability drawer & AI label system | P1 | Ready |
 | **S4** | **Identity, roles & authorization** | P0 | **Complete** (backend) |
 | **S5** | **Recommendation records & write path** | P0 | **Complete** |
-| S6 | Decision Log & human decisions | P1 | Ready (unblocked) |
+| **S6** | **Decision Log & human decisions** | P1 | **Complete** |
 | S7 | Data Health, Lineage & Settings | P2 | Not started |
 | S8 | Intelligence-screen alignment & performance | P2 | Not started |
 | S9 | Persona, accent, density | P3 | Not started |
@@ -31,10 +31,16 @@
 | After S2 (analytics complete) | 439 | 45 | 484 |
 | After S2 (complete) | 470 | 67 | 537 |
 | **After S4 + S5** | **615** | **67** | **682** |
+| **After S6** | **814** | **116** | **930** |
 
 Backend breakdown after S5: `BeeEye.UnitTests` **129** (was 18) · `BeeEye.Analytics.Tests` **384**
 (was 332) · `BeeEye.ArchitectureTests` 4 · `BeeEye.IntegrationTests` **98** (was 33).
 Web: 67 (was 17). All green, 0 failures, 0 skipped.
+
+Backend breakdown after S6: `BeeEye.UnitTests` **259** (was 129) · `BeeEye.Analytics.Tests` 384
+(unchanged — S6 touches no formula) · `BeeEye.ArchitectureTests` **5** (was 4) ·
+`BeeEye.IntegrationTests` **166** (was 98). Web: **116** (was 67).
+All green, 0 failures, 0 skipped.
 
 ---
 
@@ -291,8 +297,157 @@ refusal. The transition matrix is unchanged.
 
 **Next action.** None — slice closed. S6 is now unblocked.
 
-## S6 — Decision Log & human decisions · **Ready**
+## S6 — Decision Log & human decisions · **Complete**
 
-- **Unblocked.** S4 supplied identity (`decided_by`) and S5 supplied the append-only substrate.
-- **Conflict to resolve on entry.** V3-CONFLICT-1/2 — implement ADR-0006's model, not the prototype's
-  mutable/`localStorage` one, while preserving v3's visual design and status vocabulary.
+- **Requirements.** V3-GOV-001/004/006/007, V3-API-002/005, V3-AUTH-004, V3-DS-007, V3-PLAT-007.
+- **Unblocked by** S4 (identity, so a decision can name a human) and S5 (the frozen record and the
+  append-only status log).
+
+### The conflict this slice resolves
+
+**V3-CONFLICT-1 and V3-CONFLICT-2 are closed.** The v3 prototype models decisions as mutable rows in
+`localStorage` with a free nine-value status dropdown and a delete button on every row. ADR-0006
+rejects precisely that shape — "single mutable record" is its rejected Option B, and its `Supersedes`
+field names the prototype's `localStorage` behaviour. S6 keeps v3's **visual design and status
+vocabulary** and replaces its **data model and interaction semantics**:
+
+| v3 prototype | S6 |
+|---|---|
+| `localStorage` array of actions | `ManagementDecision` rows keyed to a frozen `Recommendation` |
+| Free `<select>` over 9 statuses | Guard-validated transition **actions**; the server publishes the legal next steps per row and the screen renders only those |
+| Delete button (`a.del`) | **No delete path, at any layer.** Rejection is the terminal state that ends a record's life while keeping *why* |
+| `updateAction(id, field, value)` in-place edit | Append a `ManagementDecision` / `ApprovalStep` / `ActionOutcome` / status event |
+| `logAllDecisions()` bulk-inserts from the cockpit feed | Bulk **claim** of records the engine already generated; nothing is fabricated in the browser |
+
+**Status vocabulary.** v3's labels map onto ADR-0006's nine states: `New`→`Generated`,
+`Under review`→`UnderReview`, `Accepted`→`Accepted` **and** `AcceptedModified` (rendered "Accepted"
+and "Accepted with modification"), `In progress`→`Implemented`, `Completed`→`OutcomeRecorded`, plus
+`Rejected`, `Superseded` and `Expired`.
+
+**v3's `Assigned` and `Snoozed` are dropped.** Neither has an ADR-0006 counterpart, and adding them
+would mean two sources of truth for where a record stands. Ownership is expressed by the
+recommendation's `OwnerRole` plus the subject id of whoever claimed it — both already recorded, both
+already visible — and the governed lifecycle has no defer/snooze state. Recorded in
+`v3-design-traceability.md` under V3-GOV-006.
+
+### Backend
+
+- **Entities** `ManagementDecision`, `ApprovalStep`, `ActionOutcome` (V3-GOV-004) and
+  `IdempotencyRecord`, with the additive `ManagementDecisions` migration. The eleven pre-existing
+  tables are untouched — asserted by an integration test that reads `information_schema`, not by
+  reading the migration and hoping.
+- **`RecommendationTransitionService`** — the only writer of lifecycle state anywhere in the platform
+  (ADR-0006 §6). It validates via `RecommendationLifecycle` and nothing else, then appends the status
+  event and updates the `CurrentStatus` projection **in one `SaveChangesAsync`**, so the cached column
+  can never disagree with the log that is the source of truth.
+- **`DecisionService`** — the human rules above the state machine: claim, accept,
+  accept-with-modification, reject, sign-off, mark implemented, record outcome.
+- **`Idempotency-Key` (ADR-0007 §2.1)** built once and reusably in `BeeEye.Shared.Web/Idempotency`,
+  applied to all seven writes via `.WithIdempotency()`. The effect and the key row share one
+  transaction, so they commit or roll back together.
+- **`GET /api/v1/identity/me`** — anonymous-friendly, answering `isAuthenticated: false` rather than
+  401, so a signed-out SPA renders its own state from a successful response.
+- `DecisionsAndOutcomes` and `Identity` move from `scaffolded` to `operational`.
+
+### Three independent layers of segregation of duties
+
+1. **Permission separation** — `recommendation.generate` is the Analyst's, `recommendation.approve`
+   the Executive's, and `RolePermissions.AuthorApprovePairs` guarantees no role holds both.
+2. **Actor separation** — an `ApprovalStep` may not be signed off by the same subject id that decided
+   (or opened) it. `SubjectIds.Same` compares **ordinally on trimmed values**, so neither a stray
+   space nor a case difference becomes a one-character bypass; both are tested.
+3. **The outcome recorder may be the same person**, deliberately. Measuring a realised result is
+   observation, not a second approval, and requiring a third party would simply mean outcomes never
+   get recorded — losing the one signal that says whether the recommendations were any good. The new
+   `decision-outcome.record` permission is therefore *not* part of an author/approve pair, and a test
+   asserts that so a later reader does not "fix" it.
+
+### Two decisions taken under ambiguity
+
+- **`Idempotency-Key` is strictly required, not optional-but-honoured.** Optional leaves the guarantee
+  to whichever client remembers to opt in, and the first one that forgets is the one that double-books
+  a decision worth millions of SAR. A missing header fails at the edge, where the fix is obvious.
+- **Claiming seeds one `ApprovalStep`** from the recommendation's owner role. Seeding at claim time
+  rather than at accept time makes the ADR-0006 §3 supersession guard real from the moment a human
+  takes ownership, so a fresh analysis run cannot erase a decision mid-flight.
+
+### The design correction testing surfaced
+
+The `Idempotency-Key` fingerprint serialised its payloads through the `IIdempotentPayload` interface.
+System.Text.Json serialises against the **declared** type, so every request body hashed to `{}` — and
+two genuinely different requests replaying one key would have been indistinguishable, returning the
+first request's answer for the second request's intent. Reading the code did not find this; the
+integration test that replays a key with a changed body did. Payloads are now serialised by runtime
+type, and the comment at that line records why.
+
+The lesson generalises: an idempotency fingerprint has no observable behaviour until two *different*
+requests share a key, so it is exactly the kind of code that looks correct and is not.
+
+### Frontend
+
+- `apiPost` with an `Idempotency-Key` **minted once per user intent** and held in a ref that survives
+  TanStack Query's retries — a fresh key per retry would defeat the whole mechanism. Refusals (4xx)
+  are not retried at all; only transport failures are, which is what the key makes safe.
+- No optimistic updates anywhere: a guard may refuse server-side, and showing a state the server
+  rejected is precisely the failure mode ADR-0006 exists to prevent.
+- `/decisions` reproducing v3's layout — status chip row with counts and v3's colour tokens, the
+  `gavel` governance banner, row cards with a status-coloured left border — with **actions in place of
+  the dropdown**. Only transitions the server published for that row are rendered; everything else is
+  *absent*, not present-and-disabled, and a single line explains where a control is hidden for
+  permission reasons.
+- The `Drawer` primitive gained a **focus trap and focus restoration** (V3-DS-007, brought forward
+  from S3): the detail drawer is a modal, and both were missing from v3 and from the app.
+- Drawer footers on the UC5/UC6/UC7 screens route into the log (V3-GOV-007). Where no persisted record
+  exists for what the drawer is showing, the footer **says so** rather than offering a control that
+  would do nothing.
+
+### Tests — 930 total (was 682)
+
+- **130 backend unit tests added** (129 → 259): the modification delta including the discount band at
+  `-0.1 / 0 / 10 / 20 / 20.01`, `from == to`, negative quantities, `to == 0`, decimal precision through
+  a serialise/deserialise round trip and invariant formatting under a comma-decimal culture;
+  self-approval including the whitespace and case bypasses; **every action the service exposes asserted
+  against `RecommendationLifecycle`** rather than a hand-written expectation table; the
+  approval-in-flight guard blocking supersession and releasing it; the fingerprint's order-independence
+  and its discrimination; key validation.
+- **68 integration tests added**: the full lifecycle with the status log asserted row-by-row and
+  actor-by-actor; **every column of the frozen recommendation snapshotted before and after a decision**
+  and compared; cross-role attempts; self-approval over the wire; four concurrent claims yielding
+  exactly one decision; a replayed key returning the identical body; a replayed key with a changed body
+  returning 422; missing and malformed keys; a forced failure between the effect and the key commit
+  leaving **neither** persisted; the four new tables present and the eleven old ones unchanged; and
+  **no `DELETE` under `/decisions` in the served OpenAPI document**.
+- **49 web tests added** (67 → 116): loading, empty, no-match, error, permission-denied and conflict
+  states; only-permitted transitions asserted as *absent* rather than disabled; reject blocked
+  client-side and the server's 400 rendered when it is not; a 25% discount refused with the 0–20%
+  message; a 409 surfacing the server's explanation and triggering a refetch; honest partial-success
+  reporting on bulk claim; the drawer showing the original beside the decision and returning focus on
+  close; CSV escaping against commas, quotes, newlines, non-ASCII and formula-injection prefixes.
+
+### Two S5 tests corrected
+
+`Every_new_record_starts_in_the_generated_state` and `Records_can_be_filtered_by_status` asserted that
+*every* record in the database is `Generated` and that *no* record is `Rejected`. Both held only while
+nothing could move a record, and both were testing the fixture rather than the behaviour. They now
+assert what they meant: an **untouched** record is `Generated`, and a status filter returns rows
+**carrying that status**.
+
+### Explicitly not implemented
+
+- **The expiry and supersession jobs.** The transition service supports both transitions and both
+  guards are exercised, but no background job or cross-module trigger ships here: supersession is
+  raised by a *generation* run in the `Recommendations` module and needs a published contract, which is
+  a later slice.
+- **`AuditEvent` (V3-API-004).** The status-event log remains the trail. Tracked as TD-4.
+- **Notifications on decision events.**
+- **Structured recommendation parameters.** A modification's `from` is verified against the engine's
+  value only where the frozen action text states it; where it does not, the check is skipped rather
+  than guessed at. Tracked as TD-3.
+
+### Verification
+
+typecheck ✅ · lint ✅ · web build ✅ · 116/116 web ✅ · **814/814 backend** ✅ · architecture 5/5 ✅ ·
+no new build warnings. Bundle: the Decision Log is its own 16.58 kB chunk (5.36 kB gzip); the shared
+index chunk is unchanged at ~325 kB.
+
+**Next action.** None — slice closed. The expiry/supersession jobs and `AuditEvent` are separate work.

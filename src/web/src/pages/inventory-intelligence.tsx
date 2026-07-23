@@ -5,6 +5,7 @@ import { Card, CardHeader } from '@/components/ui/Card';
 import { Drawer } from '@/components/ui/Drawer';
 import { FilterSelect } from '@/components/ui/FilterSelect';
 import { LoadingState, ErrorState, EmptyState } from '@/components/ui/states';
+import { DecisionFooter } from '@/components/domain/DecisionFooter';
 import { BarDistribution } from '@/components/charts/BarDistribution';
 import { InventoryTable } from '@/components/domain/InventoryTable';
 import {
@@ -145,7 +146,12 @@ export default function InventoryIntelligence() {
         </>
       )}
 
-      <Drawer open={selected !== null} title="Inventory unit" onClose={() => setSelected(null)}>
+      <Drawer
+        open={selected !== null}
+        title="Inventory unit"
+        onClose={() => setSelected(null)}
+        footer={detail.data ? <DecisionFooter subjectRef={`${detail.data.model} ${detail.data.variant}`} /> : null}
+      >
         {detail.isLoading ? (
           <LoadingState />
         ) : detail.isError || !detail.data ? (

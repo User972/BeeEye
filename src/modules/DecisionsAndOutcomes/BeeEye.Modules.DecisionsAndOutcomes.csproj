@@ -8,8 +8,12 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
+  <!-- Persistence and the shared kernel only. This module must never reference
+       BeeEye.Modules.Recommendations: it reads the frozen Recommendation entity from the shared
+       persistence kernel, not from the module that generates them. An architecture test asserts it. -->
   <ItemGroup>
     <ProjectReference Include="../../shared/BeeEye.Shared.Web/BeeEye.Shared.Web.csproj" />
+    <ProjectReference Include="../../shared/BeeEye.Persistence/BeeEye.Persistence.csproj" />
   </ItemGroup>
 
 </Project>

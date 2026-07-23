@@ -199,13 +199,19 @@ public sealed class RecommendationRecordApiTests(IntegrationTestFactory factory)
     {
         await GenerateAsync();
 
-        using var executive = As(PlatformRoles.Executive);
-        var page = await ReadAsync(await executive.CreateClient().GetAsync(RecordsUrl));
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<BeeEyeDbContext>();
 
-        foreach (var item in page.GetProperty("items").EnumerateArray())
-        {
-            Assert.Equal(nameof(RecommendationStatus.Generated), item.GetProperty("currentStatus").GetString());
-        }
+        // Scoped to records nobody has claimed. From S6 the same database also carries records that
+        // have deliberately been moved on through the decision workflow, so "every record is
+        // Generated" is no longer the claim — "an untouched record is Generated" is.
+        var untouched = await db.Recommendations
+            .AsNoTracking()
+            .Where(r => !db.ManagementDecisions.Any(d => d.RecommendationId == r.Id))
+            .ToListAsync();
+
+        Assert.NotEmpty(untouched);
+        Assert.All(untouched, r => Assert.Equal(RecommendationStatus.Generated, r.CurrentStatus));
     }
 
     [Fact]
@@ -312,9 +318,17 @@ public sealed class RecommendationRecordApiTests(IntegrationTestFactory factory)
         var generated = await ReadAsync(await client.GetAsync($"{RecordsUrl}?status=Generated"));
         Assert.NotEmpty(generated.GetProperty("items").EnumerateArray());
 
-        var rejected = await ReadAsync(await client.GetAsync($"{RecordsUrl}?status=Rejected"));
-        Assert.Empty(rejected.GetProperty("items").EnumerateArray());
-        Assert.Equal(0, rejected.GetProperty("totalCount").GetInt32());
+        // Asserted as "every row carries the requested status" rather than "no row is rejected":
+        // from S6 the workflow genuinely produces rejected records, and a filter test that depended on
+        // their absence was testing the fixture, not the filter.
+        foreach (var status in new[] { "Generated", "Rejected", "Implemented" })
+        {
+            var page = await ReadAsync(await client.GetAsync($"{RecordsUrl}?status={status}"));
+
+            Assert.All(
+                page.GetProperty("items").EnumerateArray(),
+                item => Assert.Equal(status, item.GetProperty("currentStatus").GetString()));
+        }
     }
 
     [Fact]

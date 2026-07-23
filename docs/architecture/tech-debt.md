@@ -59,3 +59,54 @@ prompt each one. Record items here so they aren't lost in commit history.
 
 ### Action when triggered
 *Trigger:* before the first deployment that handles customer data (secured mode hardening).
+
+---
+
+## TD-3 — Recommendation parameters are prose, not structured values
+
+**Status:** pending — introduced knowingly in S6, and bounded by an explicit fallback.
+
+### Current state
+- `Recommendation.Action` stores the engine's advice as the prose the approver was shown, e.g.
+  *"Prepare a transfer recommendation: 3 unit(s) Riyadh → Jeddah."* The numbers inside it exist only
+  as text.
+- ADR-0006 §2.3 requires an *accepted-with-modification* delta's `from` to be the value the engine
+  actually recommended — otherwise a client working from a stale copy of the record can silently
+  re-anchor the modification to a number the engine never produced.
+- `DecisionsAndOutcomes/Application/RecommendedValues` therefore recovers that number by matching a
+  quantity or a percentage in the action text (invariant culture, conservative patterns). Where it
+  cannot, the stale-value check is **skipped rather than guessed at**: refusing a modification we
+  cannot verify would block legitimate work to satisfy a check we are not able to perform.
+
+### Target
+- The generation path persists the engine's parameters as structured values beside the prose — for
+  example a `ParametersJson` column holding `{"transfer_qty": 3}` — so the check is exact for every
+  rule rather than best-effort for the rules whose wording happens to state a number.
+
+### Action when triggered
+*Trigger:* when a rule ships whose modifiable value is not stated in its action text, or when the
+first modification is wrongly accepted or refused because the text could not be read.
+
+The change belongs with generation in the `Recommendations` module (which owns what a recommendation
+means), not with the decision workflow, and is additive: `RecommendedValues` becomes a fallback for
+records written before the column existed.
+
+---
+
+## TD-4 — `AuditEvent` is not yet implemented
+
+**Status:** pending — the trail exists, but in a narrower form than the canonical model specifies.
+
+### Current state
+- `RecommendationStatusEvent` is the append-only trail for the decision workflow: every transition
+  appends a row naming the actor, the reason and the time, and nothing is ever updated or deleted.
+- The canonical model's Cluster 9 `AuditEvent` (V3-API-004) — an append-only record of **every**
+  consequential action with before/after hashes, across all contexts — does not exist. Actions
+  outside the recommendation lifecycle (a settings change, a data-quality override) leave no trail.
+
+### Target
+- `AuditEvent` in the `Audit` context, written by a cross-cutting seam rather than per-module code.
+
+### Action when triggered
+*Trigger:* when the first consequential action outside the recommendation lifecycle ships, or when
+internal audit asks for a single trail spanning contexts.

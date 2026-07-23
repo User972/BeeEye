@@ -56,6 +56,23 @@ public sealed class ModuleBoundaryTests
     }
 
     [Fact]
+    public void The_decision_workflow_does_not_reference_the_module_that_generates_recommendations()
+    {
+        // Called out specifically because it is the tempting one: DecisionsAndOutcomes reads and
+        // transitions the Recommendation entity, so reaching for the Recommendations module's types
+        // would feel natural. It reads them from the shared persistence kernel instead, which is what
+        // keeps the two contexts independently deployable and independently testable.
+        var decisions = ModuleAssemblies()
+            .SingleOrDefault(a => a.GetName().Name == $"{ModulePrefix}DecisionsAndOutcomes");
+
+        Assert.NotNull(decisions);
+
+        Assert.DoesNotContain(
+            decisions.GetReferencedAssemblies().Select(r => r.Name),
+            name => name == $"{ModulePrefix}Recommendations");
+    }
+
+    [Fact]
     public void Pure_shared_kernel_does_not_depend_on_aspnetcore()
     {
         // BeeEye.Shared must stay framework-free so every host can reference it cheaply.

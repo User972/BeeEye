@@ -46,6 +46,7 @@ public static class RolePermissions
                 Permissions.InventoryRiskView,
                 Permissions.RecommendationReview,
                 Permissions.RecommendationApprove,
+                Permissions.DecisionOutcomeRecord,
                 Permissions.ProcurementView,
                 Permissions.ProcurementApprove,
                 Permissions.SalesActualsView,
@@ -65,6 +66,9 @@ public static class RolePermissions
                 Permissions.InventoryRiskConfigure,
                 Permissions.RecommendationReview,
                 Permissions.RecommendationGenerate,
+                // Measuring a realised outcome is observation, not approval, so the Analyst holding
+                // it does not breach the author/approve separation asserted below.
+                Permissions.DecisionOutcomeRecord,
                 Permissions.ProcurementView,
                 Permissions.ProcurementPropose,
                 Permissions.SalesActualsView,

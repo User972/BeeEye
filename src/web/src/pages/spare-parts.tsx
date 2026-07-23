@@ -8,6 +8,7 @@ import { ScenarioSelect } from '@/components/ui/ScenarioSelect';
 import { LoadingState, ErrorState, EmptyState } from '@/components/ui/states';
 import { BarDistribution } from '@/components/charts/BarDistribution';
 import { SyntheticBanner } from '@/components/domain/SyntheticBanner';
+import { DecisionFooter } from '@/components/domain/DecisionFooter';
 import {
   useSparePartsSummary,
   useSpareParts,
@@ -198,7 +199,12 @@ export default function SparePartsPage() {
         </>
       )}
 
-      <Drawer open={selected !== null} title="Part demand & stocking" onClose={() => setSelected(null)}>
+      <Drawer
+        open={selected !== null}
+        title="Part demand & stocking"
+        onClose={() => setSelected(null)}
+        footer={detail.data ? <DecisionFooter subjectRef={detail.data.national.name} /> : null}
+      >
         {detail.isLoading ? (
           <LoadingState />
         ) : detail.isError || !detail.data ? (

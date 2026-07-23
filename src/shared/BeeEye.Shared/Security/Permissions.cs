@@ -42,6 +42,16 @@ public static class Permissions
     /// </summary>
     public const string RecommendationApprove = "recommendation.approve";
 
+    /// <summary>
+    /// Record the realised outcome of an implemented decision (ADR 0006 §4's <c>ActionOutcome</c>).
+    /// <para>
+    /// Deliberately <b>not</b> part of the author/approve pair. Measuring what actually happened is
+    /// observation, not approval — the person who decided may legitimately be the one who reports the
+    /// result, and forcing a third party would simply mean outcomes never get recorded.
+    /// </para>
+    /// </summary>
+    public const string DecisionOutcomeRecord = "decision-outcome.record";
+
     // ---- Procurement (UC4) -----------------------------------------------
     public const string ProcurementView = "procurement.view";
     public const string ProcurementPropose = "procurement.propose";
@@ -75,7 +85,7 @@ public static class Permissions
         ExecutiveCockpitView, ReportExport,
         ForecastView, ForecastRun, ForecastManage, ForecastApprove,
         InventoryRiskView, InventoryRiskConfigure,
-        RecommendationReview, RecommendationGenerate, RecommendationApprove,
+        RecommendationReview, RecommendationGenerate, RecommendationApprove, DecisionOutcomeRecord,
         ProcurementView, ProcurementPropose, ProcurementApprove,
         SalesActualsView,
         AfterSalesView, SparePartsView,
@@ -92,7 +102,7 @@ public static class Permissions
     {
         ForecastRun, ForecastManage, ForecastApprove,
         InventoryRiskConfigure,
-        RecommendationGenerate, RecommendationApprove,
+        RecommendationGenerate, RecommendationApprove, DecisionOutcomeRecord,
         ProcurementPropose, ProcurementApprove,
         ModelPublish,
         DataQualityResolve,

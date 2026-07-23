@@ -7,6 +7,7 @@ import { FilterSelect } from '@/components/ui/FilterSelect';
 import { LoadingState, ErrorState, EmptyState } from '@/components/ui/states';
 import { BarDistribution } from '@/components/charts/BarDistribution';
 import { SyntheticBanner } from '@/components/domain/SyntheticBanner';
+import { DecisionFooter } from '@/components/domain/DecisionFooter';
 import {
   useAfterSalesSummary,
   useAfterSalesByModel,
@@ -179,7 +180,12 @@ export default function AfterSalesPage() {
         </>
       )}
 
-      <Drawer open={selected !== null} title="Model service intensity" onClose={() => setSelected(null)}>
+      <Drawer
+        open={selected !== null}
+        title="Model service intensity"
+        onClose={() => setSelected(null)}
+        footer={detail.data ? <DecisionFooter subjectRef={detail.data.model.model} /> : null}
+      >
         {detail.isLoading ? (
           <LoadingState />
         ) : detail.isError || !detail.data ? (

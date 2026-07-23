@@ -16,6 +16,10 @@
     <!-- The cockpit's aggregation service holds no data access, so it is unit-testable with
          in-memory IDecisionSignalProvider fakes. -->
     <ProjectReference Include="../../../src/modules/ExecutiveInsights/BeeEye.Modules.ExecutiveInsights.csproj" />
+    <!-- The decision workflow's rules that carry no data access — which action each state offers, and
+         what the engine actually recommended — are pure and belong in unit tests. Everything that
+         touches the database is covered end-to-end in BeeEye.IntegrationTests instead. -->
+    <ProjectReference Include="../../../src/modules/DecisionsAndOutcomes/BeeEye.Modules.DecisionsAndOutcomes.csproj" />
   </ItemGroup>
 
 </Project>

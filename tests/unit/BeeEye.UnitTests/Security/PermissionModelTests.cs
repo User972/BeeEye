@@ -57,6 +57,7 @@ public sealed class PermissionModelTests
     [InlineData(Permissions.IntegrationManage)]
     [InlineData(Permissions.ForecastApprove)]
     [InlineData(Permissions.InventoryRiskConfigure)]
+    [InlineData(Permissions.DecisionOutcomeRecord)]
     public void Permissions_that_change_state_or_approve_are_marked_state_changing(string permission)
     {
         Assert.True(
@@ -169,6 +170,38 @@ public sealed class PermissionModelTests
                     permissions.Contains(author) && permissions.Contains(approver),
                     $"{role} can both author ({author}) and approve ({approver}) — segregation of duties is broken");
             }
+        }
+    }
+
+    [Fact]
+    public void Recording_an_outcome_is_open_to_both_business_roles_and_is_not_an_approval()
+    {
+        // Measuring what actually happened is observation, not a second approval. Requiring a third
+        // party would simply mean outcomes never get recorded — losing the one signal that tells ADMC
+        // whether the recommendations were any good. It is deliberately absent from AuthorApprovePairs.
+        Assert.True(RolePermissions.Grants([PlatformRoles.Executive], Permissions.DecisionOutcomeRecord));
+        Assert.True(RolePermissions.Grants([PlatformRoles.Analyst], Permissions.DecisionOutcomeRecord));
+        Assert.False(RolePermissions.Grants([PlatformRoles.ItAdmin], Permissions.DecisionOutcomeRecord));
+
+        Assert.DoesNotContain(
+            RolePermissions.AuthorApprovePairs,
+            pair => pair.Author == Permissions.DecisionOutcomeRecord
+                    || pair.Approver == Permissions.DecisionOutcomeRecord);
+    }
+
+    [Fact]
+    public void The_new_outcome_permission_did_not_break_the_author_approve_separation()
+    {
+        // Restated deliberately after adding a permission that both business roles hold: the property
+        // that matters is not "no shared permissions" but "no role holds both sides of a pair".
+        foreach (var role in PlatformRoles.All)
+        {
+            var permissions = RolePermissions.ForRole(role);
+
+            Assert.False(
+                permissions.Contains(Permissions.RecommendationGenerate)
+                && permissions.Contains(Permissions.RecommendationApprove),
+                $"{role} can both generate and approve recommendations");
         }
     }
 

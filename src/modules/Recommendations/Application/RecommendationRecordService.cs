@@ -149,7 +149,7 @@ public sealed class RecommendationRecordService(
                 await db.SaveChangesAsync(cancellationToken);
                 created++;
             }
-            catch (DbUpdateException ex) when (IsUniqueViolation(ex))
+            catch (DbUpdateException ex) when (PostgresErrors.IsUniqueViolation(ex))
             {
                 // A concurrent run recorded this same recommendation first. The unique index is the
                 // real guarantee; losing the race is a successful no-op, not an error.
@@ -280,22 +280,5 @@ public sealed class RecommendationRecordService(
         }
 
         db.Entry(recommendation).State = EntityState.Detached;
-    }
-
-    /// <summary>
-    /// True for PostgreSQL's <c>unique_violation</c> (SQLSTATE 23505). Read from the provider
-    /// exception's <c>SqlState</c> rather than by matching its message, which is localised and
-    /// version-dependent. Reflection keeps the module free of a direct Npgsql reference.
-    /// </summary>
-    private static bool IsUniqueViolation(DbUpdateException ex)
-    {
-        var inner = ex.InnerException;
-        if (inner is null)
-        {
-            return false;
-        }
-
-        var sqlState = inner.GetType().GetProperty("SqlState")?.GetValue(inner) as string;
-        return sqlState == "23505";
     }
 }

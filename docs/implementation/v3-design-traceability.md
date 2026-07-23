@@ -11,8 +11,8 @@
 
 | Status | Count |
 |--------|-------|
-| Implemented | 25 |
-| Planned | 23 |
+| Implemented | 32 |
+| Planned | 16 |
 | Deferred | 4 |
 | Rejected | 2 |
 | Blocked | 1 |
@@ -41,7 +41,7 @@
 | V3-DS-004 | `accent` prop | Accent variants (blue/teal/indigo) | — | Cosmetic | P3 | S | S9 | Deferred | None |
 | V3-DS-005 | `density` prop | Density variants (comfortable/compact) | — | Cosmetic | P3 | S | S9 | Deferred | None |
 | V3-DS-006 | drawer L1710 | Shared explainability drawer: 474px, 11 sections, footer workflow actions | `ui/Drawer.tsx` (basic) | New component | P1 | L | S3 | Planned | None |
-| V3-DS-007 | — | Focus trap + focus restoration in the shared `Drawer` primitive (**absent in both v3 and the app**) | `ui/Drawer.tsx` | Accessibility impact | P1 | S | S3 | Planned | None |
+| V3-DS-007 | — | Focus trap + focus restoration in the shared `Drawer` primitive (**absent in both v3 and the app**) | `ui/Drawer.tsx` | Accessibility impact | P1 | S | S3 | **Implemented** (brought forward into S6 — the Decision Log's detail drawer needed it) | Covered (1 component test) |
 | V3-DS-008 | banners | Demo-data disclosure banner | `domain/SyntheticBanner.tsx` | Unchanged | — | — | — | **Implemented** (pre-existing) | Covered (1 test) |
 
 ## C. Executive Decision Cockpit — UC8 (`V3-UC08-*`)
@@ -62,13 +62,13 @@
 
 | ID | V3 source | Requirement | Existing | Change category | Priority | Cx | Slice | Status | Tests |
 |----|-----------|-------------|----------|-----------------|----------|----|----|--------|-------|
-| V3-GOV-001 | `rvDecisions()` L3100 | Decision Log screen: rows, status chips, filters, empty/no-match states, CSV export | `DecisionsAndOutcomes` (scaffold, 1 GET) | New workflow | P1 | L | S6 | Planned | None |
+| V3-GOV-001 | `rvDecisions()` L3100 | Decision Log screen: rows, status chips, filters, empty/no-match states, CSV export | `pages/decision-log.tsx`, `DecisionsAndOutcomes` (operational, 9 routes) | New workflow | P1 | L | S6 | **Implemented** | Covered (29 component + 18 CSV unit + 68 integration) |
 | V3-GOV-002 | ADR-0006 §4 | Persist `Recommendation` **frozen/append-only** with provenance stamps | `recommendations` table + migration | Database schema impact | P0 | L | S5 | **Implemented** | Covered (23 integration) |
 | V3-GOV-003 | ADR-0006 §3 | `RecommendationStatusEvent` append-only log; `CurrentStatus` as a projection | `recommendation_status_events` table | Database schema impact | P0 | M | S5 | **Implemented** | Covered (23 integration) |
-| V3-GOV-004 | ADR-0006 §4 | `ManagementDecision` + modification delta; `ApprovalStep`; `ActionOutcome` | — | Database schema impact | P0 | L | S6 | Planned | None |
+| V3-GOV-004 | ADR-0006 §4 | `ManagementDecision` + modification delta; `ApprovalStep`; `ActionOutcome` | `management_decisions`, `approval_steps`, `action_outcomes` tables + migration | Database schema impact | P0 | L | S6 | **Implemented** | Covered (68 integration) |
 | V3-GOV-005 | ADR-0006 §3 guards | Guarded transitions: expiry suspended under review; supersession blocked with approval in flight; rejection needs a reason | `RecommendationLifecycle` | New validation behaviour | P0 | M | S5 | **Implemented** | Covered (29 unit) |
-| V3-GOV-006 | v3 status dropdown | **Reconcile** v3's 9-status vocabulary with ADR-0006's state machine (see V3-CONFLICT-1) | — | Unclear design intent | P0 | M | S5 | Planned | None |
-| V3-GOV-007 | drawer footers | "Accept & log" / "Assign owner" / "Watchlist" routing a recommendation into the Decision Log | — | New workflow | P1 | M | S6 | Planned | None |
+| V3-GOV-006 | v3 status dropdown | **Reconcile** v3's 9-status vocabulary with ADR-0006's state machine (see V3-CONFLICT-1) | `lib/api/decisions.ts` `statusLabels`/`statusColours` | Unclear design intent | P0 | M | S6 | **Implemented** — v3 labels map onto ADR-0006 states; `Assigned` and `Snoozed` **dropped** (no counterpart; ownership is `OwnerRole` + the claiming actor, and the lifecycle has no snooze) | Covered (component) |
+| V3-GOV-007 | drawer footers | "Accept & log" / "Assign owner" / "Watchlist" routing a recommendation into the Decision Log | `components/domain/DecisionFooter.tsx` on UC5/UC6/UC7 drawers | New workflow | P1 | M | S6 | **Implemented** — "Accept & log" claims the persisted record; where none exists the footer says so rather than acting. "Assign owner"/"Watchlist" **not built**: they map to the dropped `Assigned`/`Snoozed` states | Partial (footer states covered via the shared hooks; no dedicated component test) |
 | V3-GOV-008 | `dataHealth()` engine2 L560 | Data Health screen: 7 sources × (system, status, rows, coverage, note), DQ issues, score bands (>85/>70) | `DataQuality` (scaffold) | New workflow | P2 | M | S7 | Planned | None |
 | V3-GOV-009 | `lineage()` engine2 L583 | Lineage screen: 6-stage pipeline + 8 metrics tagged confirmed/demo | `ModelsAndExperiments` (scaffold) | New workflow | P2 | M | S7 | Planned | None |
 | V3-GOV-010 | settings defaults | Settings screen surfacing risk weights (30/25/20/15/10), bands (34/59/79), aging bands, horizon, CI | `pages/platform-settings.tsx` | Component change | P2 | M | S7 | Planned | None |
@@ -82,7 +82,7 @@
 | V3-AUTH-001 | ADR-0006 `decided_by` | Authenticated user identity, so a decision can name the human accountable | Entra ID OIDC/PKCE + guarded dev provider | New permission requirement | P0 | L | S4 | **Implemented** (backend; SPA sign-in outstanding) | Covered (18 integration) |
 | V3-AUTH-002 | ADR-0006 liability | Server-enforced authorization on every state-changing endpoint | Permission policies, unconditional for state-changing | Security impact | P0 | M | S4 | **Implemented** | Covered (18 integration) |
 | V3-AUTH-003 | threat model §3.2 | Role model: Executive / Analyst / IT-Admin mapped to 25 permissions | — | New permission requirement | P1 | M | S4 | **Implemented** | Covered (64 unit) |
-| V3-AUTH-004 | ADR-0006 §6 | Segregation of duties: no role holds both sides of an author/approve pair | — | New validation behaviour | P1 | S | S4 | **Implemented** | Covered (unit + integration) |
+| V3-AUTH-004 | ADR-0006 §6 | Segregation of duties: no role holds both sides of an author/approve pair, **and no person approves their own decision** | `RolePermissions.AuthorApprovePairs`, `SubjectIds.Same`, `DecisionService.SignOffAsync` | New validation behaviour | P1 | S | S4 + S6 | **Implemented** (all three layers: permission, actor, and a documented exemption for outcome recording) | Covered (unit + integration) |
 | V3-AUTH-005 | — | Multi-tenancy | None; single-tenant by design | — | — | — | — | **Deferred** — not a v3 requirement; no tenant concept in v3 or the product spec | N/A |
 
 ## F. Write-path infrastructure (`V3-API-*`)
@@ -90,10 +90,10 @@
 | ID | Driver | Requirement | Existing | Change category | Priority | Cx | Slice | Status | Tests |
 |----|--------|-------------|----------|-----------------|----------|----|----|--------|-------|
 | V3-API-001 | first mutations | First write endpoint: `POST /api/v1/recommendations/records/generate` | — | New API requirement | P0 | M | S5 | **Implemented** | Covered (23 integration) |
-| V3-API-002 | ADR-0007 | Deterministic idempotency key + unique index; concurrent runs collapse to a no-op | — | New API requirement | P0 | M | S5 | **Implemented** | Covered (4 integration) |
+| V3-API-002 | ADR-0007 | Deterministic idempotency key + unique index; concurrent runs collapse to a no-op; **`Idempotency-Key` header honoured on every human write** (ADR-0007 §2.1 / invariant I-6) | `Shared.Web/Idempotency/*`, `idempotency_records` | New API requirement | P0 | M | S5 + S6 | **Implemented** | Covered (4 + 7 integration, 24 unit) |
 | V3-API-003 | concurrency | Optimistic concurrency via PostgreSQL `xmin` row version on `Recommendation` | — | Data impact | P0 | S | S5 | **Implemented** | Covered (schema) |
-| V3-API-004 | audit | `AuditEvent` append-only trail with before/after hashes | `Audit` (scaffold) | New data requirement | P0 | M | S5 | Planned | None |
-| V3-API-005 | error contract | Consistent `ProblemDetails` on all new endpoints | Partial (UC1 uses it) | Changed API contract | P1 | S | S5 | Planned | Partial |
+| V3-API-004 | audit | `AuditEvent` append-only trail with before/after hashes | `Audit` (scaffold) | New data requirement | P0 | M | later | **Deferred** — out of scope for S6; the status-event log carries the trail. Tracked as tech-debt TD-4 | None |
+| V3-API-005 | error contract | Consistent `ProblemDetails` on all new endpoints | `DecisionEndpoints.Problem` — one mapping for every domain failure | Changed API contract | P1 | S | S6 | **Implemented** | Covered (integration asserts each status and its detail) |
 
 ## G. Platform & AI screens (`V3-PLAT-*`)
 
@@ -105,7 +105,7 @@
 | V3-PLAT-004 | `rvReports()` | Reports & Exports screen | None | New workflow | P3 | M | S11 | Planned | None |
 | V3-PLAT-005 | `rvMethod()` | Methodology screen | None | New screen | P3 | S | S11 | Planned | None |
 | V3-PLAT-006 | `rvIntegration()` | Integration Blueprint screen | None | New screen | P3 | S | S11 | Planned | None |
-| V3-PLAT-007 | `exportCSV()` | CSV export with RFC-4180 escaping across screens | None | New interaction | P2 | S | S7 | Planned | None |
+| V3-PLAT-007 | `exportCSV()` | CSV export with RFC-4180 escaping across screens | `lib/csv.ts` (used by the Decision Log; other screens adopt it in S7) | New interaction | P2 | S | S6 + S7 | **Implemented** (helper + Decision Log); other screens Planned | Covered (18 unit incl. formula injection) |
 | V3-PLAT-008 | `rvActions()` | Management Actions — **superseded** by the Decision Log (absent from v3's `startScreen` enum) | None | Deprecation | P3 | — | — | **Deferred** — retain nothing; never built, and v3 supersedes it | N/A |
 
 ## H. Existing intelligence screens (`V3-UC01..07-*`)
@@ -139,12 +139,12 @@
 
 | ID | Screen | Conflict | Recommended safe default | Risk if ignored |
 |----|--------|----------|--------------------------|-----------------|
-| **V3-CONFLICT-1** | Decision Log | v3 uses a **mutable status dropdown + hard delete + `localStorage`**; ADR-0006 (Accepted) explicitly **rejects** exactly this ("single mutable record" is its rejected Option B) and its `Supersedes` field names the prototype's `localStorage` behaviour | Keep v3's visual design and status vocabulary; back it with ADR-0006's append-only record + status-event log. Replace the free dropdown with **guard-validated transitions** and delete with a **terminal state**. | Loss of audit trail, IP/liability boundary and learning loop — the ADR's stated reasons |
-| **V3-CONFLICT-2** | Decision Log | v3's 9 statuses (`New`…`Superseded`) ≠ ADR-0006's 9 states (`Generated`…`OutcomeRecorded`). v3 adds `Assigned`, `In progress`, `Snoozed`; ADR adds `AcceptedModified`, `Expired`, `Implemented`, `OutcomeRecorded` | Adopt the ADR state machine as canonical; map v3 labels onto it (`New`→Generated, `Completed`→Implemented). Treat `Assigned`/`Snoozed` as **assignment//deferral attributes**, not lifecycle states, so the machine stays sound | Ambiguous lifecycle, unenforceable guards |
+| **V3-CONFLICT-1** ✅ *resolved in S6* | Decision Log | v3 uses a **mutable status dropdown + hard delete + `localStorage`**; ADR-0006 (Accepted) explicitly **rejects** exactly this ("single mutable record" is its rejected Option B) and its `Supersedes` field names the prototype's `localStorage` behaviour | Keep v3's visual design and status vocabulary; back it with ADR-0006's append-only record + status-event log. Replace the free dropdown with **guard-validated transitions** and delete with a **terminal state**. | Loss of audit trail, IP/liability boundary and learning loop — the ADR's stated reasons |
+| **V3-CONFLICT-2** ✅ *resolved in S6* | Decision Log | v3's 9 statuses (`New`…`Superseded`) ≠ ADR-0006's 9 states (`Generated`…`OutcomeRecorded`). v3 adds `Assigned`, `In progress`, `Snoozed`; ADR adds `AcceptedModified`, `Expired`, `Implemented`, `OutcomeRecorded` | Adopt the ADR state machine as canonical; map v3 labels onto it (`New`→Generated, `Completed`→Implemented). Treat `Assigned`/`Snoozed` as **assignment//deferral attributes**, not lifecycle states, so the machine stays sound | Ambiguous lifecycle, unenforceable guards |
 | **V3-CONFLICT-3** | all | v3 loads fonts from the **Google Fonts CDN** | Self-host (IBM Plex + Material Symbols are OFL-1.1, redistribution permitted) | CSP weakening, third-party runtime dependency, offline failure |
 | **V3-CONFLICT-4** | UC6/UC7 | v3's synthetic fixtures use **mulberry32 + FNV-1a-32** (`SEED = 20260531`); the repo uses **SplitMix64 + FNV-1a-64** — numerically irreconcilable | **Do not chase numeric parity on demo fixtures.** CLAUDE.md already specifies UC6/UC7 follow `docs/product/use-cases/`. Parity remains mandatory for UC2/UC5 (`engine.js`, byte-identical v1↔v3) | Wasted effort re-porting a demo fixture; risk of destabilising a passing implementation |
-| **V3-CONFLICT-5** | all | v3 has **no auth**, yet its Decision Log records an `owner` and ADR-0006 requires a named `decided_by` | Sequence identity (S4) **before** human decisions (S6). The system-generated recommendation layer (S5) needs no identity and can land first | Unattributable decisions — fails the ADR's core liability requirement |
-| **V3-CONFLICT-6** | Decision Log | v3 internal inconsistency: `addAction()` defaults `status: "Proposed"`, absent from its own 9-status list | Use ADR-0006's `Generated` as the initial state; do not reproduce the bug | Records invisible to their own filters |
+| **V3-CONFLICT-5** ✅ *resolved in S4/S6* | all | v3 has **no auth**, yet its Decision Log records an `owner` and ADR-0006 requires a named `decided_by` | Sequence identity (S4) **before** human decisions (S6). The system-generated recommendation layer (S5) needs no identity and can land first | Unattributable decisions — fails the ADR's core liability requirement |
+| **V3-CONFLICT-6** ✅ *resolved in S6* | Decision Log | v3 internal inconsistency: `addAction()` defaults `status: "Proposed"`, absent from its own 9-status list | Use ADR-0006's `Generated` as the initial state; do not reproduce the bug | Records invisible to their own filters |
 | **V3-CONFLICT-7** | all | v3 is **desktop-only** — no nav breakpoints, no mobile pattern | Define responsive behaviour independently (done in S1) | Unusable on tablet/mobile |
 | **V3-CONFLICT-8** | labels | `README.md` documents **7** AI labels; `LABELS` defines **8** (omits `Data Quality`) | Implement all 8 from code, the source of truth | Missing a status treatment |
 | **V3-CONFLICT-9** | Decision Cockpit | v3's **D-SUP-1** (supplier delay exposure) is computed entirely from `engine2.js`'s synthetic `SUPPLIERS` / `supplierPerf` / `procurement()` fixtures. The database has **no supplier, purchase-order or delivery-performance entity** — `InventoryItem.LeadTimeDays` is the only related field, and it carries no supplier identity or on-time history | **Do not implement the rule.** Fabricating supplier performance to fill a cockpit tile would put invented figures in front of executives as if they were measured. The remaining five rules ship; D-SUP-1 is tracked as V3-UC08-008 and unblocks once real Fusion Procurement data is integrated | **Medium if ignored** — a plausible-looking but fabricated supplier decision is worse than an absent one |
@@ -161,7 +161,7 @@
 | S3 | Explainability drawer + label system | V3-DS-002/006/007, V3-UC0x-002 | Planned |
 | **S4** | **Identity, roles & authorization** | V3-AUTH-001/002/003/004 | **Complete** (backend; SPA sign-in outstanding) |
 | **S5** | **Recommendation records & write path** | V3-GOV-002/003/005/011/012, V3-API-001/002/003 | **Complete** |
-| S6 | Decision Log & human decisions | V3-GOV-001/004/007 | Ready (S4 and S5 landed) |
+| **S6** | **Decision Log & human decisions** | V3-GOV-001/004/006/007, V3-API-002/005, V3-AUTH-004, V3-DS-007, V3-PLAT-007 | **Complete** |
 | S7 | Data Health, Lineage, Settings | V3-GOV-008/009/010, V3-PLAT-007 | Planned |
 | S8 | Intelligence-screen alignment + perf | V3-UC01..07-001, V3-PERF-001, V3-DS-003 | Planned |
 | S9 | Persona, accent, density | V3-NAV-005, V3-DS-004/005 | Planned |

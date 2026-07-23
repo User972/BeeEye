@@ -10,10 +10,11 @@
  *
  * Registry invariant: a nav item is listed here only when a real screen exists
  * for it. v3 groups also contain screens that are not built yet (Executive
- * Overview, Decision Log, Data Health, Model & Data Lineage, Ask Decision
- * Intelligence, Reports & Exports, Data Ingestion, Methodology, Integration
- * Blueprint); those are added by their own vertical slices so the rail never
- * shows a link that goes nowhere.
+ * Overview, Data Health, Model & Data Lineage, Ask Decision Intelligence,
+ * Reports & Exports, Data Ingestion, Methodology, Integration Blueprint);
+ * those are added by their own vertical slices so the rail never shows a link
+ * that goes nowhere. The Decision Log joined the registry with S6, when the
+ * screen behind it became real.
  */
 
 /** v3 navigation groups, in v3's display order. */
@@ -199,6 +200,22 @@ export const navItems: NavItem[] = [
       'Intermittent-demand methods (Croston / SBA / TSB)',
       'Supersession, alternates and model-to-part compatibility',
       'Stocking ranges with confidence and forecast range',
+    ],
+  },
+  {
+    id: 'decision-log',
+    path: '/decisions',
+    label: 'Decision Log',
+    icon: 'gavel',
+    group: 'governance',
+    moduleRoute: 'decisions',
+    summary: 'A governed audit trail of every recommendation and the human decision on it.',
+    wireframed: true,
+    capabilities: [
+      'Every recommendation with what the engine advised, frozen at generation',
+      'Who claimed it, what they decided, what they changed, and why',
+      'Guard-validated transitions — no free status editing, no delete',
+      'Approval chain, status-event timeline and realised outcome',
     ],
   },
   {

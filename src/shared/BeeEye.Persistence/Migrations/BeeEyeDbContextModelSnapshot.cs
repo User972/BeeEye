@@ -22,6 +22,138 @@ namespace BeeEye.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("BeeEye.Persistence.Entities.ActionOutcome", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("DecisionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("MeasuredAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Metric")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<decimal>("RealisedValue")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<string>("RecordedBy")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<string>("Unit")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DecisionId")
+                        .IsUnique();
+
+                    b.ToTable("action_outcomes", (string)null);
+                });
+
+            modelBuilder.Entity("BeeEye.Persistence.Entities.ApprovalStep", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("ActedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ActedBy")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<string>("ApproverRole")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<Guid>("DecisionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<int>("StepNumber")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DecisionId", "StepNumber")
+                        .IsUnique();
+
+                    b.ToTable("approval_steps", (string)null);
+                });
+
+            modelBuilder.Entity("BeeEye.Persistence.Entities.IdempotencyRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset>("ExpiresAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("PrincipalId")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<string>("RequestFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("ResponseBody")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("ResponseStatus")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Route")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExpiresAtUtc");
+
+                    b.HasIndex("Key")
+                        .IsUnique();
+
+                    b.ToTable("idempotency_records", (string)null);
+                });
+
             modelBuilder.Entity("BeeEye.Persistence.Entities.IngestionBatch", b =>
                 {
                     b.Property<Guid>("Id")
@@ -160,6 +292,75 @@ namespace BeeEye.Persistence.Migrations
                     b.HasIndex("Location", "Model", "Variant");
 
                     b.ToTable("inventory_items", (string)null);
+                });
+
+            modelBuilder.Entity("BeeEye.Persistence.Entities.ManagementDecision", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("DecidedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DecidedBy")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<string>("IdempotencyKey")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTimeOffset?>("ImplementedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ImplementedBy")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<string>("ModificationJson")
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<DateTimeOffset>("OpenedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("OpenedBy")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<string>("Outcome")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<Guid>("RecommendationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdempotencyKey")
+                        .IsUnique();
+
+                    b.HasIndex("RecommendationId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_management_decisions_open_per_recommendation")
+                        .HasFilter("\"Outcome\" = 'Open'");
+
+                    b.HasIndex("Outcome", "OpenedAtUtc");
+
+                    b.ToTable("management_decisions", (string)null);
                 });
 
             modelBuilder.Entity("BeeEye.Persistence.Entities.Part", b =>
@@ -696,6 +897,39 @@ namespace BeeEye.Persistence.Migrations
                     b.ToTable("vehicle_sales", (string)null);
                 });
 
+            modelBuilder.Entity("BeeEye.Persistence.Entities.ActionOutcome", b =>
+                {
+                    b.HasOne("BeeEye.Persistence.Entities.ManagementDecision", "Decision")
+                        .WithOne("ActionOutcome")
+                        .HasForeignKey("BeeEye.Persistence.Entities.ActionOutcome", "DecisionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Decision");
+                });
+
+            modelBuilder.Entity("BeeEye.Persistence.Entities.ApprovalStep", b =>
+                {
+                    b.HasOne("BeeEye.Persistence.Entities.ManagementDecision", "Decision")
+                        .WithMany("ApprovalSteps")
+                        .HasForeignKey("DecisionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Decision");
+                });
+
+            modelBuilder.Entity("BeeEye.Persistence.Entities.ManagementDecision", b =>
+                {
+                    b.HasOne("BeeEye.Persistence.Entities.Recommendation", "Recommendation")
+                        .WithMany()
+                        .HasForeignKey("RecommendationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Recommendation");
+                });
+
             modelBuilder.Entity("BeeEye.Persistence.Entities.Recommendation", b =>
                 {
                     b.HasOne("BeeEye.Persistence.Entities.Recommendation", null)
@@ -713,6 +947,13 @@ namespace BeeEye.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("Recommendation");
+                });
+
+            modelBuilder.Entity("BeeEye.Persistence.Entities.ManagementDecision", b =>
+                {
+                    b.Navigation("ActionOutcome");
+
+                    b.Navigation("ApprovalSteps");
                 });
 
             modelBuilder.Entity("BeeEye.Persistence.Entities.Recommendation", b =>

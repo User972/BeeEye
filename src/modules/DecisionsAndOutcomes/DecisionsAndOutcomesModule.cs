@@ -1,32 +1,27 @@
-using BeeEye.Shared.Api;
+using BeeEye.Modules.DecisionsAndOutcomes.Application;
 using BeeEye.Shared.Modularity;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace BeeEye.Modules.DecisionsAndOutcomes;
 
-/// <summary>Decision workflow, reviews, assignments, comments and outcomes.</summary>
+/// <summary>Decision workflow, reviews, approvals and outcomes (ADR 0006).</summary>
 public sealed class DecisionsAndOutcomesModule : IModule
 {
     public string Name => "Decisions and Outcomes";
     public string RoutePrefix => "decisions";
-    public string Description => "Decision workflow, reviews, assignments, comments and outcomes.";
+    public string Description => "The governed decision log: who decided, what they changed, and what resulted.";
+    public string Status => "operational";
 
     public void RegisterServices(IServiceCollection services, IConfiguration configuration)
     {
-        // Scaffolded: Decisions and Outcomes application, domain and persistence services register here.
+        ArgumentNullException.ThrowIfNull(services);
+
+        // The only writer of recommendation lifecycle state anywhere in the platform (ADR 0006 §6).
+        services.AddScoped<RecommendationTransitionService>();
+        services.AddScoped<DecisionService>();
     }
 
-    public void MapEndpoints(IEndpointRouteBuilder endpoints)
-    {
-        var group = endpoints.MapGroup($"{ApiRoutes.V1}/{RoutePrefix}");
-        group.WithTags(Name);
-
-        var info = group.MapGet("/", () => new ModuleInfo(Name, RoutePrefix, Description, "scaffolded"));
-        info.WithName("DecisionsAndOutcomes_Info");
-        info.WithSummary("Decisions and Outcomes module information");
-    }
+    public void MapEndpoints(IEndpointRouteBuilder endpoints) => DecisionEndpoints.Map(endpoints);
 }

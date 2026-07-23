@@ -205,6 +205,60 @@ public sealed class RecommendationLifecycleTests
     }
 
     [Fact]
+    public void An_approval_in_flight_blocks_supersession_from_every_non_terminal_state()
+    {
+        // From S6 the flag is no longer synthetic: it is read from the actual approval chain on the
+        // open decision, so this guard is what stops a fresh analysis run erasing a decision a human
+        // is part-way through approving.
+        foreach (var from in AllStates.Where(s => !RecommendationLifecycle.IsTerminal(s)))
+        {
+            if (!RecommendationLifecycle.NextStates(from).Contains(RecommendationStatus.Superseded))
+            {
+                continue;
+            }
+
+            var result = RecommendationLifecycle.CanTransition(
+                from, RecommendationStatus.Superseded, approvalInFlight: true);
+
+            Assert.False(result.Allowed);
+            Assert.Equal(TransitionRefusal.SupersessionBlockedByApprovalInFlight, result.Refusal);
+        }
+    }
+
+    [Fact]
+    public void Supersession_stops_being_blocked_once_the_last_step_resolves()
+    {
+        // The sequence a real chain goes through: blocked while a step is pending, permitted the
+        // moment none is.
+        var blocked = RecommendationLifecycle.CanTransition(
+            RecommendationStatus.UnderReview, RecommendationStatus.Superseded, approvalInFlight: true);
+
+        var released = RecommendationLifecycle.CanTransition(
+            RecommendationStatus.UnderReview, RecommendationStatus.Superseded, approvalInFlight: false);
+
+        Assert.False(blocked.Allowed);
+        Assert.True(released.Allowed);
+    }
+
+    [Fact]
+    public void The_approval_guard_never_turns_a_refused_transition_into_an_allowed_one()
+    {
+        // Guards may only narrow the matrix. A guard that widened it would be a way past the machine.
+        foreach (var from in AllStates)
+        {
+            foreach (var to in AllStates)
+            {
+                if (RecommendationLifecycle.CanTransition(from, to, approvalInFlight: true).Allowed)
+                {
+                    Assert.True(
+                        RecommendationLifecycle.CanTransition(from, to, approvalInFlight: false).Allowed,
+                        $"{from}->{to} is allowed with an approval in flight but refused without one");
+                }
+            }
+        }
+    }
+
+    [Fact]
     public void Rejection_requires_a_reason()
     {
         var result = RecommendationLifecycle.CanTransition(
@@ -212,6 +266,23 @@ public sealed class RecommendationLifecycleTests
 
         Assert.False(result.Allowed);
         Assert.Equal(TransitionRefusal.ReasonRequired, result.Refusal);
+    }
+
+    [Fact]
+    public void A_whitespace_only_reason_is_no_reason_at_all()
+    {
+        // The caller passes hasReason, so this asserts the contract the transition service must honour
+        // when it trims: "   " must not buy a rejection past the guard.
+        foreach (var blank in new[] { "", "   ", "\t", "\n" })
+        {
+            var result = RecommendationLifecycle.CanTransition(
+                RecommendationStatus.UnderReview,
+                RecommendationStatus.Rejected,
+                hasReason: !string.IsNullOrWhiteSpace(blank));
+
+            Assert.False(result.Allowed);
+            Assert.Equal(TransitionRefusal.ReasonRequired, result.Refusal);
+        }
     }
 
     [Fact]

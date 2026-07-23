@@ -23,6 +23,15 @@ public class BeeEyeDbContext(DbContextOptions<BeeEyeDbContext> options) : DbCont
     public DbSet<Recommendation> Recommendations => Set<Recommendation>();
     public DbSet<RecommendationStatusEvent> RecommendationStatusEvents => Set<RecommendationStatusEvent>();
 
+    // The human layer (ADR 0006 §4). Appended around the frozen recommendation, never an edit of it:
+    // who claimed it, what they decided, who signed off, and what actually happened.
+    public DbSet<ManagementDecision> ManagementDecisions => Set<ManagementDecision>();
+    public DbSet<ApprovalStep> ApprovalSteps => Set<ApprovalStep>();
+    public DbSet<ActionOutcome> ActionOutcomes => Set<ActionOutcome>();
+
+    // Honoured Idempotency-Keys (ADR 0007 §2.1), written in the same transaction as the effect.
+    public DbSet<IdempotencyRecord> IdempotencyRecords => Set<IdempotencyRecord>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(BeeEyeDbContext).Assembly);

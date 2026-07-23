@@ -571,3 +571,189 @@ html:not(.icons-ready) .material-symbols-outlined { font-size: 0; }
   .decision-card__meta { grid-template-columns: 1fr; }
   .decision-card__priority { margin-left: 0; }
 }
+
+/* ---------------- Decision Log (V3-GOV-001) ---------------- */
+
+.dl-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: var(--gap);
+}
+.dl-toolbar__actions { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* Status chips. Real buttons with aria-pressed, so the filter is reachable and announceable. */
+.dl-chips { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.dl-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 13px;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  color: var(--text);
+  font: inherit;
+}
+.dl-chip:hover { border-color: var(--border-strong); }
+.dl-chip--active { border-color: var(--primary); background: var(--primary-weak); }
+.dl-chip__dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.dl-chip__label { font-size: 11.5px; color: var(--text-muted); }
+.dl-chip__count { font-family: var(--font-mono); font-size: 14px; }
+
+.dl-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  margin: 0 0 var(--gap);
+}
+.dl-banner b { color: var(--text); }
+.dl-banner .dl-btn--link { margin-left: auto; }
+
+.dl-rows { display: flex; flex-direction: column; gap: var(--gap); }
+
+.dl-row {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--text-muted);
+  border-radius: var(--radius);
+  padding: 14px 17px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.dl-row__head { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+.dl-row__id { font-family: var(--font-mono); font-size: 10.5px; color: var(--text-faint); }
+.dl-row__title { font-weight: 600; font-size: 13.5px; }
+.dl-row__pill {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  background: var(--surface-2);
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+.dl-row__evidence { font-size: 11.5px; color: var(--text-muted); line-height: 1.5; margin: 0; }
+.dl-row__meta { font-size: 10.5px; color: var(--text-faint); margin: 0; }
+.dl-row__foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+  padding-top: 11px;
+  border-top: 1px solid var(--border);
+}
+/* Status is always stated in words; the dot only repeats what the text already says. */
+.dl-row__status { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; }
+.dl-row__decided, .dl-row__mod { font-size: 11.5px; color: var(--text-muted); }
+.dl-row__mod { font-family: var(--font-mono); }
+.dl-row__hint { font-size: 11px; color: var(--text-faint); margin: 0; }
+.dl-row__error {
+  font-size: 11.5px;
+  margin: 0;
+  color: var(--risk-crit);
+  background: color-mix(in oklab, var(--risk-crit) 8%, transparent);
+  border-radius: var(--radius-sm);
+  padding: 7px 10px;
+}
+.dl-row__ok { font-size: 11.5px; margin: 0; color: var(--risk-low); }
+
+.dl-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-left: auto; }
+
+.dl-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 7px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.dl-btn:hover:not(:disabled) { background: var(--surface-2); border-color: var(--border-strong); }
+.dl-btn:disabled { opacity: 0.55; cursor: default; }
+.dl-btn--primary { color: #fff; background: var(--primary); border-color: var(--primary); }
+.dl-btn--primary:hover:not(:disabled) { background: var(--primary); filter: brightness(1.06); }
+.dl-btn--link { border-color: transparent; background: transparent; color: var(--primary); padding: 7px 4px; }
+
+.dl-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+.dl-form__row { display: grid; gap: 4px; }
+.dl-form__row--wide { grid-column: 1 / -1; }
+.dl-form__row label { font-size: 11px; color: var(--text-muted); font-weight: 600; }
+.dl-form input, .dl-form select, .dl-form textarea {
+  font: inherit;
+  font-size: 12.5px;
+  padding: 6px 9px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  width: 100%;
+}
+.dl-form__hint { grid-column: 1 / -1; font-size: 11px; color: var(--text-faint); margin: 0; }
+.dl-form__error { grid-column: 1 / -1; font-size: 11.5px; color: var(--risk-crit); margin: 0; }
+.dl-form__actions { grid-column: 1 / -1; display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* Detail drawer: the frozen original beside the human decision. */
+.dl-detail { display: grid; gap: 20px; }
+.dl-detail__col { display: grid; gap: 8px; }
+.dl-detail__heading { font-size: 13px; margin: 0; }
+.dl-detail__subheading { font-size: 12px; margin: 10px 0 0; color: var(--text-muted); }
+.dl-detail__list { display: grid; grid-template-columns: minmax(96px, auto) 1fr; gap: 4px 12px; margin: 0; font-size: 12.5px; }
+.dl-detail__list dt { color: var(--text-muted); font-weight: 600; }
+.dl-detail__list dd { margin: 0; }
+.dl-detail__list ul { margin: 0; padding-left: 16px; }
+.dl-detail__none { font-size: 12px; color: var(--text-faint); margin: 0; }
+.dl-detail__steps { margin: 0; padding-left: 16px; font-size: 12px; }
+.dl-detail__timeline { margin: 0; padding-left: 16px; font-size: 12px; display: grid; gap: 6px; }
+.dl-detail__reason { display: block; color: var(--text-faint); font-size: 11px; }
+
+.drawer__footer {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 12px 18px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+
+@media (min-width: 1024px) {
+  /* Side by side only where both columns stay readable; stacked below that. */
+  .dl-detail { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 720px) {
+  .dl-toolbar__actions { margin-left: 0; width: 100%; }
+  .dl-actions { margin-left: 0; width: 100%; }
+  .dl-row__foot { align-items: flex-start; }
+}
+
+/* Explainability drawer footer routing into the Decision Log (V3-GOV-007). */
+.decision-footer { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; width: 100%; }
+.decision-footer .dl-row__hint { flex: 1 1 100%; }
