@@ -1,4 +1,5 @@
 using BeeEye.Analytics.Decisions;
+using BeeEye.Analytics.Explainability;
 using BeeEye.Modules.Inventory.Application;
 using BeeEye.Shared.Modularity;
 using Microsoft.AspNetCore.Routing;
@@ -21,6 +22,9 @@ public sealed class InventoryModule : IModule
 
         // Contributes this context's material exceptions to the Executive Decision Cockpit (UC8).
         services.AddScoped<IDecisionSignalProvider, InventoryDecisionSignalProvider>();
+
+        // Answers "why is this unit at risk?" for the global explainability drawer (S3).
+        services.AddScoped<IExplainabilityProvider, InventoryExplainabilityProvider>();
     }
 
     public void MapEndpoints(IEndpointRouteBuilder endpoints)

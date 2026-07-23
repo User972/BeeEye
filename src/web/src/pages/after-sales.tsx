@@ -3,6 +3,8 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { StatCard } from '@/components/ui/StatCard';
 import { Card, CardHeader } from '@/components/ui/Card';
 import { Drawer } from '@/components/ui/Drawer';
+import { ExplainButton, ExplainabilityDrawer } from '@/components/domain/ExplainabilityDrawer';
+import { useExplainabilityDrawer } from '@/components/domain/useExplainabilityDrawer';
 import { FilterSelect } from '@/components/ui/FilterSelect';
 import { LoadingState, ErrorState, EmptyState } from '@/components/ui/states';
 import { BarDistribution } from '@/components/charts/BarDistribution';
@@ -38,6 +40,7 @@ export default function AfterSalesPage() {
   };
   const byModel = useAfterSalesByModel(query);
   const detail = useAfterSalesModel(selected);
+  const explain = useExplainabilityDrawer();
 
   const reset = <T,>(setter: (v: T) => void) => (v: T) => {
     setter(v);
@@ -191,9 +194,17 @@ export default function AfterSalesPage() {
         ) : detail.isError || !detail.data ? (
           <ErrorState title="Could not load model" />
         ) : (
-          <ModelDetail data={detail.data.model} />
+          <>
+            <ExplainButton
+              label={detail.data.model.model}
+              onClick={() => explain.open({ kind: 'service-model', ref: detail.data.model.model })}
+            />
+            <ModelDetail data={detail.data.model} />
+          </>
         )}
       </Drawer>
+
+      <ExplainabilityDrawer subject={explain.subject} onClose={explain.close} />
     </>
   );
 }

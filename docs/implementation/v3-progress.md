@@ -11,7 +11,7 @@
 | **S0** | **Dependency & warning hygiene** | P1 | **Complete** |
 | **S1** | **Application shell & grouped navigation** | P1 | **Complete** |
 | **S2** | **UC8 Executive Decision Cockpit** | P1 | **Complete** |
-| S3 | Explainability drawer & AI label system | P1 | Ready |
+| **S3** | **Explainability drawer & AI label system** | P1 | **Complete** |
 | **S4** | **Identity, roles & authorization** | P0 | **Complete** (backend) |
 | **S5** | **Recommendation records & write path** | P0 | **Complete** |
 | **S6** | **Decision Log & human decisions** | P1 | **Complete** |
@@ -32,6 +32,7 @@
 | After S2 (complete) | 470 | 67 | 537 |
 | **After S4 + S5** | **615** | **67** | **682** |
 | **After S6** | **814** | **116** | **930** |
+| **After S3** | **885** | **200** | **1085** |
 
 Backend breakdown after S5: `BeeEye.UnitTests` **129** (was 18) · `BeeEye.Analytics.Tests` **384**
 (was 332) · `BeeEye.ArchitectureTests` 4 · `BeeEye.IntegrationTests` **98** (was 33).
@@ -41,6 +42,11 @@ Backend breakdown after S6: `BeeEye.UnitTests` **259** (was 129) · `BeeEye.Anal
 (unchanged — S6 touches no formula) · `BeeEye.ArchitectureTests` **5** (was 4) ·
 `BeeEye.IntegrationTests` **166** (was 98). Web: **116** (was 67).
 All green, 0 failures, 0 skipped.
+
+Backend breakdown after S3: `BeeEye.UnitTests` **297** (was 259) · `BeeEye.Analytics.Tests` 384
+(unchanged — S3 changes no formula, and the `engine.js` parity tests are untouched) ·
+`BeeEye.ArchitectureTests` **6** (was 5) · `BeeEye.IntegrationTests` **198** (was 166).
+Web: **200** (was 116). All green, 0 failures, 0 skipped.
 
 ---
 
@@ -193,6 +199,231 @@ R-06 addressed: a 5 s response budget is asserted in integration tests. The feed
 it, but the two slow underlying endpoints remain a S8 concern.
 
 **Next action.** None — slice closed.
+
+## S3 — Explainability drawer & AI label system · **Complete**
+
+- **Requirements.** V3-DS-002, V3-DS-006, V3-DS-007 (extended), V3-UC0x-002.
+- **Outcome.** Every number, forecast and recommendation the platform shows can now answer "why?" in
+  one consistent panel, on all nine screens.
+
+### Architecture — the `IExplainabilityProvider` seam
+
+The drawer spans eight contexts, and the boundary rules forbid a module referencing another module.
+The same answer S2 found applies: a **published contract** in
+`BeeEye.Analytics/Explainability/IExplainabilityProvider.cs`. Each context explains its own output;
+the `Predictions` module injects `IEnumerable<IExplainabilityProvider>` and only routes, aggregates
+and reports gaps.
+
+- Every explanation stays with the context that owns the figure it explains.
+- `Predictions` references **no module** — only `BeeEye.Analytics` and `BeeEye.Persistence`. A sixth
+  architecture test asserts every provider lives in a `BeeEye.Modules.*` assembly and gets its
+  contract from `BeeEye.Analytics`, and that there are exactly **eight** of them: a drop to seven
+  means a screen quietly lost the ability to explain itself.
+- **A kind is claimed by exactly one provider, and a duplicate claim fails at start-up.** The service
+  is resolved once during endpoint mapping precisely so the check runs at boot. Two providers on one
+  kind means whichever answers depends on dependency-injection registration order — the worst kind of
+  bug to discover on the request path.
+
+### The two conflicts this slice resolves
+
+**V3-CONFLICT-8 — seven labels or eight.** `docs/wireframes-v3/README.md` documented seven AI output
+labels and omitted `Data Quality`; `engine2.js`'s `LABELS` table (L28–37) defines eight. **The code
+was the source of truth**: all eight ship in `components/ui/AiLabel.tsx`, and the README and the
+design inventory were corrected in the same commit rather than left disagreeing with the code. The
+completeness of the map is asserted by reflection over the C# enum *and* by an exhaustive component
+test, so a ninth label cannot be added without a chip.
+
+**"Was this useful?" — the conflict the plan did not name.** v3's drawer ends with four feedback
+buttons under a caption saying the answer "is recorded in the analytics platform only". It is
+recorded nowhere: `explainFeedback()` writes to component state and the answer dies on reload. That
+is exactly the pattern ADR-0006 rejects (V3-GOV-011), and a control that silently discards input is
+worse than no control — it spends a reader's goodwill and returns nothing.
+
+**Resolved by persisting it properly.** The S6 machinery made this cheap: the idempotency filter, the
+`IIdempotencyStore` seam and the permission catalogue all existed. `ExplainabilityFeedback` is a
+sixteenth table, append-only, attributed to a stable subject id, written behind
+`RequirePermission` + `.WithIdempotency()`. The caption stays — and is now true.
+
+### Backend
+
+- **Contract** (`BeeEye.Analytics/Explainability/`): `IExplainabilityProvider`, the `Explanation`
+  record and its parts, the `OutputLabel` / `LineageKind` / `ImpactTone` / `ConfidenceBand` enums with
+  their wire-key maps, and `ExplanationFormat` — invariant money/date formatting matching
+  `src/web/src/lib/format.ts` so a figure reads identically on a screen and in the drawer explaining
+  it.
+- **Eight providers**, one per live context: `OrderExplainabilityProvider` (UC1),
+  `ForecastExplainabilityProvider` (UC2), `ConfigurationExplainabilityProvider` (UC3),
+  `ProcurementExplainabilityProvider` (UC4), `InventoryExplainabilityProvider` (UC5),
+  `AfterSalesExplainabilityProvider` (UC6), `SparePartsExplainabilityProvider` (UC7) and
+  `CockpitExplainabilityProvider` (UC8, claiming both `decision` and `brief`).
+- **`GET /api/v1/predictions/explain?kind=&ref=`** — 400 on an unknown kind, *listing the kinds
+  actually registered*; 404 on a known kind with an unknown reference; **200 with a reported gap**
+  when a provider throws. `Predictions` moves from `scaffolded` to `operational`.
+- **`POST /api/v1/predictions/explain/feedback`** — `RequirePermission` +
+  `.WithIdempotency()`, body implementing `IIdempotentPayload`.
+- **New permission** `explanation-feedback.submit`, in `All` **and** `StateChanging`, granted to
+  Executive and Analyst.
+- **Migration `ExplainabilityFeedback`** — one `CreateTable` and two `CreateIndex`; the `Down` drops
+  only the new table. The fifteen pre-existing tables are asserted untouched against
+  `information_schema`, not by reading the migration and hoping.
+
+### Six decisions worth recording
+
+1. **Confidence is nullable, and an absent band stays absent.** v3 defaults a missing confidence to
+   `Medium`. That is an invented assertion wearing the costume of a default, and it is not reproduced:
+   `Confidence is null` survives the whole pipeline, the section is omitted, and a test asserts the
+   word "Medium" appears nowhere in a drawer whose payload carries no band.
+2. **`IsDemoData` is an explicit flag, not something derived from lineage.** Inference would be a rule
+   two places must agree on forever, and the day they disagree is the day a synthetic figure loses its
+   label in front of an executive. `Demo` is also **not exclusive**: a demo-derived forecast carries
+   `Label = Forecast`, `IsDemoData = true` and a `Demo` lineage node, and a test pins all three.
+3. **`ImpactTile.Value` is a pre-formatted string; `Tone` is an enum, never a colour.** The server
+   knows whether a figure is money, a count or a percentage; the browser would have to be told, and
+   the first client that forgot would render `72095231.5` to an executive. A colour in a contract is a
+   colour nobody can theme.
+4. **Null and failure are different answers.** A provider returning `null` means "no such subject" →
+   404. A provider that *fails* throws → the service reports a **gap** and answers 200. Collapsing
+   them would tell a user that a figure carries no explanation when the truth is that the data could
+   not be reached.
+5. **No new read permission.** The explain route uses `executive-cockpit.view`. A role that could read
+   a number but not its basis would be strictly worse informed than one that could read neither, and
+   no ADMC role wants that.
+6. **The evidence chart appears only where a screen already has one to give it.** UC2's back-test
+   (actual vs fitted) and UC5's additive risk factors, plus UC7's usage history. Everywhere else the
+   section is **absent from the DOM**, and the integration tests assert the null rather than merely
+   not asserting the chart — which is what stops someone helpfully filling it later.
+
+### Honest assumptions, promoted out of hiding
+
+UC6's assumed **SAR 350/hour** labour rate lived in an evidence string in S2, where nobody reads it.
+It is now an `Assumption`, stated in the section a reader goes to for exactly this. UC4 states the
+missing supplier feed in the same place, and carries a `Demo`-kind lineage chip reading "Supplier & PO
+history — not integrated" (V3-CONFLICT-9), so nobody can assume its safety stock accounts for
+supplier reliability. UC3 states that its stockout suspicion is inferred from the absence of sales
+*and* stock, and is not confirmed against a stock-movement history the platform does not hold.
+
+### Frontend
+
+- **`AiLabel`** — all eight labels, text and icon from v3 verbatim, **colour in `components.css`** as
+  `.ai-label--{kind}` rather than inline. The label text is always rendered: never colour alone. An
+  unrecognised key falls back to `recommendation` (v3's behaviour) **and warns in development** — a
+  silent fallback would render a confident "Recommendation" chip on something that is not one.
+- The three hand-rolled `badge badge--demo` spans in `executive-cockpit.tsx` and `decision-log.tsx`
+  (two) now use `<AiLabel kind="demo" />`. Their tests were updated from "Demo data" to v3's exact
+  **"Demo Data"** — the label is the contract, so the test moved, not the label.
+- **`ExplainabilityDrawer`** — v3's eleven sections in v3's order, each a real
+  `<section aria-labelledby>` and each **absent from the DOM** when its data is absent. Built on the
+  shared `Drawer` with a `.drawer--explain` modifier carrying v3's 474px / 94vw, so every other drawer
+  keeps the geometry it was designed at.
+- Drivers are capped at 8 behind a `Show all (n)` disclosure. An unbounded list turns the panel into a
+  scroll trap, and UC5's factor list is already five long before anything is added to it.
+- All six states: loading (the drawer opens *immediately* and fills in), no-recorded-explanation,
+  error with the server's own `detail`, network failure with actionable text, **partial** (what
+  arrived plus what is missing) and permission-denied.
+- Feedback submits with one idempotency key per intent, held in a ref that survives TanStack Query's
+  retry, and **no optimistic update** — the same reasoning S6 recorded.
+
+### The design correction testing surfaced
+
+The shared `Drawer` had **two** defects that only appear when two drawers are open at once, which is
+exactly what the Decision Log now does:
+
+1. **Every drawer attached its own `window` keydown listener**, so one Escape closed *both* — losing
+   the decision the user was reading in order to dismiss the explanation of it. The same applied to
+   Tab: two live focus traps fighting over one keypress, resolved by listener registration order.
+   Fixed with a module-level drawer stack; only the topmost entry acts.
+2. **`onClose` sat in the focus effect's dependency array.** It is almost always an inline arrow, so
+   its identity changes on every parent render — and the effect's teardown *restores focus*. A
+   re-render while the drawer was open therefore yanked focus back to the invoking control and then
+   back into the panel. Invisible with one drawer; with two, it left focus in the wrong panel. Held in
+   a ref now, with the effect depending on `open` alone.
+
+Neither was found by reading the code. The stacked-drawer test found both, and both have regression
+tests: Escape closes only the top, the second Escape closes the one beneath, focus lands **inside**
+the drawer beneath, and Tab stays trapped in the top.
+
+### Tests — 1085 total (was 930)
+
+- **38 backend unit tests added** (259 → 297): the label, lineage and tone maps complete **by
+  reflection** over their enums, with an unmapped value throwing rather than falling back; the eight
+  v3 keys asserted in order; section-presence in both directions; confidence absent surviving the
+  whole pipeline with no band invented; demo-ness stated rather than inferred; tones projected as keys
+  and never as `var(--…)`; invariant money and dates under a comma-decimal culture built by cloning
+  `InvariantCulture`; and the aggregation service with fakes — one claimant answers, a
+  non-claimant is never called, an unknown kind is not a not-found, a throwing provider becomes a
+  **gap** carrying no exception detail, and cancellation propagates rather than being misreported as a
+  data gap.
+- **32 integration tests added** (166 → 198): one per subject kind against the real composition root,
+  each asserting a complete payload, a label from the eight, non-empty lineage and every money value
+  an invariantly-parsable string; the unknown-kind 400 naming all nine registered kinds; the
+  unknown-reference 404; anonymous and wrong-role refusals; **a failing provider yielding a gap and a
+  200 with no exception detail anywhere in the body**; feedback recorded, read back, replayed
+  identically under one key, refused at 422 for a replayed key with a changed verdict, refused for a
+  missing or malformed key, refused unauthenticated **even in the relaxed read posture**, and
+  appending rather than overwriting when someone changes their mind; **no `DELETE` under
+  `/predictions/explain` in the served OpenAPI document**; the sixteenth table created and the fifteen
+  existing ones unchanged; and response-time budgets.
+- **1 architecture test added** (5 → 6): eight providers, each in a module assembly, each getting its
+  contract from `BeeEye.Analytics`.
+- **84 web tests added** (116 → 200): all eight labels with their exact text, modifier class and icon,
+  the unknown-key fallback *and* its warning; every one of the eleven sections asserted **absent**
+  when its data is absent; confidence with and without a percentage and the "Medium" prohibition;
+  drivers capped with a working disclosure; all six states; the feedback round trip including a
+  server 4xx rendered inline and the absence of an optimistic update; the caveat; accessible names on
+  every trigger; focus returning to the invoking button; the stacked-drawer chain; and one wiring case
+  per screen asserting the drawer opens for **that** subject reference — the failure a hand-check
+  never finds is a button wired to the wrong row.
+
+### Explicitly not implemented
+
+- **Live AI narration (V3-PLAT-002, S10).** The drawer renders the deterministic engine's own
+  explanation. The seam is the `IExplainabilityProvider` contract and nothing in this slice crosses
+  it; **no model call ships in S3** (ADR 0006 §2.6, `overview.md` §8 — *GenAI narrates, never
+  decides*).
+- **Self-hosted fonts (V3-DS-003 / V3-CONFLICT-3).** S8.
+- **The historical-evidence chart for UC1, UC3, UC4 and UC6.** Those screens have no chart for the
+  drawer to reuse, and a placeholder would imply evidence that is not being shown.
+- **Feedback influencing anything.** No model consumes the table; the response and the caption both
+  say so, and a test asserts the caption.
+- **Explaining a *tuned* scenario.** UC1 and UC4 explain the default planning scenario. Explaining an
+  analyst's tuned figure needs the scenario inside the subject reference, which is deferred rather
+  than half-done — see the gap below.
+
+### One thing S3 found that was not S3's
+
+`src/web/openapi/openapi.json` — the committed contract snapshot the `openapi` CI job diffs against —
+was **stale by nine routes**. S6 added the whole decision workflow and `GET /identity/me`, and removed
+the Identity module-info route, without re-exporting it. Regenerating for this slice's two new
+endpoints picked all of that up: 47 paths → 57. The snapshot is now current, and the drift gate is
+protecting something again.
+
+### Known gaps
+
+- **Scenario-aware subject references (UC1, UC4, UC7).** The screens let an analyst tune horizon,
+  target cover, service level and review period; the drawer explains the *default* scenario. Where the
+  analyst has changed a control, the explanation is therefore for a neighbouring figure rather than the
+  one on screen. Tracked as tech debt (TD-5) rather than papered over.
+- **UC6/UC7 remain the two slow paths (V3-PERF-001).** Explaining a part goes through the same
+  per-request recomputation the S8 slice exists to fix, so the provider inherits that cost. Both
+  explain endpoints are held to the **same 5 s budget as everything else** rather than given a wider
+  one — a wider budget would hide the fix S8 is supposed to prove.
+- **The "partial" response shape.** Because exactly one provider claims each kind today, the reachable
+  partial state is *gap present, explanation absent*. The contract permits gap-and-explanation
+  together and the drawer renders it; that variant is covered by a component test against a mocked
+  response rather than an integration test, and will become reachable when a kind is served by more
+  than one context.
+- **No visual-regression coverage** (S12), so the 474px geometry and the eleven-section layout are
+  asserted structurally, not pixel-wise.
+
+### Verification
+
+typecheck ✅ · lint ✅ · web build ✅ · **200/200 web** ✅ · **885/885 backend** ✅ · architecture 6/6 ✅ ·
+**`dotnet build` 0 warnings** · the **384 `engine.js` parity tests unchanged and green** — S3 changes
+no formula. Bundle: a shared 23.86 kB explainability chunk (8.40 kB gzip) loaded only by screens that
+use it; the index chunk is unchanged at ~325 kB.
+
+**Next action.** None — slice closed. Scenario-aware references and the UC6/UC7 performance work are
+S8; live narration is S10.
 
 ## S4 — Identity, roles & authorization · **Complete** (backend)
 

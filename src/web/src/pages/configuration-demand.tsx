@@ -5,6 +5,8 @@ import { Card, CardHeader } from '@/components/ui/Card';
 import { FilterSelect } from '@/components/ui/FilterSelect';
 import { LoadingState, ErrorState, EmptyState } from '@/components/ui/states';
 import { BarDistribution } from '@/components/charts/BarDistribution';
+import { ExplainButton, ExplainabilityDrawer } from '@/components/domain/ExplainabilityDrawer';
+import { useExplainabilityDrawer } from '@/components/domain/useExplainabilityDrawer';
 import { useConfigSummary, useConfigs, useConfigFilterOptions, type ConfigQuery } from '@/lib/api/config';
 import { fmtInt, fmtNum, fmtSignPct, rotationClass } from '@/lib/format';
 
@@ -27,6 +29,7 @@ export default function ConfigurationDemand() {
   const options = useConfigFilterOptions();
   const summary = useConfigSummary(filter);
   const list = useConfigs({ ...filter, page, pageSize: PAGE_SIZE, sort });
+  const explain = useExplainabilityDrawer();
 
   const reset = <T,>(setter: (v: T) => void) => (v: T) => {
     setter(v);
@@ -113,6 +116,7 @@ export default function ConfigurationDemand() {
                         <th>Rotation</th>
                         <SortHeader label="Stock" active={sort === 'stock'} onClick={() => sortBy('stock')} />
                         <th>Flags</th>
+                        <th><span className="sr-only">Explanation</span></th>
                       </tr>
                     </thead>
                     <tbody>
@@ -129,6 +133,17 @@ export default function ConfigurationDemand() {
                             {c.stockoutSuspected ? <span className="badge risk-med">stockout?</span> : null}{' '}
                             {c.isColdStart ? <span className="badge">new</span> : null}
                           </td>
+                          <td>
+                            <ExplainButton
+                              label={`${c.model} ${c.variant} ${c.colour}`}
+                              onClick={() =>
+                                explain.open({
+                                  kind: 'configuration',
+                                  ref: `${c.model}|${c.variant}|${c.colour}|${c.interior}`,
+                                })
+                              }
+                            />
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -144,6 +159,8 @@ export default function ConfigurationDemand() {
           </Card>
         </>
       )}
+
+      <ExplainabilityDrawer subject={explain.subject} onClose={explain.close} />
     </>
   );
 }

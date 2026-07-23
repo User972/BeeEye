@@ -4,6 +4,8 @@ import { StatCard } from '@/components/ui/StatCard';
 import { Card, CardHeader } from '@/components/ui/Card';
 import { ScenarioSelect } from '@/components/ui/ScenarioSelect';
 import { LoadingState, ErrorState, EmptyState } from '@/components/ui/states';
+import { ExplainButton, ExplainabilityDrawer } from '@/components/domain/ExplainabilityDrawer';
+import { useExplainabilityDrawer } from '@/components/domain/useExplainabilityDrawer';
 import { useOrderOptimisation, type OrderScenarioQuery } from '@/lib/api/orders';
 import { fmtInt, fmtPct, riskWordClass } from '@/lib/format';
 
@@ -20,6 +22,7 @@ export default function OrderOptimisation() {
     orderMultiple: Number(multiple),
   };
   const orders = useOrderOptimisation(query);
+  const explain = useExplainabilityDrawer();
 
   return (
     <>
@@ -71,6 +74,7 @@ export default function OrderOptimisation() {
                     <th>Understock</th>
                     <th>Confidence</th>
                     <th className="num">WMAPE</th>
+                    <th><span className="sr-only">Explanation</span></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -85,6 +89,14 @@ export default function OrderOptimisation() {
                       <td><span className={`badge ${riskWordClass(r.understockRisk)}`}>{r.understockRisk}</span></td>
                       <td>{r.confidence}</td>
                       <td className="num">{fmtPct(r.wmape)}</td>
+                      <td>
+                        <ExplainButton
+                          label={`${r.model} ${r.variant}`}
+                          onClick={() =>
+                            explain.open({ kind: 'order-configuration', ref: `${r.model}|${r.variant}` })
+                          }
+                        />
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -93,6 +105,8 @@ export default function OrderOptimisation() {
           </Card>
         </>
       )}
+
+      <ExplainabilityDrawer subject={explain.subject} onClose={explain.close} />
     </>
   );
 }

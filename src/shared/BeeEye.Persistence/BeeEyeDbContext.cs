@@ -29,6 +29,10 @@ public class BeeEyeDbContext(DbContextOptions<BeeEyeDbContext> options) : DbCont
     public DbSet<ApprovalStep> ApprovalSteps => Set<ApprovalStep>();
     public DbSet<ActionOutcome> ActionOutcomes => Set<ActionOutcome>();
 
+    // What readers thought of an explanation (S3). Append-only, and it retrains nothing — no model
+    // consumes this table, and the endpoint and the drawer both say so.
+    public DbSet<ExplainabilityFeedback> ExplainabilityFeedback => Set<ExplainabilityFeedback>();
+
     // Honoured Idempotency-Keys (ADR 0007 §2.1), written in the same transaction as the effect.
     public DbSet<IdempotencyRecord> IdempotencyRecords => Set<IdempotencyRecord>();
 

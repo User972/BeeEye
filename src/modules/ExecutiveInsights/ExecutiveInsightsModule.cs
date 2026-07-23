@@ -1,3 +1,4 @@
+using BeeEye.Analytics.Explainability;
 using BeeEye.Modules.ExecutiveInsights.Application;
 using BeeEye.Modules.ExecutiveInsights.Contracts;
 using BeeEye.Shared.Api;
@@ -24,6 +25,9 @@ public sealed class ExecutiveInsightsModule : IModule
     public void RegisterServices(IServiceCollection services, IConfiguration configuration)
     {
         services.AddScoped<DecisionFeedService>();
+
+        // Explains a cockpit decision and the monthly brief itself for the drawer (S3).
+        services.AddScoped<IExplainabilityProvider, CockpitExplainabilityProvider>();
     }
 
     public void MapEndpoints(IEndpointRouteBuilder endpoints)

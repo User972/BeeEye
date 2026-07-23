@@ -78,6 +78,66 @@ function respondWith(body: DecisionFeedResponse) {
   );
 }
 
+/**
+ * Answers the feed and, separately, the explainability endpoint — the cockpit's two reads once the
+ * drawer is wired (V3-UC0x-002).
+ */
+function respondWithFeedAndExplanation(body: DecisionFeedResponse, explanationTitle: string) {
+  fetchMock.mockImplementation((input: string) => {
+    const url = String(input);
+
+    if (url.includes('/predictions/explain')) {
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({
+            subjectKind: url.includes('kind=brief') ? 'brief' : 'decision',
+            subjectRef: 'x',
+            explanation: {
+              title: explanationTitle,
+              module: 'Decision Cockpit',
+              label: 'calculated',
+              recommendation: null,
+              impacts: [],
+              confidence: null,
+              drivers: [],
+              evidence: null,
+              assumptions: [],
+              lineage: [{ label: 'Sales & inventory workbooks', kind: 'workbook' }],
+              model: null,
+              ownership: null,
+              isDemoData: false,
+            },
+            gaps: [],
+            feedback: [],
+            feedbackCaveat: 'Recorded in this analytics platform only.',
+            generatedAtUtc: '2026-07-24T09:00:00Z',
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        ),
+      );
+    }
+
+    if (url.includes('/identity/me')) {
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({
+            isAuthenticated: true,
+            subjectId: 'exec-1',
+            displayName: 'An Executive',
+            roles: ['Executive'],
+            permissions: ['recommendation.review', 'explanation-feedback.submit'],
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        ),
+      );
+    }
+
+    return Promise.resolve(
+      new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } }),
+    );
+  });
+}
+
 function respondWithError(status = 500) {
   fetchMock.mockResolvedValue(
     new Response(JSON.stringify({ title: 'Server error', status }), {
@@ -251,7 +311,7 @@ describe('Decision Cockpit — synthetic data disclosure (V3-DS-002)', () => {
     respondWith(feed({ decisions: [decision({ isDemo: true })] }));
     renderCockpit();
 
-    expect(await screen.findByText('Demo data')).toBeInTheDocument();
+    expect(await screen.findByText('Demo Data')).toBeInTheDocument();
   });
 
   it('does not label decisions computed from the real dataset', async () => {
@@ -259,7 +319,7 @@ describe('Decision Cockpit — synthetic data disclosure (V3-DS-002)', () => {
     renderCockpit();
 
     await screen.findByText(/Redistribute aging inventory/);
-    expect(screen.queryByText('Demo data')).not.toBeInTheDocument();
+    expect(screen.queryByText('Demo Data')).not.toBeInTheDocument();
   });
 });
 
@@ -330,5 +390,29 @@ describe('Decision Cockpit — partial-failure state (V3-UC08-004)', () => {
 
     await screen.findByText(/Redistribute aging inventory/);
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+});
+
+describe('Decision Cockpit — explainability (V3-UC0x-002)', () => {
+  it('explains a single decision card, and the brief itself', async () => {
+    respondWithFeedAndExplanation(feed(), 'How this monthly brief was generated');
+    renderCockpit();
+
+    // v3's ckExplainSummary — the brief is itself a thing that needs explaining.
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: /why this recommendation\? how this monthly brief was generated/i,
+      }),
+    );
+
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    expect(await screen.findByText('How this monthly brief was generated')).toBeInTheDocument();
+
+    // And each ranked decision carries its own trigger, named for that decision.
+    expect(
+      screen.getByRole('button', {
+        name: /why this recommendation\? redistribute aging inventory — es 350 zx/i,
+      }),
+    ).toBeInTheDocument();
   });
 });

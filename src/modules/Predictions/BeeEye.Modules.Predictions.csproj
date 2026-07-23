@@ -10,6 +10,11 @@
 
   <ItemGroup>
     <ProjectReference Include="../../shared/BeeEye.Shared.Web/BeeEye.Shared.Web.csproj" />
+    <!-- The IExplainabilityProvider contract. Every context implements it; this module only
+         aggregates, which is exactly what keeps it from referencing any of them. -->
+    <ProjectReference Include="../../shared/BeeEye.Analytics/BeeEye.Analytics.csproj" />
+    <!-- Explainability feedback is a write, so this module owns an entity and a service over it. -->
+    <ProjectReference Include="../../shared/BeeEye.Persistence/BeeEye.Persistence.csproj" />
   </ItemGroup>
 
 </Project>

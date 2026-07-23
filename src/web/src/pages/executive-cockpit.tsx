@@ -3,7 +3,10 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { StatCard } from '@/components/ui/StatCard';
 import { Card, CardHeader } from '@/components/ui/Card';
 import { Icon } from '@/components/ui/Icon';
+import { AiLabel } from '@/components/ui/AiLabel';
 import { LoadingState, ErrorState, EmptyState } from '@/components/ui/states';
+import { ExplainButton, ExplainabilityDrawer } from '@/components/domain/ExplainabilityDrawer';
+import { useExplainabilityDrawer } from '@/components/domain/useExplainabilityDrawer';
 import { useDecisionFeed } from '@/lib/api/executive';
 import type { Decision, DecisionSeverity } from '@/lib/api/executive';
 import { ApiError } from '@/lib/api/client';
@@ -40,7 +43,7 @@ const severityLabel: Record<DecisionSeverity, string> = {
   Low: 'Monitor',
 };
 
-function DecisionCard({ decision }: { decision: Decision }) {
+function DecisionCard({ decision, onExplain }: { decision: Decision; onExplain: () => void }) {
   const target = navItemById(decision.screen);
 
   return (
@@ -51,12 +54,7 @@ function DecisionCard({ decision }: { decision: Decision }) {
           {severityLabel[decision.severity]}
         </span>
         <span className="badge">{decision.area}</span>
-        {decision.isDemo ? (
-          <span className="badge badge--demo" title="Derived from synthetic demo data, not Oracle Fusion">
-            <Icon name="biotech" />
-            Demo data
-          </span>
-        ) : null}
+        {decision.isDemo ? <AiLabel kind="demo" /> : null}
         <span className="decision-card__priority" title="Priority: impact × urgency × confidence × controllability">
           <span className="decision-card__priority-value">{decision.priority}</span>
           <span className="decision-card__priority-label">priority</span>
@@ -106,6 +104,7 @@ function DecisionCard({ decision }: { decision: Decision }) {
 
       <div className="decision-card__foot">
         <span className="decision-card__evidence">{decision.evidence}</span>
+        <ExplainButton label={decision.title} onClick={onExplain} />
         {target ? (
           <Link to={target.path} className="decision-card__link">
             Open {target.label}
@@ -121,6 +120,7 @@ function DecisionCard({ decision }: { decision: Decision }) {
  *  ranked across every intelligence module. */
 export default function ExecutiveCockpit() {
   const { data, isLoading, isError, error, refetch } = useDecisionFeed();
+  const explain = useExplainabilityDrawer();
 
   const summary = data?.summary;
 
@@ -174,6 +174,14 @@ export default function ExecutiveCockpit() {
         <CardHeader
           title="Decisions needing attention"
           subtitle={data ? data.narrative : 'Ranked by impact, urgency, confidence and controllability'}
+          action={
+            // v3's ckExplainSummary: the brief itself is a thing that needs explaining, and it is
+            // the one subject where a failure elsewhere changes the answer.
+            <ExplainButton
+              label="How this monthly brief was generated"
+              onClick={() => explain.open({ kind: 'brief', ref: 'current' })}
+            />
+          }
         />
 
         {isLoading ? (
@@ -193,7 +201,11 @@ export default function ExecutiveCockpit() {
         ) : (
           <div className="decision-list">
             {data.decisions.map((d) => (
-              <DecisionCard key={d.id} decision={d} />
+              <DecisionCard
+                key={d.id}
+                decision={d}
+                onExplain={() => explain.open({ kind: 'decision', ref: d.id })}
+              />
             ))}
           </div>
         )}
@@ -214,6 +226,8 @@ export default function ExecutiveCockpit() {
           </div>
         ) : null}
       </Card>
+
+      <ExplainabilityDrawer subject={explain.subject} onClose={explain.close} />
     </>
   );
 }

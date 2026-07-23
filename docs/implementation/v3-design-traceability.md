@@ -11,8 +11,8 @@
 
 | Status | Count |
 |--------|-------|
-| Implemented | 34 |
-| Planned | 14 |
+| Implemented | 37 |
+| Planned | 11 |
 | Deferred | 4 |
 | Rejected | 2 |
 | Blocked | 1 |
@@ -36,12 +36,12 @@
 | ID | V3 source | Requirement | Existing | Change category | Priority | Cx | Slice | Status | Tests |
 |----|-----------|-------------|----------|-----------------|----------|----|----|--------|-------|
 | V3-DS-001 | `:root` token block | OKLCH token set, light + dark | `styles/tokens.css` | Unchanged | — | — | — | **Implemented** (verified identical) | N/A |
-| V3-DS-002 | `LABELS` engine2 L28 | Eight AI-output label chips (Observed · Calculated · Forecast · Recommendation · Simulation · Demo Data · Low Confidence · **Data Quality**) with exact colour/icon | — | New component | P1 | S | S3 | Planned | None |
+| V3-DS-002 | `LABELS` engine2 L28 | Eight AI-output label chips (Observed · Calculated · Forecast · Recommendation · Simulation · Demo Data · Low Confidence · **Data Quality**) with exact colour/icon | `ui/AiLabel.tsx` + `ui/aiLabels.ts`; colours in `components.css` | New component | P1 | S | S3 | **Implemented** — all eight; the three hand-rolled `badge--demo` spans migrated onto it | Covered (31 component) |
 | V3-DS-003 | fonts via Google CDN | Self-host IBM Plex Sans/Mono + Material Symbols (OFL-1.1 permits redistribution) rather than CDN | CDN today | Security impact (CSP) | P2 | S | S8 | Planned | None |
 | V3-DS-004 | `accent` prop | Accent variants (blue/teal/indigo) | — | Cosmetic | P3 | S | S9 | Deferred | None |
 | V3-DS-005 | `density` prop | Density variants (comfortable/compact) | — | Cosmetic | P3 | S | S9 | Deferred | None |
-| V3-DS-006 | drawer L1710 | Shared explainability drawer: 474px, 11 sections, footer workflow actions | `ui/Drawer.tsx` (basic) | New component | P1 | L | S3 | Planned | None |
-| V3-DS-007 | — | Focus trap + focus restoration in the shared `Drawer` primitive (**absent in both v3 and the app**) | `ui/Drawer.tsx` | Accessibility impact | P1 | S | S3 | **Implemented** (brought forward into S6 — the Decision Log's detail drawer needed it) | Covered (1 component test) |
+| V3-DS-006 | drawer L1710 | Shared explainability drawer: 474px, 11 sections, footer workflow actions | `domain/ExplainabilityDrawer.tsx` on the shared `ui/Drawer`; `GET /api/v1/predictions/explain` behind `IExplainabilityProvider` | New component | P1 | L | S3 | **Implemented** | Covered (44 component + 32 integration + 38 unit) |
+| V3-DS-007 | — | Focus trap + focus restoration in the shared `Drawer` primitive (**absent in both v3 and the app**) | `ui/Drawer.tsx` | Accessibility impact | P1 | S | S3 | **Implemented** (brought forward into S6; S3 added the drawer **stack** so Escape and Tab reach only the topmost, and fixed an effect-churn defect that reset focus on every parent render) | Covered (6 component tests) |
 | V3-DS-008 | banners | Demo-data disclosure banner | `domain/SyntheticBanner.tsx` | Unchanged | — | — | — | **Implemented** (pre-existing) | Covered (1 test) |
 
 ## C. Executive Decision Cockpit — UC8 (`V3-UC08-*`)
@@ -119,7 +119,7 @@
 | V3-UC05-001 | UC5 | Inventory Aging & Overstock aligned to v3 | `pages/inventory-intelligence.tsx` (live) | Layout change | P2 | M | S8 | Planned | Partial |
 | V3-UC06-001 | UC6 | Sales ↔ Service Correlation aligned to v3 | `pages/after-sales.tsx` (live) | Layout change | P2 | M | S8 | Planned | Partial |
 | V3-UC07-001 | UC7 | Spare Parts Prediction aligned to v3 | `pages/spare-parts.tsx` (live) | Layout change | P2 | M | S8 | Planned | Partial |
-| V3-UC0x-002 | all | Explainability drawer wired into each intelligence screen | — | New interaction | P1 | L | S3 | Planned | None |
+| V3-UC0x-002 | all | Explainability drawer wired into each intelligence screen | All seven intelligence screens + the cockpit + the Decision Log | New interaction | P1 | L | S3 | **Implemented** (9 of 9 screens) | Covered (7 wiring + 1 cockpit + 1 Decision Log) |
 | V3-PERF-001 | UC6/UC7 | Fix per-request recomputation: `after-sales/service-intensity/summary` is 669 ms **warm** for a 479-byte payload | `AfterSalesReadService` | Performance impact | P1 | M | S8 | Planned | None |
 
 ## I. Quality gates (`V3-QA-*`)
@@ -146,7 +146,7 @@
 | **V3-CONFLICT-5** ✅ *resolved in S4/S6* | all | v3 has **no auth**, yet its Decision Log records an `owner` and ADR-0006 requires a named `decided_by` | Sequence identity (S4) **before** human decisions (S6). The system-generated recommendation layer (S5) needs no identity and can land first | Unattributable decisions — fails the ADR's core liability requirement |
 | **V3-CONFLICT-6** ✅ *resolved in S6* | Decision Log | v3 internal inconsistency: `addAction()` defaults `status: "Proposed"`, absent from its own 9-status list | Use ADR-0006's `Generated` as the initial state; do not reproduce the bug | Records invisible to their own filters |
 | **V3-CONFLICT-7** | all | v3 is **desktop-only** — no nav breakpoints, no mobile pattern | Define responsive behaviour independently (done in S1) | Unusable on tablet/mobile |
-| **V3-CONFLICT-8** | labels | `README.md` documents **7** AI labels; `LABELS` defines **8** (omits `Data Quality`) | Implement all 8 from code, the source of truth | Missing a status treatment |
+| **V3-CONFLICT-8** ✅ *resolved in S3* | labels | `README.md` documents **7** AI labels; `LABELS` defines **8** (omits `Data Quality`) | Implement all 8 from code, the source of truth | Missing a status treatment |
 | **V3-CONFLICT-9** | Decision Cockpit | v3's **D-SUP-1** (supplier delay exposure) is computed entirely from `engine2.js`'s synthetic `SUPPLIERS` / `supplierPerf` / `procurement()` fixtures. The database has **no supplier, purchase-order or delivery-performance entity** — `InventoryItem.LeadTimeDays` is the only related field, and it carries no supplier identity or on-time history | **Do not implement the rule.** Fabricating supplier performance to fill a cockpit tile would put invented figures in front of executives as if they were measured. The remaining five rules ship; D-SUP-1 is tracked as V3-UC08-008 and unblocks once real Fusion Procurement data is integrated | **Medium if ignored** — a plausible-looking but fabricated supplier decision is worse than an absent one |
 
 ---
@@ -158,7 +158,7 @@
 | **S0** | **Dependency & warning hygiene** | V3-QA-005/006 | **Complete** |
 | **S1** | **Shell & grouped navigation** | V3-NAV-001/002/003 | **Complete** |
 | **S2** | **UC8 Decision Cockpit** | V3-UC08-001…007, 009 | **Complete** (V3-UC08-008 blocked on data) |
-| S3 | Explainability drawer + label system | V3-DS-002/006/007, V3-UC0x-002 | Planned |
+| **S3** | **Explainability drawer + label system** | V3-DS-002/006/007, V3-UC0x-002 | **Complete** |
 | **S4** | **Identity, roles & authorization** | V3-AUTH-001/002/003/004 | **Complete** (backend; SPA sign-in outstanding) |
 | **S5** | **Recommendation records & write path** | V3-GOV-002/003/005/011/012, V3-API-001/002/003 | **Complete** |
 | **S6** | **Decision Log & human decisions** | V3-GOV-001/004/006/007, V3-API-002/005, V3-AUTH-004, V3-DS-007, V3-PLAT-007 | **Complete** |

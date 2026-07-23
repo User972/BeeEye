@@ -52,6 +52,18 @@ public static class Permissions
     /// </summary>
     public const string DecisionOutcomeRecord = "decision-outcome.record";
 
+    /// <summary>
+    /// Record a verdict on an explanation ("Was this useful?", V3-DS-006).
+    /// <para>
+    /// State-changing, because it writes an attributed, append-only row — so it is enforced in every
+    /// environment and can never be declared as a read. Deliberately <b>not</b> part of an
+    /// author/approve pair: an opinion about whether an explanation was clear is not an approval of
+    /// anything, it retrains nothing, and requiring separation of duties to say "this was confusing"
+    /// would simply mean nobody ever says it.
+    /// </para>
+    /// </summary>
+    public const string ExplanationFeedbackSubmit = "explanation-feedback.submit";
+
     // ---- Procurement (UC4) -----------------------------------------------
     public const string ProcurementView = "procurement.view";
     public const string ProcurementPropose = "procurement.propose";
@@ -86,6 +98,7 @@ public static class Permissions
         ForecastView, ForecastRun, ForecastManage, ForecastApprove,
         InventoryRiskView, InventoryRiskConfigure,
         RecommendationReview, RecommendationGenerate, RecommendationApprove, DecisionOutcomeRecord,
+        ExplanationFeedbackSubmit,
         ProcurementView, ProcurementPropose, ProcurementApprove,
         SalesActualsView,
         AfterSalesView, SparePartsView,
@@ -103,6 +116,7 @@ public static class Permissions
         ForecastRun, ForecastManage, ForecastApprove,
         InventoryRiskConfigure,
         RecommendationGenerate, RecommendationApprove, DecisionOutcomeRecord,
+        ExplanationFeedbackSubmit,
         ProcurementPropose, ProcurementApprove,
         ModelPublish,
         DataQualityResolve,

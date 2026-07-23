@@ -195,6 +195,34 @@ function serve(routes: Routes) {
       return Promise.resolve(json(routes.identity ?? approver));
     }
 
+    if (url.includes('/predictions/explain')) {
+      return Promise.resolve(
+        json({
+          subjectKind: 'decision',
+          subjectRef: 'D-INV-1',
+          explanation: {
+            title: 'Redistribute aging inventory — ES 350 ZX',
+            module: 'Decision Cockpit · Inventory',
+            label: 'recommendation',
+            recommendation: null,
+            impacts: [],
+            confidence: null,
+            drivers: [],
+            evidence: null,
+            assumptions: [],
+            lineage: [{ label: 'Inventory workbook', kind: 'workbook' }],
+            model: null,
+            ownership: null,
+            isDemoData: false,
+          },
+          gaps: [],
+          feedback: [],
+          feedbackCaveat: 'Recorded in this analytics platform only.',
+          generatedAtUtc: '2026-07-24T09:00:00Z',
+        }),
+      );
+    }
+
     if (/\/decisions\/[0-9a-f-]{36}/.test(url)) {
       return Promise.resolve(json(routes.detail ?? detail()));
     }
@@ -294,7 +322,7 @@ describe('Decision Log — rows and chips (V3-GOV-001)', () => {
     serve({ log: page({ items: [item({ isDemoData: true })] }) });
     renderLog();
 
-    expect(await screen.findByText('Demo data')).toBeInTheDocument();
+    expect(await screen.findByText('Demo Data')).toBeInTheDocument();
   });
 
   it('has no delete control anywhere on the screen', async () => {
@@ -652,6 +680,30 @@ describe('Decision Log — detail drawer', () => {
     expect(within(dialog).getByText(/Riyadh holds units the risk model/)).toBeInTheDocument();
     expect(within(dialog).getByText(/Ruleset v1 · dataset workbook-2026-06/)).toBeInTheDocument();
     expect(within(dialog).getByText(/proposed_qty: 40 → 30/)).toBeInTheDocument();
+  });
+
+  it('explains the frozen recommendation in a drawer stacked over this one (V3-UC0x-002)', async () => {
+    serve({ log: page(), detail: detail() });
+    renderLog();
+
+    fireEvent.click(await screen.findByRole('button', { name: /open evidence/i }));
+    const dialog = await screen.findByRole('dialog');
+
+    fireEvent.click(
+      await within(dialog).findByRole('button', {
+        name: /why this recommendation\? es 350 zx · pearl white/i,
+      }),
+    );
+
+    // Two drawers, the explanation on top. Escape closes only it, leaving the decision the user was
+    // reading exactly where it was — the whole point of the drawer stack.
+    await waitFor(() => expect(screen.getAllByRole('dialog')).toHaveLength(2));
+    expect(await screen.findByText('Redistribute aging inventory — ES 350 ZX')).toBeInTheDocument();
+
+    fireEvent.keyDown(window, { key: 'Escape' });
+
+    await waitFor(() => expect(screen.getAllByRole('dialog')).toHaveLength(1));
+    expect(within(screen.getByRole('dialog')).getByText('What the system recommended')).toBeInTheDocument();
   });
 
   it('shows the full status-event timeline', async () => {

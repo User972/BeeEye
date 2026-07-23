@@ -110,3 +110,36 @@ records written before the column existed.
 ### Action when triggered
 *Trigger:* when the first consequential action outside the recommendation lifecycle ships, or when
 internal audit asks for a single trail spanning contexts.
+
+---
+
+## TD-5 — An explanation explains the default scenario, not the one on screen
+
+**Status:** pending — introduced knowingly in S3, and stated in the drawer rather than hidden.
+
+### Current state
+- `GET /api/v1/predictions/explain?kind=&ref=` identifies a subject by **kind and reference only**.
+  For UC1, UC4 and UC7 the figure on screen also depends on a *scenario* the analyst controls —
+  horizon and target cover, service level and review period.
+- The providers therefore run the **default** scenario. Where an analyst has changed a control, the
+  drawer explains a neighbouring figure rather than the exact one they are looking at.
+- The gap is disclosed, not concealed: each of those explanations carries an assumption naming the
+  scenario it used and stating that it is the default rather than a tuned one.
+
+### Why it was accepted
+Encoding a scenario in the subject reference is easy to do badly. `"ES 350|ZX|h=3|c=1|moq=0|mult=1"`
+turns an opaque identifier into a second, undocumented query language, and every screen that forgets
+a parameter produces an explanation that is confidently wrong rather than honestly approximate. The
+cheap version was rejected in favour of stating the limitation.
+
+### Target
+- A scenario travels as its own query parameters on the explain route, mirroring the parameters the
+  owning screen already sends to its own endpoint, so the drawer and the screen compute from the same
+  inputs by construction.
+
+### Action when triggered
+*Trigger:* when an analyst reports that the drawer's numbers disagree with the screen's, or when the
+first scenario-dependent recommendation is persisted as a decision record.
+
+The change is additive — a provider that ignores the extra parameters keeps working — and belongs
+with the providers, which already own what their scenario means.

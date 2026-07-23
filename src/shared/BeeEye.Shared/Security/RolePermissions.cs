@@ -47,6 +47,9 @@ public static class RolePermissions
                 Permissions.RecommendationReview,
                 Permissions.RecommendationApprove,
                 Permissions.DecisionOutcomeRecord,
+                // Saying "this explanation was confusing" is an opinion, not an approval, so both
+                // business roles hold it without breaching the author/approve separation below.
+                Permissions.ExplanationFeedbackSubmit,
                 Permissions.ProcurementView,
                 Permissions.ProcurementApprove,
                 Permissions.SalesActualsView,
@@ -69,6 +72,7 @@ public static class RolePermissions
                 // Measuring a realised outcome is observation, not approval, so the Analyst holding
                 // it does not breach the author/approve separation asserted below.
                 Permissions.DecisionOutcomeRecord,
+                Permissions.ExplanationFeedbackSubmit,
                 Permissions.ProcurementView,
                 Permissions.ProcurementPropose,
                 Permissions.SalesActualsView,

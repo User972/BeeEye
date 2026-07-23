@@ -5,6 +5,8 @@ import { Card, CardHeader } from '@/components/ui/Card';
 import { FilterSelect } from '@/components/ui/FilterSelect';
 import { LoadingState, ErrorState, EmptyState } from '@/components/ui/states';
 import { ForecastChart } from '@/components/charts/ForecastChart';
+import { ExplainButton, ExplainabilityDrawer } from '@/components/domain/ExplainabilityDrawer';
+import { useExplainabilityDrawer } from '@/components/domain/useExplainabilityDrawer';
 import {
   useForecast,
   useAccuracyBy,
@@ -27,6 +29,7 @@ export default function SalesForecasting() {
   const [ci, setCi] = useState('80');
 
   const options = useForecastFilterOptions();
+  const explain = useExplainabilityDrawer();
 
   const base = {
     ...(model ? { model: [model] } : {}),
@@ -95,7 +98,18 @@ export default function SalesForecasting() {
           <div style={{ height: 'var(--gap)' }} />
 
           <Card>
-            <CardHeader title="Demand forecast" subtitle={`${f.totalN} months history · ${f.horizon}-month projection · ${effectiveCi}% confidence`} />
+            <CardHeader
+              title="Demand forecast"
+              subtitle={`${f.totalN} months history · ${f.horizon}-month projection · ${effectiveCi}% confidence`}
+              action={
+                // The scope, not a row: UC2 forecasts whatever the filters currently select, and
+                // "|" is the unfiltered total business.
+                <ExplainButton
+                  label={model || location ? [location, model].filter(Boolean).join(' · ') : 'total business'}
+                  onClick={() => explain.open({ kind: 'forecast-scope', ref: `${model}|${location}` })}
+                />
+              }
+            />
             <ForecastChart history={f.history} backtest={f.backtest} future={f.future} />
           </Card>
 
@@ -166,6 +180,8 @@ export default function SalesForecasting() {
           </Card>
         </>
       )}
+
+      <ExplainabilityDrawer subject={explain.subject} onClose={explain.close} />
     </>
   );
 }

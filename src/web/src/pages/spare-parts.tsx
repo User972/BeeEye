@@ -3,6 +3,8 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { StatCard } from '@/components/ui/StatCard';
 import { Card, CardHeader } from '@/components/ui/Card';
 import { Drawer } from '@/components/ui/Drawer';
+import { ExplainButton, ExplainabilityDrawer } from '@/components/domain/ExplainabilityDrawer';
+import { useExplainabilityDrawer } from '@/components/domain/useExplainabilityDrawer';
 import { FilterSelect } from '@/components/ui/FilterSelect';
 import { ScenarioSelect } from '@/components/ui/ScenarioSelect';
 import { LoadingState, ErrorState, EmptyState } from '@/components/ui/states';
@@ -50,6 +52,7 @@ export default function SparePartsPage() {
   };
   const list = useSpareParts(listQuery);
   const detail = useSparePart(selected, scenario);
+  const explain = useExplainabilityDrawer();
 
   const reset = <T,>(setter: (v: T) => void) => (v: T) => {
     setter(v);
@@ -210,9 +213,17 @@ export default function SparePartsPage() {
         ) : detail.isError || !detail.data ? (
           <ErrorState title="Could not load part" />
         ) : (
-          <PartDetail data={detail.data} />
+          <>
+            <ExplainButton
+              label={`${detail.data.national.partNumber} ${detail.data.national.name}`}
+              onClick={() => explain.open({ kind: 'part', ref: detail.data.national.partNumber })}
+            />
+            <PartDetail data={detail.data} />
+          </>
         )}
       </Drawer>
+
+      <ExplainabilityDrawer subject={explain.subject} onClose={explain.close} />
     </>
   );
 }

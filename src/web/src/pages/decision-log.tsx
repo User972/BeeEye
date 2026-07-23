@@ -2,7 +2,10 @@ import { useMemo, useState } from 'react';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { Icon } from '@/components/ui/Icon';
+import { AiLabel } from '@/components/ui/AiLabel';
 import { Drawer } from '@/components/ui/Drawer';
+import { ExplainButton, ExplainabilityDrawer } from '@/components/domain/ExplainabilityDrawer';
+import { useExplainabilityDrawer } from '@/components/domain/useExplainabilityDrawer';
 import { LoadingState, ErrorState, EmptyState } from '@/components/ui/states';
 import { ApiError, apiErrorMessage } from '@/lib/api/client';
 import { permissions, useCurrentUser, useHasPermission } from '@/lib/api/identity';
@@ -329,12 +332,7 @@ function DecisionRow({
         <span className="dl-row__id">{item.ruleId}</span>
         <span className="dl-row__title">{item.subjectRef}</span>
         <span className="dl-row__pill">{item.area}</span>
-        {item.isDemoData ? (
-          <span className="badge badge--demo" title="Derived from synthetic demo data, not Oracle Fusion">
-            <Icon name="biotech" />
-            Demo data
-          </span>
-        ) : null}
+        {item.isDemoData ? <AiLabel kind="demo" /> : null}
       </div>
 
       {item.evidence ? (
@@ -412,7 +410,7 @@ function DecisionRow({
 // Detail drawer — the frozen original beside the human decision
 // ---------------------------------------------------------------------------
 
-function DetailPanel({ detail }: { detail: DecisionDetail }) {
+function DetailPanel({ detail, onExplain }: { detail: DecisionDetail; onExplain: () => void }) {
   const { recommendation: r, decision, approvalSteps, statusEvents, outcome } = detail;
 
   return (
@@ -422,12 +420,11 @@ function DetailPanel({ detail }: { detail: DecisionDetail }) {
           What the system recommended
         </h3>
 
-        {r.isDemoData ? (
-          <p className="badge badge--demo">
-            <Icon name="biotech" />
-            Derived from synthetic demo data, not Oracle Fusion
-          </p>
-        ) : null}
+        {r.isDemoData ? <AiLabel kind="demo" /> : null}
+
+        {/* Opens over this drawer, which is what the drawer stack exists for: Escape closes the
+            explanation and leaves the decision the user was reading exactly where it was. */}
+        <ExplainButton label={r.subjectRef} onClick={onExplain} />
 
         <dl className="dl-detail__list">
           <dt>Action</dt>
@@ -554,6 +551,7 @@ export default function DecisionLog() {
   const [status, setStatus] = useState<RecommendationStatus | null>(null);
   const [openForm, setOpenForm] = useState<{ id: string; action: DecisionAction } | null>(null);
   const [detailFor, setDetailFor] = useState<DecisionLogItem | null>(null);
+  const explain = useExplainabilityDrawer();
   const [rowMessage, setRowMessage] = useState<Record<string, string>>({});
   const [rowError, setRowError] = useState<Record<string, string>>({});
   const [bulkMessage, setBulkMessage] = useState<string | null>(null);
@@ -834,9 +832,14 @@ export default function DecisionLog() {
         ) : detail.isError || !detail.data ? (
           <ErrorState title="Could not load this decision" message={apiErrorMessage(detail.error)} />
         ) : (
-          <DetailPanel detail={detail.data} />
+          <DetailPanel
+            detail={detail.data}
+            onExplain={() => explain.open({ kind: 'decision', ref: detail.data.recommendation.ruleId })}
+          />
         )}
       </Drawer>
+
+      <ExplainabilityDrawer subject={explain.subject} onClose={explain.close} />
     </>
   );
 }

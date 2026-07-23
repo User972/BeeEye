@@ -58,6 +58,7 @@ public sealed class PermissionModelTests
     [InlineData(Permissions.ForecastApprove)]
     [InlineData(Permissions.InventoryRiskConfigure)]
     [InlineData(Permissions.DecisionOutcomeRecord)]
+    [InlineData(Permissions.ExplanationFeedbackSubmit)]
     public void Permissions_that_change_state_or_approve_are_marked_state_changing(string permission)
     {
         Assert.True(
@@ -206,6 +207,42 @@ public sealed class PermissionModelTests
     }
 
     [Fact]
+    public void Submitting_explanation_feedback_is_open_to_both_business_roles_and_is_not_an_approval()
+    {
+        // An opinion about whether an explanation was clear is not an approval of anything, and it
+        // retrains nothing. Requiring segregation of duties to say "this was confusing" would simply
+        // mean nobody ever says it — so both business roles hold it, and it is deliberately absent
+        // from AuthorApprovePairs.
+        Assert.True(RolePermissions.Grants([PlatformRoles.Executive], Permissions.ExplanationFeedbackSubmit));
+        Assert.True(RolePermissions.Grants([PlatformRoles.Analyst], Permissions.ExplanationFeedbackSubmit));
+        Assert.False(RolePermissions.Grants([PlatformRoles.ItAdmin], Permissions.ExplanationFeedbackSubmit));
+
+        Assert.DoesNotContain(
+            RolePermissions.AuthorApprovePairs,
+            pair => pair.Author == Permissions.ExplanationFeedbackSubmit
+                    || pair.Approver == Permissions.ExplanationFeedbackSubmit);
+    }
+
+    [Fact]
+    public void The_feedback_permission_did_not_break_the_author_approve_separation()
+    {
+        // Re-asserted after adding a second permission both business roles hold. The property that
+        // matters is not "no shared permissions" but "no role holds both sides of any pair", and it
+        // is restated over *every* pair rather than the one that happens to be topical.
+        foreach (var role in PlatformRoles.All)
+        {
+            var permissions = RolePermissions.ForRole(role);
+
+            foreach (var (author, approver) in RolePermissions.AuthorApprovePairs)
+            {
+                Assert.False(
+                    permissions.Contains(author) && permissions.Contains(approver),
+                    $"{role} holds both sides of the {author} / {approver} pair");
+            }
+        }
+    }
+
+    [Fact]
     public void Approval_permissions_belong_to_the_executive_alone()
     {
         Assert.True(RolePermissions.Grants([PlatformRoles.Executive], Permissions.RecommendationApprove));
@@ -273,6 +310,9 @@ public sealed class PermissionModelTests
     [InlineData(PlatformRoles.ItAdmin, Permissions.ExecutiveCockpitView, false)]
     [InlineData(PlatformRoles.ItAdmin, Permissions.ForecastView, false)]
     [InlineData(PlatformRoles.ItAdmin, Permissions.ProcurementPropose, false)]
+    [InlineData(PlatformRoles.ItAdmin, Permissions.ExplanationFeedbackSubmit, false)]
+    [InlineData(PlatformRoles.Executive, Permissions.ExplanationFeedbackSubmit, true)]
+    [InlineData(PlatformRoles.Analyst, Permissions.ExplanationFeedbackSubmit, true)]
     public void Role_mapping_matches_the_threat_model(string role, string permission, bool granted)
     {
         Assert.Equal(granted, RolePermissions.Grants([role], permission));

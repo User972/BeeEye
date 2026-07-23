@@ -1,4 +1,5 @@
 using BeeEye.Analytics.Decisions;
+using BeeEye.Analytics.Explainability;
 using BeeEye.Modules.SpareParts.Application;
 using BeeEye.Shared.Modularity;
 using Microsoft.AspNetCore.Routing;
@@ -21,6 +22,9 @@ public sealed class SparePartsModule : IModule
 
         // Contributes this context's material exceptions to the Executive Decision Cockpit (UC8).
         services.AddScoped<IDecisionSignalProvider, SparePartsDecisionSignalProvider>();
+
+        // Answers "why stock this many?" for the global explainability drawer (S3).
+        services.AddScoped<IExplainabilityProvider, SparePartsExplainabilityProvider>();
     }
 
     public void MapEndpoints(IEndpointRouteBuilder endpoints)

@@ -1,3 +1,4 @@
+using BeeEye.Analytics.Explainability;
 using BeeEye.Modules.Procurement.Application;
 using BeeEye.Shared.Modularity;
 using Microsoft.AspNetCore.Routing;
@@ -17,6 +18,9 @@ public sealed class ProcurementModule : IModule
     public void RegisterServices(IServiceCollection services, IConfiguration configuration)
     {
         services.AddScoped<ProcurementReadService>();
+
+        // Answers "why this procurement quantity?" for the global explainability drawer (S3).
+        services.AddScoped<IExplainabilityProvider, ProcurementExplainabilityProvider>();
     }
 
     public void MapEndpoints(IEndpointRouteBuilder endpoints)

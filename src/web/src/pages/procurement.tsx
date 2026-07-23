@@ -4,6 +4,8 @@ import { StatCard } from '@/components/ui/StatCard';
 import { Card, CardHeader } from '@/components/ui/Card';
 import { ScenarioSelect } from '@/components/ui/ScenarioSelect';
 import { LoadingState, ErrorState, EmptyState } from '@/components/ui/states';
+import { ExplainButton, ExplainabilityDrawer } from '@/components/domain/ExplainabilityDrawer';
+import { useExplainabilityDrawer } from '@/components/domain/useExplainabilityDrawer';
 import { useProcurement, type ProcurementScenarioQuery } from '@/lib/api/orders';
 import { fmtInt, fmtNum, riskWordClass } from '@/lib/format';
 
@@ -20,6 +22,7 @@ export default function Procurement() {
     ...(lead ? { leadTimeMonths: Number(lead) } : {}),
   };
   const procurement = useProcurement(query);
+  const explain = useExplainabilityDrawer();
 
   return (
     <>
@@ -70,6 +73,7 @@ export default function Procurement() {
                     <th className="num">Recommended range</th>
                     <th>Stockout risk</th>
                     <th>Confidence</th>
+                    <th><span className="sr-only">Explanation</span></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -83,6 +87,14 @@ export default function Procurement() {
                       <td className="num"><strong>{fmtInt(r.rangeLow)}–{fmtInt(r.rangeHigh)}</strong></td>
                       <td><span className={`badge ${riskWordClass(r.stockoutRisk)}`}>{r.stockoutRisk}</span></td>
                       <td>{r.confidence}</td>
+                      <td>
+                        <ExplainButton
+                          label={`${r.model} ${r.variant}`}
+                          onClick={() =>
+                            explain.open({ kind: 'procurement-item', ref: `${r.model}|${r.variant}` })
+                          }
+                        />
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -91,6 +103,8 @@ export default function Procurement() {
           </Card>
         </>
       )}
+
+      <ExplainabilityDrawer subject={explain.subject} onClose={explain.close} />
     </>
   );
 }

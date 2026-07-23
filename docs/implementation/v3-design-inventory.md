@@ -204,9 +204,13 @@ Source: `LABELS`, `engine2.js` lines 28–37. **Eight** labels:
 | `low` | Low Confidence | `--risk-high` | `color-mix(in oklch, var(--risk-high) 14%, transparent)` | `help` |
 | `dq` | Data Quality | `--risk-med` | `color-mix(in oklch, var(--risk-med) 16%, transparent)` | `rule` |
 
-> **Finding V3-INC-2.** `docs/wireframes-v3/README.md` documents **seven** labels and omits
-> `Data Quality`. The implementation is the source of truth: there are eight. Chip styling relies on
-> `color-mix(in oklch, …)`; the app must confirm browser-support policy or provide a fallback.
+> **Finding V3-INC-2 — resolved in S3.** `docs/wireframes-v3/README.md` documented **seven** labels
+> and omitted `Data Quality`. The implementation is the source of truth: there are eight, all eight
+> ship in `components/ui/AiLabel.tsx`, and that README was corrected in the same commit
+> (V3-CONFLICT-8). Chip styling uses `color-mix(in oklab, …)` rather than v3's `oklch` interpolation
+> space, matching the `.risk-*` and `.badge--demo` rules the app already shipped — the perceptual
+> difference at these mix ratios is invisible, and one interpolation space across the stylesheet is
+> worth more than parity with a prototype's arbitrary choice.
 
 ---
 

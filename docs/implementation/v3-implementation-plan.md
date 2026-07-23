@@ -33,7 +33,7 @@ S1 shell ───┼─→ S2 cockpit ──→ S3 drawer ──┐
 
 ---
 
-## S0 — Dependency & warning hygiene · P1 · XS
+## S0 — Dependency & warning hygiene · P1 · XS · **COMPLETE**
 
 | Field | Value |
 |-------|-------|
@@ -84,16 +84,21 @@ other modules' types — preserving module isolation (CLAUDE.md rule 3).
 
 ---
 
-## S3 — Explainability drawer & AI label system · P1 · L
+## S3 — Explainability drawer & AI label system · P1 · L · **COMPLETE**
 
 | Field | Value |
 |-------|-------|
 | **Requirements** | V3-DS-002, V3-DS-006, V3-DS-007, V3-UC0x-002 |
 | **Outcome** | Any recommendation anywhere in the platform can answer "why?" in one consistent panel. |
-| **Components** | Extend `ui/Drawer.tsx` (**add focus trap + focus restoration** — absent in both v3 and the app); new `ExplainabilityDrawer` with the 11 v3 sections; `AiLabel` chip with all 8 labels. |
-| **Backend** | Explainability payload contract (recommendation, impacts, confidence + reasons, ranked drivers, evidence, assumptions, lineage, model info). |
-| **Tests** | Component: each section renders/omits correctly; Escape and overlay dismissal; **focus trap and restoration**; label variants. Accessibility: `aria-modal`, focus order. |
-| **Acceptance** | Drawer matches v3 geometry (474px, `max-width: 94vw`); Escape priority chain honoured; focus returns to the invoking control; all 8 labels styled per `LABELS`. |
+| **Components** | `ui/AiLabel.tsx` + `ui/aiLabels.ts` (all 8 labels, colours in CSS); `domain/ExplainabilityDrawer.tsx` with v3's 11 sections; `charts/EvidenceChart.tsx`; the shared `ui/Drawer` gained a **drawer stack** so Escape and Tab reach only the topmost. |
+| **Backend** | `IExplainabilityProvider` published in `BeeEye.Analytics`, 8 providers (UC1–UC8), `GET /api/v1/predictions/explain`, `POST /api/v1/predictions/explain/feedback`, `ExplainabilityFeedback` entity + additive migration. |
+| **Data / Auth / Audit** | One new table (append-only, no delete path); new `explanation-feedback.submit` permission, state-changing, granted to Executive and Analyst. |
+| **Tests** | 38 unit · 32 integration · 1 architecture · 84 component. Suite 930 → **1085**. |
+| **Migration / Flag / Rollback** | Additive `ExplainabilityFeedback` / none / revert; the table is left unused. |
+| **Acceptance** | ✅ 474px / 94vw as a modifier, not a change to the shared drawer. ✅ Escape closes only the topmost, focus restores into the drawer beneath. ✅ All 8 labels per `LABELS`, replacing the 3 hand-rolled demo badges. ✅ Wired into all 9 screens. ✅ Feedback persisted, idempotent, and honestly captioned. |
+
+**Conflicts resolved:** V3-CONFLICT-8 (7 labels vs 8 — the code won, the README was corrected) and
+v3's non-persisting "Was this useful?" control, which now writes to an append-only table.
 
 ---
 

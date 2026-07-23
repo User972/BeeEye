@@ -13,6 +13,7 @@ public sealed class ModuleBoundaryTests
 {
     private const string ModulePrefix = "BeeEye.Modules.";
     private const string SharedKernelAssembly = "BeeEye.Shared";
+    private const string AnalyticsAssembly = "BeeEye.Analytics";
 
     private static IReadOnlyList<Assembly> ModuleAssemblies()
     {
@@ -90,6 +91,40 @@ public sealed class ModuleBoundaryTests
         Assert.True(
             aspNetReferences.Count == 0,
             $"The pure shared kernel must not reference ASP.NET Core. Found: {string.Join(", ", aspNetReferences)}");
+    }
+
+    [Fact]
+    public void Every_explainability_provider_lives_in_a_module_and_gets_its_contract_from_analytics()
+    {
+        // The S3 seam, held to the same rule as the S2 one: each context explains its own output
+        // through a contract published in BeeEye.Analytics, so the endpoint that aggregates them —
+        // and every provider beside it — references no module at all.
+        var contract = Assembly.Load(AnalyticsAssembly)
+            .GetType("BeeEye.Analytics.Explainability.IExplainabilityProvider");
+
+        Assert.NotNull(contract);
+
+        var implementations = ModuleAssemblies()
+            .SelectMany(a => a.GetTypes().Select(t => (Assembly: a, Type: t)))
+            .Where(x => contract.IsAssignableFrom(x.Type) && x.Type is { IsInterface: false, IsAbstract: false })
+            .ToList();
+
+        // Eight live contexts implement it. A drop to seven means a provider was lost in a refactor
+        // and a screen quietly stopped being able to explain itself.
+        Assert.Equal(8, implementations.Count);
+
+        foreach (var (assembly, type) in implementations)
+        {
+            var name = assembly.GetName().Name;
+
+            Assert.True(
+                name?.StartsWith(ModulePrefix, StringComparison.Ordinal) == true,
+                $"{type.FullName} implements the explainability contract but does not live in a module assembly.");
+
+            Assert.Contains(
+                assembly.GetReferencedAssemblies().Select(r => r.Name),
+                referenced => referenced == AnalyticsAssembly);
+        }
     }
 
     [Fact]

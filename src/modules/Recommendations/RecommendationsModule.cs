@@ -1,4 +1,5 @@
 using BeeEye.Analytics.Decisions;
+using BeeEye.Analytics.Explainability;
 using BeeEye.Modules.Recommendations.Application;
 using BeeEye.Shared.Modularity;
 using Microsoft.AspNetCore.Routing;
@@ -21,6 +22,9 @@ public sealed class RecommendationsModule : IModule
 
         // Contributes this context's material exceptions to the Executive Decision Cockpit (UC8).
         services.AddScoped<IDecisionSignalProvider, OrderDecisionSignalProvider>();
+
+        // Answers "why this order quantity?" for the global explainability drawer (S3).
+        services.AddScoped<IExplainabilityProvider, OrderExplainabilityProvider>();
 
         // Persists engine recommendations as frozen, append-only records (ADR 0006).
         services.AddScoped<RecommendationRecordService>();
