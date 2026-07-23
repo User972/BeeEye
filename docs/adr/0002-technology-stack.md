@@ -9,7 +9,7 @@
 | **Deciders** | BeeEye architecture team (for ADMC) |
 | **Context tier** | Cross-cutting / whole-platform |
 | **Supersedes** | — |
-| **Depends on** | [ADR 0001 — Architecture Style (Modular Monolith)](./0001-architecture-style.md) |
+| **Depends on** | [ADR 0001 — Architecture Style (Modular Monolith)](./0001-modular-monolith.md) |
 
 ---
 
@@ -28,13 +28,13 @@ The stack must satisfy several standing constraints that shape every choice belo
 |-----------|---------------------------|
 | **Determinism first** | All numbers (forecasts, risk scores, quantities, values, decisions) come from deterministic engines. GenAI narrates validated metrics and **never** computes. The stack must keep statistical compute reproducible and out of the request path. |
 | **Oracle Fusion is read-only** | The system of record is reached only through a versioned anti-corruption layer; BeeEye never writes back. The stack owns its *own* curated store, not Fusion's. |
-| **Modular monolith** ([ADR 0001](./0001-architecture-style.md)) | One deployable API host composed of ~19 bounded-context modules. Favours a single strongly-typed runtime with mature in-process modularity over a polyglot fleet of services. |
+| **Modular monolith** ([ADR 0001](./0001-modular-monolith.md)) | One deployable API host composed of ~19 bounded-context modules. Favours a single strongly-typed runtime with mature in-process modularity over a polyglot fleet of services. |
 | **Tenant-resident, Azure-native** | Managed PaaS preferred over self-managed infrastructure; managed identity, Key Vault, and Azure-first observability are baseline, not add-ons. |
 | **Explainability & lineage** | Additive risk breakdown, transparent demand-fallback hierarchy, SHAP, and source-row lineage through storage zones — the ML tooling must support this natively. |
 | **Small, senior team; long horizon** | LTS runtimes, strong static typing, first-class tooling, and hiring-friendly ecosystems reduce operational and staffing risk over the product's life. |
 
 This ADR selects the concrete technologies. The *shape* (why a modular monolith with an out-of-band ML
-tier, rather than microservices) is decided in [ADR 0001](./0001-architecture-style.md) and is treated
+tier, rather than microservices) is decided in [ADR 0001](./0001-modular-monolith.md) and is treated
 here as given.
 
 ---
@@ -304,7 +304,7 @@ validation reject any narrative that alters or invents a number. See the guardra
 This ADR records the *what*; the following documents carry the surrounding detail and are kept consistent
 with it.
 
-- Architecture style this stack serves → [ADR 0001 — Architecture Style (Modular Monolith)](./0001-architecture-style.md)
+- Architecture style this stack serves → [ADR 0001 — Architecture Style (Modular Monolith)](./0001-modular-monolith.md)
 - Full container view, version tables and non-functional goals → [architecture/overview.md](../architecture/overview.md)
 - Canonical data model realised on PostgreSQL + ADLS → [architecture/canonical-data-model.md](../architecture/canonical-data-model.md)
 

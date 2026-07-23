@@ -2,6 +2,12 @@
 
 **Purpose:** Identify slow-moving and over-covered vehicle stock early, quantify each unit's overstock risk with a transparent, explainable score, and recommend the specific corrective action — so ADMC frees trapped capital and stops holding-cost accrual before a unit becomes unsellable.
 
+> **Current build — Implemented (live).** UC5 is operational as the **Inventory** module
+> (`Status => "operational"`), porting the POC `computeInventory`/`recommend` engine into `BeeEye.Analytics`
+> (`Inventory/InventoryRiskCalculator.cs`, `InventoryAggregator.cs`, `Bands.cs`). Live routes:
+> `GET /api/v1/inventory/summary`, `/inventory/items`, `/inventory/items/{stockId}`, `/inventory/filter-options`,
+> rendered by the `/inventory` React screen. The finer-grained endpoint shapes in this spec are the target design.
+
 ---
 
 ## 1. At a glance

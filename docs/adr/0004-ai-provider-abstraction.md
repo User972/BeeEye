@@ -266,7 +266,7 @@ This ADR realises the "provider-neutral GenAI & grounding" commitment in the arc
 grounding contract proven in the POC.
 
 - Architecture map & determinism guardrails → [../architecture/overview.md](../architecture/overview.md)
-- Provider-neutral GenAI & grounding (detailed design) → [../architecture/genai-architecture.md](../architecture/genai-architecture.md)
+- Provider-neutral GenAI & grounding (detailed design) → [../architecture/ai-provider-abstraction.md](../architecture/ai-provider-abstraction.md)
 - AI grounding rules & explanation constraints → [../wireframes/docs/METHODOLOGY.md](../wireframes/docs/METHODOLOGY.md#ai-grounding)
 - Integration blueprint (POC "Azure OpenAI, strict grounding") → [../wireframes/docs/INTEGRATION_AZURE_ORACLE.md](../wireframes/docs/INTEGRATION_AZURE_ORACLE.md)
 - Assumptions & limitations (decision-support, human approval) → [../wireframes/docs/ASSUMPTIONS_LIMITATIONS.md](../wireframes/docs/ASSUMPTIONS_LIMITATIONS.md)

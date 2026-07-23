@@ -483,6 +483,6 @@ fallback hierarchy applies and the **tier actually used** is persisted on the re
 | [METHODOLOGY](../wireframes/docs/METHODOLOGY.md) | Forecasting, the additive risk model, and the demand fallback hierarchy. |
 | [ASSUMPTIONS_LIMITATIONS](../wireframes/docs/ASSUMPTIONS_LIMITATIONS.md) | Analysis-Date, `service_date`, and sparse-demand assumptions reflected above. |
 | [INTEGRATION_AZURE_ORACLE](../wireframes/docs/INTEGRATION_AZURE_ORACLE.md) | Oracle Fusion ingestion and lineage feeding the Platform Operations cluster. |
-| `./bounded-contexts.md` | Ownership map from clusters/entities to the 19 bounded contexts. |
+| `./module-boundaries.md` | Ownership map from clusters/entities to the 19 bounded contexts. |
 | `./data-platform-and-storage.md` | Physical PostgreSQL schema and ADLS Gen2 zone realisation of this model. |
 | `./integration-and-acl.md` | The versioned anti-corruption layer that maps Oracle Fusion into these entities. |

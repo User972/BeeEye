@@ -342,6 +342,6 @@ bumping `acl_version`) is the first, test-driven step of absorbing that change.
 | [../wireframes/docs/DATA_DICTIONARY.md](../wireframes/docs/DATA_DICTIONARY.md) | Field-level source definitions the validation list is built from. |
 | [../wireframes/docs/DERIVED_METRICS.md](../wireframes/docs/DERIVED_METRICS.md) | Reconciliation formulae (`revenue`, `lead_time_days`, holding cost) used by the consistency rules. |
 | [../wireframes/docs/ASSUMPTIONS_LIMITATIONS.md](../wireframes/docs/ASSUMPTIONS_LIMITATIONS.md) | Source of the `service_date`-unconfirmed and Mecca-no-inventory handling. |
-| `./data-architecture.md` | Deeper ADLS Gen2 zone realisation and PostgreSQL physical schema. |
-| `./ml-platform.md` | Consumer of the `model-input` zone and the critical-gate that blocks model runs. |
-| `./security-and-identity.md` | Key Vault / managed-identity auth and audit controls the adapters rely on. |
+| `./canonical-data-model.md` | Deeper ADLS Gen2 zone realisation and PostgreSQL physical schema. |
+| `./mlops-and-models.md` | Consumer of the `model-input` zone and the critical-gate that blocks model runs. |
+| `./security-threat-model.md` | Key Vault / managed-identity auth and audit controls the adapters rely on. |

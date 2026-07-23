@@ -9,7 +9,7 @@
 | **Deciders** | BeeEye platform architecture team |
 | **Applies to** | Target production architecture for ADMC (Saudi Arabia; SAR) |
 | **Supersedes** | — |
-| **Related** | [architecture/overview.md](../architecture/overview.md), [architecture/bounded-contexts.md](../architecture/bounded-contexts.md), [architecture/deployment-topology.md](../architecture/deployment-topology.md) |
+| **Related** | [architecture/overview.md](../architecture/overview.md), [architecture/module-boundaries.md](../architecture/module-boundaries.md), [architecture/deployment-and-ip-protection.md](../architecture/deployment-and-ip-protection.md) |
 
 ---
 
@@ -209,9 +209,9 @@ change behind an existing contract — not a re-architecture. Until then, the mo
 - Target architecture map (C4, tech stack, the modular-monolith container view) →
   [architecture/overview.md](../architecture/overview.md)
 - The nineteen bounded contexts, contracts, and events →
-  [architecture/bounded-contexts.md](../architecture/bounded-contexts.md)
+  [architecture/module-boundaries.md](../architecture/module-boundaries.md)
 - Azure deployment topology (Container Apps host + jobs) →
-  [architecture/deployment-topology.md](../architecture/deployment-topology.md)
+  [architecture/deployment-and-ip-protection.md](../architecture/deployment-and-ip-protection.md)
 - POC integration future-state that this decision productionises →
   [wireframes/docs/INTEGRATION_AZURE_ORACLE.md](../wireframes/docs/INTEGRATION_AZURE_ORACLE.md)
 - POC assumptions & limitations (determinism, human-in-the-loop, read-only source) →

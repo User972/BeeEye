@@ -279,7 +279,7 @@ domain reads Fusion's shape.*
 |------------------|--------------|
 | [architecture/overview.md](../architecture/overview.md) | Asserts the read-only, versioned-ACL guardrail (§1, §7, §8) that this ADR elaborates. |
 | [architecture/canonical-data-model.md](../architecture/canonical-data-model.md) | Defines `SourceExtract`, `DatasetVersion`, `DataQualityResult` and the canonical entities adapters emit (Cluster 9; cross-cutting rules 1–2). |
-| [architecture/integration-oracle-fusion.md](../architecture/integration-oracle-fusion.md) | Detailed integration & ACL design that implements this decision *(planned sibling)*. |
+| [architecture/data-integration-and-quality.md](../architecture/data-integration-and-quality.md) | Detailed integration & ACL design that implements this decision *(planned sibling)*. |
 | [wireframes/docs/INTEGRATION_AZURE_ORACLE.md](../wireframes/docs/INTEGRATION_AZURE_ORACLE.md) | POC future-state blueprint (governed extraction, validation on load, lineage preserved). |
 | [wireframes/docs/DATA_DICTIONARY.md](../wireframes/docs/DATA_DICTIONARY.md) | Source field definitions and the reconciliation invariants validated at the boundary. |
 | [wireframes/docs/ASSUMPTIONS_LIMITATIONS.md](../wireframes/docs/ASSUMPTIONS_LIMITATIONS.md) | `service_date` exclusion, "no live Fusion connection", "no write-back" — the assumptions this ADR formalises. |

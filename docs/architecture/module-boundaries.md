@@ -142,7 +142,7 @@ flowchart TD
 ```
 
 > The dashed GenAI edges originate **only** from ExecutiveInsights and Notifications — enforced by an
-> architecture test. See [genai-architecture.md](./genai-architecture.md).
+> architecture test. See [ai-provider-abstraction.md](./ai-provider-abstraction.md).
 
 ---
 
@@ -219,7 +219,7 @@ Low-level, widely depended upon, stable. They depend on little and are reference
 ### 7. Integration
 - **Responsibility:** the **versioned anti-corruption layer** to Oracle Fusion (read-only system of record)
   via REST/BICC/approved extracts, landing raw records in ADLS Gen2 and preserving source-row references
-  for lineage. See [integration-oracle-fusion.md](./integration-oracle-fusion.md).
+  for lineage. See [data-integration-and-quality.md](./data-integration-and-quality.md).
 - **Owned aggregates:** `ExtractRun`, `SourceContractVersion`, `RawLanding`.
 - **Public contract surface:** `IIngestionTrigger`, `IExtractStatus`; `ExtractRunDto`; events
   `RawExtractLanded`, `SourceContractDrifted`.
@@ -270,9 +270,9 @@ Low-level, widely depended upon, stable. They depend on little and are reference
   is obtained from Predictions/SalesActuals contracts. `service_date` excluded from any scoring.
 
 ### 11. Procurement
-- **Responsibility:** order optimisation — UC1 (Monthly Vehicle Order Optimisation) and UC4 (Procurement
-  Quantity Optimisation): recommend order/pause quantities from forecast demand, current stock, lead time
-  and risk.
+- **Responsibility:** UC4 (Procurement Quantity Optimisation): recommend order/pause quantities from
+  forecast demand, current stock, lead time and risk. (The related UC1 Monthly Vehicle Order
+  Optimisation recommendations are emitted by the Recommendations context — see §17.)
 - **Owned aggregates:** `PurchasePlan`, `OrderProposal`, `ReplenishmentPolicy`.
 - **Public contract surface:** `IProcurementPlanning`; `OrderProposalDto`; event `OrderPlanProposed`.
 - **Allowed dependencies:** `Shared`, `MasterData.Contracts`, `Organisation.Contracts`,
@@ -310,7 +310,7 @@ Low-level, widely depended upon, stable. They depend on little and are reference
 - **Responsibility:** the ML lifecycle spine — experiment tracking, the model registry, and holdout
   back-test governance (train-on-all-but-last-N, WMAPE-based selection) backed by **MLflow** and the Python
   tier. Registers both the forecasting models and the explainable additive risk model as versioned artifacts.
-  See [ml-platform.md](./ml-platform.md).
+  See [mlops-and-models.md](./mlops-and-models.md).
 - **Owned aggregates:** `Experiment`, `ModelVersion`, `BackTestRun`, `PromotionRecord`.
 - **Public contract surface:** `IModelRegistry`, `IExperimentTracker`; `ModelVersionDto`, `BackTestResultDto`;
   events `ModelPromoted`, `BackTestCompleted`.
@@ -347,7 +347,7 @@ Low-level, widely depended upon, stable. They depend on little and are reference
   box; every served value records the demand-fallback basis used. No GenAI reference.
 
 ### 17. Recommendations
-- **Responsibility:** the transparent rules engine emitting Retain · Transfer · Targeted promotion ·
+- **Responsibility:** UC1 (Monthly Vehicle Order Optimisation) — the transparent rules engine emitting Retain · Transfer · Targeted promotion ·
   Controlled discount (0–20% observed range) · Pause/reduce procurement · Prioritise liquidation ·
   Investigate demand data — each with rationale, evidence, expected outcome, confidence and assumptions
   (Management Actions). Productionises `recommend`, `transferOpportunities`.
@@ -384,7 +384,7 @@ Low-level, widely depended upon, stable. They depend on little and are reference
 - **Forbidden couplings:** **the only quantitative-consumer permitted to reference GenAI.** It may
   *narrate* validated numbers but must never compute forecasts, risk probabilities, values, quantities or
   decisions; it must state when data is unavailable or a fallback was used and must preserve the engine's
-  numbers verbatim. See [genai-architecture.md](./genai-architecture.md).
+  numbers verbatim. See [ai-provider-abstraction.md](./ai-provider-abstraction.md).
 
 ---
 
@@ -432,11 +432,11 @@ This document is part of the BeeEye planning & architecture package. It refines 
 context-level contracts and enforcement rules.
 
 - Parent index & C4 container view → [overview.md](./overview.md)
-- Data architecture & ADLS zones → [data-architecture.md](./data-architecture.md)
-- Oracle Fusion integration & ACL → [integration-oracle-fusion.md](./integration-oracle-fusion.md)
-- ML platform & model lifecycle → [ml-platform.md](./ml-platform.md)
-- Provider-neutral GenAI & grounding → [genai-architecture.md](./genai-architecture.md)
-- Security & identity → [security-and-identity.md](./security-and-identity.md)
+- Data architecture & ADLS zones → [data-integration-and-quality.md](./data-integration-and-quality.md)
+- Oracle Fusion integration & ACL → [data-integration-and-quality.md](./data-integration-and-quality.md)
+- ML platform & model lifecycle → [mlops-and-models.md](./mlops-and-models.md)
+- Provider-neutral GenAI & grounding → [ai-provider-abstraction.md](./ai-provider-abstraction.md)
+- Security & identity → [security-threat-model.md](./security-threat-model.md)
 
 POC provenance (the analytics and data model these contexts productionise):
 
