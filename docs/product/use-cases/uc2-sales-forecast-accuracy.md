@@ -2,6 +2,12 @@
 
 > Turn BeeEye's demand forecasts into a self-auditing loop: measure planned-vs-actual, detect systematic bias, recommend explainable correction factors, and raise early-warning flags — all on validated numbers only.
 
+> **Current build — Implemented (live).** UC2 is operational as the **Forecasting** module
+> (`Status => "operational"`), porting the POC `forecast`/`metrics` engine into `BeeEye.Analytics`
+> (`Forecasting/Forecaster.cs`, `ForecastMethods.cs`, `ForecastMetrics.cs`). Live routes:
+> `GET /api/v1/forecasting/forecast`, `/forecasting/accuracy-by/{dimension}`, `/forecasting/filter-options`,
+> rendered by the `/forecasting` React screen. The finer-grained endpoint shapes in this spec are the target design.
+
 ---
 
 ## 1. Business framing
@@ -263,4 +269,4 @@ flowchart TB
 - **Assumptions & limitations:** [ASSUMPTIONS_LIMITATIONS.md](../../wireframes/docs/ASSUMPTIONS_LIMITATIONS.md) — forecasts are prototype estimates; original business forecasts not supplied.
 - **Integration & data zones:** [INTEGRATION_AZURE_ORACLE.md](../../wireframes/docs/INTEGRATION_AZURE_ORACLE.md) — Oracle Fusion read-only ACL, ADLS model-input/output zones.
 - **Wireframe source:** `docs/wireframes/Meridian BI.dc.html` (Sales Forecasting screen) · `engine.js` (`forecast()`, `metrics()`, `explainForecast()`).
-- **Related use cases:** [UC1 — Monthly Vehicle Order Optimisation](./uc1-monthly-order-optimisation.md) (consumes the corrected forecast) · [UC5 — Inventory Aging & Overstock Risk](./uc5-inventory-aging-overstock-risk.md) (demand velocity shares the forecast base) · [UC8 — Executive Decision Cockpit](./uc8-executive-decision-cockpit.md) (surfaces the accuracy & bias KPIs).
+- **Related use cases:** [UC1 — Monthly Vehicle Order Optimisation](./uc1-monthly-vehicle-order-optimisation.md) (consumes the corrected forecast) · [UC5 — Inventory Aging & Overstock Risk](./uc5-inventory-aging-overstock-risk.md) (demand velocity shares the forecast base) · [UC8 — Executive Decision Cockpit](./uc8-executive-decision-cockpit.md) (surfaces the accuracy & bias KPIs).

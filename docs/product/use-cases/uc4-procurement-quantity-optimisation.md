@@ -2,6 +2,12 @@
 
 > Recommend defensible procurement **quantity ranges** per model-variant-location, grounded in demand, lead-time reality and the **current + inbound** stock position — never a false-precision single number, and never blind to what is already on order.
 
+> **Current build — Implemented (live).** UC4 is operational as the **Procurement** module
+> (`Status => "operational"`), with quantity logic in `BeeEye.Analytics`
+> (`Optimisation/ProcurementOptimiser.cs`). Live routes: `GET /api/v1/procurement/recommendations` and
+> `/procurement/filter-options`, rendered by the `/procurement` React screen. The endpoint shapes elsewhere
+> in this spec are the target design.
+
 ---
 
 ## 1. Purpose & business value
@@ -30,7 +36,7 @@ capability and the data it requires.
 Related: this use case shares its demand engine with
 [UC1 — Monthly Vehicle Order Optimisation](./uc1-monthly-vehicle-order-optimisation.md) and its
 configuration-level demand signal with
-[UC3 — Configuration-Level Demand Insights](./uc3-configuration-level-demand-insights.md).
+[UC3 — Configuration-Level Demand Insights](./uc3-configuration-demand-insights.md).
 
 ## 2. Actors
 
@@ -371,4 +377,4 @@ closes the loop with realised-vs-recommended learning; `Audit` records everythin
 - Derived metrics (velocity, cover, holding cost) — [Derived Metrics](../../wireframes/docs/DERIVED_METRICS.md)
 - POC boundaries and the "missing ≠ zero" principle — [Assumptions & Limitations](../../wireframes/docs/ASSUMPTIONS_LIMITATIONS.md)
 - Oracle Fusion ingestion & Azure target state — [Integration Blueprint](../../wireframes/docs/INTEGRATION_AZURE_ORACLE.md)
-- Sibling use cases — [UC1 Monthly Vehicle Order Optimisation](./uc1-monthly-vehicle-order-optimisation.md) · [UC3 Configuration-Level Demand](./uc3-configuration-level-demand-insights.md) · [UC5 Inventory Aging & Overstock Risk](./uc5-inventory-aging-overstock-risk.md) · [UC8 Executive Decision Cockpit](./uc8-executive-decision-cockpit.md)
+- Sibling use cases — [UC1 Monthly Vehicle Order Optimisation](./uc1-monthly-vehicle-order-optimisation.md) · [UC3 Configuration-Level Demand](./uc3-configuration-demand-insights.md) · [UC5 Inventory Aging & Overstock Risk](./uc5-inventory-aging-overstock-risk.md) · [UC8 Executive Decision Cockpit](./uc8-executive-decision-cockpit.md)

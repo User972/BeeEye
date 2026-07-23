@@ -387,8 +387,8 @@ resulting client/API IDs feed back into the Container Apps configuration as non-
 |------------------|--------------|
 | [overview.md](./overview.md) | Parent C4 + tech-stack map; deployment model, container view and NFRs this document realises. |
 | [canonical-data-model.md](./canonical-data-model.md) | The entities and zones stored on the PostgreSQL + ADLS resources provisioned here. |
-| `./security-and-identity.md` | Entra AuthN/AuthZ, managed identity, secrets and Key Vault detail that this deployment configures. |
-| `./integration-oracle-fusion.md` | The read-only ACL whose egress is pinned to the fixed NAT outbound IP in private mode. |
-| `./non-functional-requirements.md` | Availability, performance and observability budgets the SKUs and scale settings target. |
+| `./security-threat-model.md` | Entra AuthN/AuthZ, managed identity, secrets and Key Vault detail that this deployment configures. |
+| `./data-integration-and-quality.md` | The read-only ACL whose egress is pinned to the fixed NAT outbound IP in private mode. |
+| `./overview.md#7-non-functional-goals` | Availability, performance and observability budgets the SKUs and scale settings target. |
 | [../wireframes/docs/INTEGRATION_AZURE_ORACLE.md](../wireframes/docs/INTEGRATION_AZURE_ORACLE.md) | POC future-state blueprint that this production Azure topology supersedes and grounds. |
 | [../wireframes/docs/ASSUMPTIONS_LIMITATIONS.md](../wireframes/docs/ASSUMPTIONS_LIMITATIONS.md) | Analysis-Date and data-handling assumptions honoured across environments and masking. |

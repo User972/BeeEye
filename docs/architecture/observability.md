@@ -9,7 +9,7 @@ telemetry model (OpenTelemetry logs/traces/metrics), the correlation and run-ide
 a browser click to an ML job run, the health-check surface, the monitor and alert catalogue, the
 operational dashboards, and the backup / recovery / business-continuity posture — including
 expand-and-contract schema migrations. It is the operations companion to
-[overview.md](./overview.md) and [non-functional-requirements.md](./non-functional-requirements.md).
+[overview.md](./overview.md) and its [non-functional goals](./overview.md#7-non-functional-goals).
 
 ---
 
@@ -157,7 +157,7 @@ and verified in CI. Rules:
   processors are registered; a synthetic "canary secret" is emitted in test environments and an alert
   fires if it ever appears in Log Analytics.
 
-See [security-and-identity.md](./security-and-identity.md) for the identity and secrets model these
+See [security-threat-model.md](./security-threat-model.md) for the identity and secrets model these
 rules depend on.
 
 ---
@@ -341,17 +341,17 @@ Rules that make it safe:
    instance reports ready.
 
 This lets ADMC deploy schema changes during business hours with no downtime and a guaranteed rollback
-path — consistent with the availability goals in [non-functional-requirements.md](./non-functional-requirements.md).
+path — consistent with the availability goals in [overview.md#7-non-functional-goals](./overview.md#7-non-functional-goals).
 
 ---
 
 ## Traceability
 
-- Architecture map & NFRs → [overview.md](./overview.md) · [non-functional-requirements.md](./non-functional-requirements.md)
-- Deployment topology (Container Apps, probes, HA) → [deployment-topology.md](./deployment-topology.md)
-- Identity, secrets & redaction basis → [security-and-identity.md](./security-and-identity.md)
-- Data zones, lineage & data-quality gates → [data-architecture.md](./data-architecture.md)
-- ML lifecycle, MLflow & model runs → [ml-platform.md](./ml-platform.md)
-- Provider-neutral GenAI & structured-output validation → [genai-architecture.md](./genai-architecture.md)
-- Oracle Fusion ACL & ingestion cadence → [integration-oracle-fusion.md](./integration-oracle-fusion.md)
+- Architecture map & NFRs → [overview.md](./overview.md) · [non-functional goals](./overview.md#7-non-functional-goals)
+- Deployment topology (Container Apps, probes, HA) → [deployment-and-ip-protection.md](./deployment-and-ip-protection.md)
+- Identity, secrets & redaction basis → [security-threat-model.md](./security-threat-model.md)
+- Data zones, lineage & data-quality gates → [data-integration-and-quality.md](./data-integration-and-quality.md)
+- ML lifecycle, MLflow & model runs → [mlops-and-models.md](./mlops-and-models.md)
+- Provider-neutral GenAI & structured-output validation → [ai-provider-abstraction.md](./ai-provider-abstraction.md)
+- Oracle Fusion ACL & ingestion cadence → [data-integration-and-quality.md](./data-integration-and-quality.md)
 - POC provenance: methodology (WMAPE, risk weights) → [../wireframes/docs/METHODOLOGY.md](../wireframes/docs/METHODOLOGY.md) · assumptions (Analysis Date) → [../wireframes/docs/ASSUMPTIONS_LIMITATIONS.md](../wireframes/docs/ASSUMPTIONS_LIMITATIONS.md)

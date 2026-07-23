@@ -3,6 +3,12 @@
 > Reveal which exact vehicle configurations (model × variant × colour × trim × options) actually sell,
 > where they sell, and which are decaying — while never comparing two configurations whose availability differed.
 
+> **Current build — Implemented (live).** UC3 is operational as the **SalesActuals** module
+> (`Status => "operational"`), with configuration-demand logic in `BeeEye.Analytics`
+> (`Configuration/ConfigurationDemand.cs`). Live routes under `GET /api/v1/sales-actuals/config-demand/*`
+> (`summary`, `configs`, `config`, `decay-alerts`, `filter-options`), rendered by the `/configuration-demand`
+> React screen. The endpoint shapes elsewhere in this spec are the target design.
+
 ---
 
 ## 1. Purpose & business context
@@ -18,7 +24,7 @@ high-demand clusters, low-rotation and demand-decay detection, and regional dema
 guardrail that keeps every comparison honest by accounting for whether each configuration was actually
 available to be sold.
 
-**Related use cases:** feeds [UC1 — Monthly Order Optimisation](./uc1-monthly-order-optimisation.md) and
+**Related use cases:** feeds [UC1 — Monthly Order Optimisation](./uc1-monthly-vehicle-order-optimisation.md) and
 [UC4 — Procurement Quantity Optimisation](./uc4-procurement-quantity-optimisation.md) with configuration mix,
 consumes availability context from [UC5 — Inventory Aging & Overstock Risk](./uc5-inventory-aging-overstock-risk.md),
 and surfaces in [UC8 — Executive Decision Cockpit](./uc8-executive-decision-cockpit.md).
@@ -376,7 +382,7 @@ whose numbers do not reconcile to the computed metrics.
 - Metric formulas → [Derived Metrics](../../wireframes/docs/DERIVED_METRICS.md)
 - POC honesty constraints → [Assumptions & Limitations](../../wireframes/docs/ASSUMPTIONS_LIMITATIONS.md)
 - Integration / Oracle Fusion availability history → [Integration & Azure/Oracle](../../wireframes/docs/INTEGRATION_AZURE_ORACLE.md)
-- Consuming use cases → [UC1](./uc1-monthly-order-optimisation.md) ·
+- Consuming use cases → [UC1](./uc1-monthly-vehicle-order-optimisation.md) ·
   [UC4](./uc4-procurement-quantity-optimisation.md) ·
   [UC5](./uc5-inventory-aging-overstock-risk.md) ·
   [UC8](./uc8-executive-decision-cockpit.md)

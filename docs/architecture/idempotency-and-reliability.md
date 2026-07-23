@@ -69,7 +69,7 @@ scope = (tenant_id, caller_subject, http_method, route_template, operation_name)
 ```
 
 - `tenant_id` — ADMC is single-tenant today, but scoping keeps multi-tenant safe.
-- `caller_subject` — the Entra ID `sub` / service principal object id (see [security-and-identity.md](./security-and-identity.md)).
+- `caller_subject` — the Entra ID `sub` / service principal object id (see [security-threat-model.md](./security-threat-model.md)).
 - `route_template` + `operation_name` — the logical operation, not the raw URL (query strings excluded).
 
 ### 2.3 The idempotency record
@@ -131,7 +131,7 @@ context; only the dedupe envelope is transient.
 ## 3. Layer 2 — Data-ingestion idempotency
 
 Sales (3,120 monthly rows) and inventory (291 units) arrive from Oracle Fusion via the versioned ACL
-(see [integration-oracle-fusion.md](./integration-oracle-fusion.md)) and land through the ADLS Gen2
+(see [data-integration-and-quality.md](./data-integration-and-quality.md)) and land through the ADLS Gen2
 zones (`raw → validated → curated`, with `quarantine`). Re-pulling a failed extract, or replaying a
 day, must **never** inflate a fact.
 
@@ -215,7 +215,7 @@ flowchart LR
 
 Forecast refits, risk scoring, recommendation generation, executive-insight builds and export
 generation run as Container Apps Jobs (scheduled or event-triggered — see
-[ml-platform.md](./ml-platform.md) and [deployment-topology.md](./deployment-topology.md)). Jobs get
+[mlops-and-models.md](./mlops-and-models.md) and [deployment-and-ip-protection.md](./deployment-and-ip-protection.md)). Jobs get
 killed and restarted; a retry must **not** produce a second set of predictions, a duplicate export
 file, a repeat notification, or a duplicated audit trail.
 
@@ -373,7 +373,7 @@ duplicate-detection may be enabled as a cheap first-line filter, but correctness
 
 | Concern | Approach |
 |---------|----------|
-| **Correlation** | A single `correlation_id` flows request → outbox message → job run → derived records → audit, so any replay or dedupe is traceable end-to-end via OpenTelemetry / App Insights (see [non-functional-requirements.md](./non-functional-requirements.md)). |
+| **Correlation** | A single `correlation_id` flows request → outbox message → job run → derived records → audit, so any replay or dedupe is traceable end-to-end via OpenTelemetry / App Insights (see [overview.md#7-non-functional-goals](./overview.md#7-non-functional-goals)). |
 | **Retention & cleanup** | Idempotency records TTL ~24h; inbox/outbox rows are pruned after their dedupe/replay window closes; `JobRun` history is retained for audit. Cleanup runs as its own idempotent scheduled job. |
 | **Analysis Date, not wall-clock** | Time-sensitive recomputation (aging, holding cost, risk) uses the explicit configurable Analysis Date, so a re-run on a different day yields the *same* result for the same inputs — a precondition for job idempotency. Inherited from the POC assumption model ([ASSUMPTIONS_LIMITATIONS](../wireframes/docs/ASSUMPTIONS_LIMITATIONS.md)). |
 | **GenAI narration** | Narratives are derived, immutable records keyed to their run; a retried insight build re-narrates deterministically and supersedes rather than appends duplicates. GenAI still never computes numbers ([overview.md](./overview.md) §8). |
@@ -387,9 +387,9 @@ duplicate-detection may be enabled as a cheap first-line filter, but correctness
 |------------------|--------------|
 | [overview.md](./overview.md) | Container view, cross-cutting guardrails, and the at-least-once messaging posture this document operationalises. |
 | [canonical-data-model.md](./canonical-data-model.md) | Append-only facts, `SalesRestatement`, `StockUnitStatusHistory`, immutable derived records with `superseded_by` — the write rules ingestion and job idempotency enforce. |
-| [integration-oracle-fusion.md](./integration-oracle-fusion.md) | The versioned ACL and extract mechanics that supply source lineage for batch/record identity. |
-| [data-architecture.md](./data-architecture.md) | ADLS Gen2 zones (raw/validated/curated/quarantine) referenced by ingestion idempotency. |
-| [ml-platform.md](./ml-platform.md) | Job orchestration, dataset/model/ruleset versioning consumed by `JobRun`. |
-| [security-and-identity.md](./security-and-identity.md) | Entra ID caller identity that scopes the API `Idempotency-Key`. |
-| [non-functional-requirements.md](./non-functional-requirements.md) | Availability, observability and correlation targets this reliability model serves. |
+| [data-integration-and-quality.md](./data-integration-and-quality.md) | The versioned ACL and extract mechanics that supply source lineage for batch/record identity. |
+| [data-integration-and-quality.md](./data-integration-and-quality.md) | ADLS Gen2 zones (raw/validated/curated/quarantine) referenced by ingestion idempotency. |
+| [mlops-and-models.md](./mlops-and-models.md) | Job orchestration, dataset/model/ruleset versioning consumed by `JobRun`. |
+| [security-threat-model.md](./security-threat-model.md) | Entra ID caller identity that scopes the API `Idempotency-Key`. |
+| [overview.md#7-non-functional-goals](./overview.md#7-non-functional-goals) | Availability, observability and correlation targets this reliability model serves. |
 | [ASSUMPTIONS_LIMITATIONS](../wireframes/docs/ASSUMPTIONS_LIMITATIONS.md) | The explicit Analysis-Date assumption that makes recomputation deterministic. |

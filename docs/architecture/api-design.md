@@ -13,7 +13,7 @@ Two platform guardrails shape the whole surface and are repeated here because th
 1. **Oracle Fusion is read-only.** No endpoint writes to the system of record. Mutations only ever touch
    BeeEye-owned state (model-runs, decisions/approvals, settings, notifications).
 2. **GenAI narrates, never computes.** Endpoints may return a `narrative` string, but every number in
-   the payload comes from the deterministic engines. See [genai-architecture.md](./genai-architecture.md).
+   the payload comes from the deterministic engines. See [ai-provider-abstraction.md](./ai-provider-abstraction.md).
 
 ---
 
@@ -312,7 +312,7 @@ A catalog of codes lives at `/api/v1/errors` and is rendered from the same regis
 - The correlation/trace context is **propagated end-to-end**: onto Service Bus messages, into Python ML
   jobs, and into every log line and OpenTelemetry span — so a forecast request, its enqueued command, the
   job that fulfils it, and the narrated response all share one trace. See
-  [non-functional-requirements.md](./non-functional-requirements.md).
+  [overview.md#7-non-functional-goals](./overview.md#7-non-functional-goals).
 
 ---
 
@@ -365,7 +365,7 @@ the client asserts in the body or query.
 - Out-of-scope access returns **`404`** for existence-sensitive resources (we do not confirm that a hidden
   record exists) and `403` where the resource class itself is forbidden.
 - Persona gating is policy-based per bounded context (e.g. only `Executive` may finalise an approval).
-  Details in [security-and-identity.md](./security-and-identity.md).
+  Details in [security-threat-model.md](./security-threat-model.md).
 
 ---
 
@@ -451,7 +451,7 @@ sequenceDiagram
 
 The result is a first-class resource with its own ETag; cancellation is best-effort (a job past the point
 of no return still completes and is reported honestly). Job orchestration detail lives in
-[ml-platform.md](./ml-platform.md).
+[mlops-and-models.md](./mlops-and-models.md).
 
 ---
 
@@ -487,12 +487,12 @@ of no return still completes and is reported honestly). Job orchestration detail
 ## Traceability
 
 - Architecture index & container view → [overview.md](./overview.md)
-- Bounded contexts that own each resource → [bounded-contexts.md](./bounded-contexts.md)
-- Auth, personas, scope & token claims → [security-and-identity.md](./security-and-identity.md)
-- ML job orchestration behind `model-runs` → [ml-platform.md](./ml-platform.md)
-- GenAI narration & structured-output validation → [genai-architecture.md](./genai-architecture.md)
-- Oracle Fusion read-only ACL (source of curated data) → [integration-oracle-fusion.md](./integration-oracle-fusion.md)
-- Rate limits, tracing & performance budgets → [non-functional-requirements.md](./non-functional-requirements.md)
+- Bounded contexts that own each resource → [module-boundaries.md](./module-boundaries.md)
+- Auth, personas, scope & token claims → [security-threat-model.md](./security-threat-model.md)
+- ML job orchestration behind `model-runs` → [mlops-and-models.md](./mlops-and-models.md)
+- GenAI narration & structured-output validation → [ai-provider-abstraction.md](./ai-provider-abstraction.md)
+- Oracle Fusion read-only ACL (source of curated data) → [data-integration-and-quality.md](./data-integration-and-quality.md)
+- Rate limits, tracing & performance budgets → [overview.md#7-non-functional-goals](./overview.md#7-non-functional-goals)
 
 POC provenance for the domain vocabulary used in examples:
 

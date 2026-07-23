@@ -28,7 +28,7 @@ UC7 depends on and reuses:
 
 | Related use case | Relationship |
 |------------------|--------------|
-| [UC6 — Sales vs After-Sales Demand Correlation](./uc6-sales-aftersales-demand-correlation.md) | Supplies the **model-wise service-intensity index** and service-frequency-by-mileage/age curves that convert the installed base into a parts-usage signal. |
+| [UC6 — Sales vs After-Sales Demand Correlation](./uc6-sales-aftersales-correlation.md) | Supplies the **model-wise service-intensity index** and service-frequency-by-mileage/age curves that convert the installed base into a parts-usage signal. |
 | [UC4 — Procurement Quantity Optimisation](./uc4-procurement-quantity-optimisation.md) | UC7 emits parts reorder points / quantities that feed the same procurement-decision workbench pattern. |
 | [UC5 — Inventory Aging & Overstock Risk](./uc5-inventory-aging-overstock-risk.md) | Shares the overstock/aging framing, now applied to parts rather than vehicles. |
 | [UC1 — Monthly Vehicle Order Optimisation](./uc1-monthly-vehicle-order-optimisation.md) | The vehicle sales mix UC1 optimises is the leading indicator of future parts demand for those configurations. |
@@ -203,7 +203,7 @@ The SBC thresholds (ADI ≈ 1.32, CV² ≈ 0.49) are configurable platform param
 
 ### 5.3 Selection & back-testing (consistent with the POC philosophy)
 
-As in [UC2](./uc2-sales-forecast-accuracy-improvement.md) and the POC methodology, the customer's
+As in [UC2](./uc2-sales-forecast-accuracy.md) and the POC methodology, the customer's
 historical parts forecasts are not assumed available, so accuracy is demonstrated by **hold-out
 back-testing**: train on earlier periods, predict a known later window, compare to actuals, and choose
 transparently.
@@ -388,11 +388,11 @@ flowchart TD
   [Data Dictionary](../../wireframes/docs/DATA_DICTIONARY.md) ·
   [Assumptions & Limitations](../../wireframes/docs/ASSUMPTIONS_LIMITATIONS.md) ·
   [Integration Blueprint](../../wireframes/docs/INTEGRATION_AZURE_ORACLE.md)
-- Related use cases: [UC6 — Sales vs After-Sales Demand Correlation](./uc6-sales-aftersales-demand-correlation.md) ·
+- Related use cases: [UC6 — Sales vs After-Sales Demand Correlation](./uc6-sales-aftersales-correlation.md) ·
   [UC4 — Procurement Quantity Optimisation](./uc4-procurement-quantity-optimisation.md) ·
   [UC5 — Inventory Aging & Overstock Risk](./uc5-inventory-aging-overstock-risk.md) ·
   [UC1 — Monthly Vehicle Order Optimisation](./uc1-monthly-vehicle-order-optimisation.md) ·
-  [UC2 — Sales Forecast Accuracy Improvement](./uc2-sales-forecast-accuracy-improvement.md)
+  [UC2 — Sales Forecast Accuracy Improvement](./uc2-sales-forecast-accuracy.md)
 - Bounded contexts touched: MasterData, SalesActuals, AfterSales, **SpareParts**, Forecasting,
   ModelsAndExperiments, Predictions, Recommendations, Procurement, Inventory, DataQuality, Integration,
   DecisionsAndOutcomes.

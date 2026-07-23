@@ -63,7 +63,7 @@ flowchart TB
 
 **Guardrail (context level):** the generative-AI provider may *narrate* metrics already computed and
 validated by the platform. It must **never** compute forecasts, risk probabilities, monetary values,
-quantities, or decisions. See [genai-architecture.md](./genai-architecture.md).
+quantities, or decisions. See [ai-provider-abstraction.md](./ai-provider-abstraction.md).
 
 ---
 
@@ -191,7 +191,7 @@ The nineteen contexts: **Identity, Organisation, MasterData, Integration, DataQu
 Forecasting, Inventory, Procurement, AfterSales, SpareParts, ModelsAndExperiments, Predictions,
 Recommendations, DecisionsAndOutcomes, ExecutiveInsights, Notifications, Audit, PlatformAdministration.**
 Their contracts, ownership, and events are catalogued in
-[bounded-contexts.md](./bounded-contexts.md); each maps to one or more of the eight ADMC business use
+[module-boundaries.md](./module-boundaries.md); each maps to one or more of the eight ADMC business use
 cases (UC1 order optimisation → UC8 executive cockpit).
 
 ---
@@ -285,7 +285,7 @@ Versions reflect the July 2026 target baseline; exact patch levels are pinned pe
 Rationale for the shape: a **modular monolith** minimises operational complexity and cross-service
 transactions for a data-and-analytics workload, while the **out-of-band Python job tier** keeps
 long-running statistical compute off the request path and independently scalable. See
-[deployment-topology.md](./deployment-topology.md) and [ml-platform.md](./ml-platform.md).
+[deployment-and-ip-protection.md](./deployment-and-ip-protection.md) and [mlops-and-models.md](./mlops-and-models.md).
 
 ---
 
@@ -326,8 +326,8 @@ text/iconography.
 | Observability | OpenTelemetry traces/metrics/logs to App Insights; PII-aware logging. |
 | Environments | Separate dev / test / prod with isolated identities, secrets, and data. |
 
-Details in [security-and-identity.md](./security-and-identity.md) and
-[non-functional-requirements.md](./non-functional-requirements.md).
+Details in [security-threat-model.md](./security-threat-model.md) and
+[overview.md#7-non-functional-goals](./overview.md#7-non-functional-goals).
 
 ---
 
@@ -352,14 +352,14 @@ Details in [security-and-identity.md](./security-and-identity.md) and
 This overview is the index; the following sibling documents carry the detail and are kept consistent
 with the facts here.
 
-- Bounded contexts & module contracts → [bounded-contexts.md](./bounded-contexts.md)
-- Data architecture & ADLS zones → [data-architecture.md](./data-architecture.md)
-- Oracle Fusion integration & ACL → [integration-oracle-fusion.md](./integration-oracle-fusion.md)
-- ML platform & model lifecycle → [ml-platform.md](./ml-platform.md)
-- Provider-neutral GenAI & grounding → [genai-architecture.md](./genai-architecture.md)
-- Security & identity → [security-and-identity.md](./security-and-identity.md)
-- Deployment topology (Azure) → [deployment-topology.md](./deployment-topology.md)
-- Non-functional requirements → [non-functional-requirements.md](./non-functional-requirements.md)
+- Bounded contexts & module contracts → [module-boundaries.md](./module-boundaries.md)
+- Data architecture & ADLS zones → [data-integration-and-quality.md](./data-integration-and-quality.md)
+- Oracle Fusion integration & ACL → [data-integration-and-quality.md](./data-integration-and-quality.md)
+- ML platform & model lifecycle → [mlops-and-models.md](./mlops-and-models.md)
+- Provider-neutral GenAI & grounding → [ai-provider-abstraction.md](./ai-provider-abstraction.md)
+- Security & identity → [security-threat-model.md](./security-threat-model.md)
+- Deployment topology (Azure) → [deployment-and-ip-protection.md](./deployment-and-ip-protection.md)
+- Non-functional requirements → [overview.md#7-non-functional-goals](./overview.md#7-non-functional-goals)
 
 POC provenance (source of the analytics and data model this architecture productionises):
 

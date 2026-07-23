@@ -18,7 +18,17 @@ The Meridian BI POC (`docs/wireframes/Meridian BI.dc.html` + `engine.js`) is the
 | **Scaffolded** | Module library, endpoint stub and/or React route shell exist and compile; behaviour not wired. |
 | **Implemented** | Feature complete against the POC behaviour and covered by tests. |
 
-At the time of writing there is no `src/` tree, so **every production row below is `Planned`**; the POC provenance column records what already works in the reference implementation. As modules land, statuses advance here.
+**Current build status.** The `src/` tree now exists and **seven use cases are live end-to-end** —
+UC1 (Recommendations / Order Optimisation), UC2 (Forecasting), UC3 (SalesActuals / Configuration
+Demand), UC4 (Procurement) and UC5 (Inventory) on the real sales/inventory data, plus UC6 (AfterSales)
+and UC7 (SpareParts) on a labelled synthetic-demo dataset. Their modules are `Status => "operational"`
+and expose live `/api/v1` routes with working React screens. The **Executive Cockpit (UC8), AI Business
+Analyst, Management Actions, Reports & Exports and Data Management** screens remain `Planned` — their
+modules (ExecutiveInsights, DecisionsAndOutcomes, DataQuality, Integration) are still scaffolded. The
+detailed per-metric tables in §2–§4 below record the **target** endpoint design; the authoritative live
+surface is each module's actual routes (see [api-design.md](../api-design.md) and the committed OpenAPI
+snapshot). Where a granular target endpoint is not yet a distinct route, its data is currently served
+within the module's summary/detail responses.
 
 **Conventions.** Module names are .NET library roots under namespace `BeeEye.Modules.*`. API endpoints are host-relative under `/api/v1`. React routes are TanStack Router paths; component names are PascalCase feature components. GenAI may **narrate** validated metrics but must never compute forecasts, risk scores, values, quantities or decisions.
 
@@ -41,8 +51,8 @@ The ten POC screens (internal ids from `screenMeta()` in the POC) map to product
 | POC id | Screen | Primary module(s) | React route | Root component | Status |
 |--------|--------|-------------------|-------------|----------------|--------|
 | `exec` | Executive Cockpit | ExecutiveInsights | `/executive` | `ExecutiveCockpit` | Planned |
-| `inventory` | Inventory Intelligence | Inventory, Predictions, Recommendations | `/inventory` | `InventoryIntelligence` | Planned |
-| `forecast` | Sales Forecasting | Forecasting, ModelsAndExperiments | `/forecasting` | `SalesForecasting` | Planned |
+| `inventory` | Inventory Intelligence | Inventory, Predictions, Recommendations | `/inventory` | `InventoryIntelligence` | **Implemented** |
+| `forecast` | Sales Forecasting | Forecasting, ModelsAndExperiments | `/forecasting` | `SalesForecasting` | **Implemented** |
 | `ai` | AI Business Analyst | ExecutiveInsights (+ GenAI abstraction) | `/analyst` | `AiBusinessAnalyst` | Planned |
 | `actions` | Management Actions | DecisionsAndOutcomes | `/actions` | `ManagementActions` | Planned |
 | `reports` | Reports & Exports | ExecutiveInsights, Integration (export zone) | `/reports` | `ReportsExports` | Planned |
@@ -120,6 +130,12 @@ The ten POC screens (internal ids from `screenMeta()` in the POC) map to product
 
 Screen: **Inventory Intelligence** (`/inventory`). This is one of the two fully wireframed use cases; every element below has a working POC reference. The production risk score is an **explainable additive** model — the breakdown is a first-class API field, never a black box.
 
+> **Current build — Implemented (live).** The Inventory module is operational. Live routes:
+> `GET /api/v1/inventory/summary`, `/inventory/items`, `/inventory/items/{stockId}`,
+> `/inventory/filter-options`. The finer-grained target endpoints listed in the tables below
+> (`/inventory/units`, `/inventory/by-location`, `/inventory/risk-summary`, `/demand/velocity`, …) are
+> the design target; their values are currently delivered as fields within the summary/items responses.
+
 ### 3.1 Metrics & aggregates
 
 | Element | POC provenance | Target module(s) | API endpoint | React component | Status |
@@ -165,6 +181,13 @@ Screen: **Inventory Intelligence** (`/inventory`). This is one of the two fully 
 
 Screen: **Sales Forecasting** (`/forecasting`). The second fully wireframed use case. Accuracy is demonstrated by **holdout back-testing** (the customer's original forecasts were not supplied); the future forecast refits on all history.
 
+> **Current build — Implemented (live).** The Forecasting module is operational. Live routes:
+> `GET /api/v1/forecasting/forecast`, `/forecasting/accuracy-by/{dimension}`,
+> `/forecasting/filter-options`. The finer-grained target endpoints listed below
+> (`/forecasting/overview`, `/forecasting/backtest`, `/forecasting/bias`, `/forecasting/scenario`, …)
+> are the design target; their values are currently delivered within the `forecast` and
+> `accuracy-by` responses.
+
 ### 4.1 Forecast methods (compared transparently)
 
 | Method | POC provenance | Target module(s) | Status |
@@ -196,16 +219,16 @@ Screen: **Sales Forecasting** (`/forecasting`). The second fully wireframed use 
 
 The eight use cases are sequenced across five delivery phases (P1 = highest priority / earliest). The two wireframed use cases (**UC2, UC5**) anchor Phase 1 because they are proven in the POC and establish the analytics spine (SalesActuals, Forecasting, Inventory, Predictions, Recommendations, DataQuality). Later phases extend into after-sales and spare parts, which have no POC data yet.
 
-| # | Use case | Primary contexts | Supporting contexts | Phase | POC status |
-|---|----------|------------------|---------------------|:-----:|------------|
-| **UC5** | Inventory Aging & Overstock Risk | Inventory, Predictions, Recommendations | SalesActuals, MasterData, DataQuality | **P1** | Wireframed |
-| **UC2** | Sales Forecast Accuracy Improvement | Forecasting, ModelsAndExperiments, Predictions | SalesActuals, MasterData | **P1** | Wireframed |
-| **UC8** | Executive Decision Cockpit | ExecutiveInsights | Forecasting, Inventory, Predictions, Recommendations, Notifications | **P2** | Built (aggregates P1) |
-| **UC1** | Monthly Vehicle Order Optimisation | Procurement, Forecasting | Inventory, Predictions, Recommendations, DecisionsAndOutcomes | **P2** | Partial (recs engine) |
-| **UC4** | Procurement Quantity Optimisation | Procurement | Forecasting, Inventory, Predictions | **P3** | Partial |
-| **UC3** | Configuration-Level Demand Insights | SalesActuals, MasterData | Forecasting, Predictions | **P3** | Partial (breakdowns) |
-| **UC6** | Sales vs After-Sales Demand Correlation | AfterSales, SalesActuals | Predictions, ExecutiveInsights | **P4** | New (no data) |
-| **UC7** | Spare Parts Demand Prediction | SpareParts, Forecasting | AfterSales, ModelsAndExperiments, Predictions | **P5** | New (no data) |
+| # | Use case | Primary contexts | Supporting contexts | Phase | Build (current) | POC status |
+|---|----------|------------------|---------------------|:-----:|-----------------|------------|
+| **UC5** | Inventory Aging & Overstock Risk | Inventory, Predictions, Recommendations | SalesActuals, MasterData, DataQuality | **P1** | ✅ Live | Wireframed |
+| **UC2** | Sales Forecast Accuracy Improvement | Forecasting, ModelsAndExperiments, Predictions | SalesActuals, MasterData | **P1** | ✅ Live | Wireframed |
+| **UC8** | Executive Decision Cockpit | ExecutiveInsights | Forecasting, Inventory, Predictions, Recommendations, Notifications | **P2** | Planned | Built (aggregates P1) |
+| **UC1** | Monthly Vehicle Order Optimisation | Recommendations, Forecasting | Inventory, Predictions, Procurement, DecisionsAndOutcomes | **P2** | ✅ Live | Partial (recs engine) |
+| **UC4** | Procurement Quantity Optimisation | Procurement | Forecasting, Inventory, Predictions | **P3** | ✅ Live | Partial |
+| **UC3** | Configuration-Level Demand Insights | SalesActuals, MasterData | Forecasting, Predictions | **P3** | ✅ Live | Partial (breakdowns) |
+| **UC6** | Sales vs After-Sales Demand Correlation | AfterSales, SalesActuals | Predictions, ExecutiveInsights | **P4** | ✅ Live (synthetic-demo) | New (no data) |
+| **UC7** | Spare Parts Demand Prediction | SpareParts, Forecasting | AfterSales, ModelsAndExperiments, Predictions | **P5** | ✅ Live (synthetic-demo) | New (no data) |
 
 **Foundational contexts (Phase 0/1, prerequisite to every UC):** Identity, Organisation, MasterData, Integration (Oracle Fusion read-only anti-corruption layer), DataQuality, Audit, Notifications, PlatformAdministration. These deliver auth, the location/model taxonomy, ingestion + validation zones (raw/validated/curated/quarantine/model-input/model-output/export), configuration and observability that all use cases consume.
 
@@ -237,7 +260,11 @@ flowchart TD
 
 ## 6. Notes on status governance
 
-- No `src/` tree exists yet, so all production rows are **Planned**. Statuses advance to **Scaffolded** when the module library + endpoint stub + route shell compile, and to **Implemented** when behaviour matches the cited POC function and is covered by tests.
+- The `src/` tree exists and the seven live use cases (UC1–UC7) have advanced to **Implemented**; the
+  remaining screens/contexts (UC8 Executive Cockpit, AI Analyst, Management Actions, Reports, Data
+  Management) are still **Planned/Scaffolded**. A row is **Scaffolded** when the module library +
+  endpoint stub + route shell compile, and **Implemented** when behaviour matches the cited POC function
+  and is covered by tests.
 - The POC provenance column is the acceptance oracle: a production metric is "done" when it reproduces the corresponding `engine.js` output for the sample dataset (3,120 sales rows, 291 inventory units) within tolerance, and the additive risk / accuracy breakdowns match.
 - Any endpoint that returns a computed number is owned by a .NET module or the Python ML service — **never** by the GenAI layer, which is restricted to narration of already-validated values.
 

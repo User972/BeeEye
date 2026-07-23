@@ -4,7 +4,13 @@
 
 UC1 is the flagship planning use case for ADMC. Each monthly ordering cycle, supply planners must decide **how many of each vehicle configuration to order** — by model, variant, colour, interior and destination location — under real procurement limits (minimum order quantities, factory allocation, working capital, storage). BeeEye supports that decision by chaining four machine steps and one human step, keeping every number traceable back to the sales history and inventory position it came from.
 
-This document is a product specification. It builds directly on the POC forecasting engine (see [UC2](./uc2-sales-forecast-accuracy-improvement.md)) and the POC inventory-risk engine (see [UC5](./uc5-inventory-aging-overstock-risk.md)), and reuses their visual language.
+This document is a product specification. It builds directly on the POC forecasting engine (see [UC2](./uc2-sales-forecast-accuracy.md)) and the POC inventory-risk engine (see [UC5](./uc5-inventory-aging-overstock-risk.md)), and reuses their visual language.
+
+> **Current build — Implemented (live).** UC1 is operational as the **Recommendations** module
+> (`Status => "operational"`), with the order-optimisation logic in `BeeEye.Analytics`
+> (`Optimisation/OrderOptimiser.cs`). Live routes: `GET /api/v1/recommendations/order-optimisation` and
+> `/recommendations/order-optimisation/filter-options`, rendered by the `/order-optimisation` React screen.
+> The endpoint shapes elsewhere in this spec are the target design.
 
 ---
 
@@ -27,7 +33,7 @@ Concretely, for the ADMC portfolio (Nissan Patrol, Toyota Corolla, HAVAL H9, Toy
 | **Supply / Order Planner** | Primary user. Runs the monthly cycle, reviews recommendations, accepts / amends / rejects per configuration. | Trustworthy quantities with the reasoning attached; fast bulk review. | Analyst |
 | **Procurement Manager** | Owns MOQ, factory-allocation ceilings, working-capital and storage limits; approves the consolidated order. | Guarantee the order respects every hard constraint before it goes to the OEM. | Analyst / Exec |
 | **Demand / BI Analyst** | Validates the forecast basis and back-test accuracy feeding each configuration; investigates low-confidence cells. | Transparency of method, holdout accuracy and demand-fallback basis. | Analyst |
-| **Brand / Model Manager** | Sanity-checks configuration mix (colour/interior/variant split) against market intent and campaigns. | Configuration-level demand insight (ties to [UC3](./uc3-configuration-level-demand-insights.md)). | Analyst |
+| **Brand / Model Manager** | Sanity-checks configuration mix (colour/interior/variant split) against market intent and campaigns. | Configuration-level demand insight (ties to [UC3](./uc3-configuration-demand-insights.md)). | Analyst |
 | **Regional Sales Manager** | Reviews the destination allocation for their locations; flags local knowledge the data can't see. | Location-level allocation they can defend to their showrooms. | Exec |
 | **Executive Sponsor** | Approves total commitment value and capital exposure. | One-line defensible summary of total units, SAR value and risk. | Exec (ties to [UC8](./uc8-executive-decision-cockpit.md)) |
 
@@ -276,4 +282,4 @@ flowchart LR
 - **Data model:** [`DATA_DICTIONARY.md`](../../wireframes/docs/DATA_DICTIONARY.md)
 - **Assumptions & limits:** [`ASSUMPTIONS_LIMITATIONS.md`](../../wireframes/docs/ASSUMPTIONS_LIMITATIONS.md)
 - **Integration target:** [`INTEGRATION_AZURE_ORACLE.md`](../../wireframes/docs/INTEGRATION_AZURE_ORACLE.md)
-- **Related use cases:** [UC2 — Sales Forecast Accuracy](./uc2-sales-forecast-accuracy-improvement.md) · [UC3 — Configuration-Level Demand](./uc3-configuration-level-demand-insights.md) · [UC4 — Procurement Quantity Optimisation](./uc4-procurement-quantity-optimisation.md) · [UC5 — Inventory Aging & Overstock Risk](./uc5-inventory-aging-overstock-risk.md) · [UC8 — Executive Decision Cockpit](./uc8-executive-decision-cockpit.md)
+- **Related use cases:** [UC2 — Sales Forecast Accuracy](./uc2-sales-forecast-accuracy.md) · [UC3 — Configuration-Level Demand](./uc3-configuration-demand-insights.md) · [UC4 — Procurement Quantity Optimisation](./uc4-procurement-quantity-optimisation.md) · [UC5 — Inventory Aging & Overstock Risk](./uc5-inventory-aging-overstock-risk.md) · [UC8 — Executive Decision Cockpit](./uc8-executive-decision-cockpit.md)
