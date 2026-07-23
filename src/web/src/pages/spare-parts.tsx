@@ -21,10 +21,6 @@ import { demandClassBadge, fmtInt, fmtNum, riskWordClass } from '@/lib/format';
 
 const PAGE_SIZE = 25;
 
-function fmtDemand(v: number | null): string {
-  return v === null || v === undefined ? '—' : fmtNum(v, 2);
-}
-
 function fmtRange(lo: number | null, hi: number | null): string {
   return lo === null || hi === null ? 'insufficient data' : `${fmtInt(lo)}–${fmtInt(hi)}`;
 }
@@ -174,7 +170,7 @@ export default function SparePartsPage() {
                           <td>{r.location}</td>
                           <td><span className={`badge ${demandClassBadge(r.demandClass)}`}>{r.demandClass}</span></td>
                           <td>{r.method}</td>
-                          <td className="num">{fmtDemand(r.predictedMonthlyDemand)}</td>
+                          <td className="num">{fmtNum(r.predictedMonthlyDemand, 2)}</td>
                           <td className="num">{fmtRange(r.stockingRangeLow, r.stockingRangeHigh)}</td>
                           <td className="num">{fmtInt(r.currentStock)}{r.inboundStock > 0 ? ` +${fmtInt(r.inboundStock)}` : ''}</td>
                           <td className="num">{fmtInt(r.leadTimeDays)}</td>
@@ -228,7 +224,7 @@ function PartDetail({ data }: { data: PartDetailResponse }) {
       </div>
 
       <dl style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '6px 14px', margin: 0, fontSize: 12.5 }}>
-        <dt style={{ color: 'var(--text-muted)' }}>National demand</dt><dd style={{ margin: 0 }}>{fmtDemand(n.predictedMonthlyDemand)} /mo · method {n.method} ({n.confidence})</dd>
+        <dt style={{ color: 'var(--text-muted)' }}>National demand</dt><dd style={{ margin: 0 }}>{fmtNum(n.predictedMonthlyDemand, 2)} /mo · method {n.method} ({n.confidence})</dd>
         <dt style={{ color: 'var(--text-muted)' }}>Intermittency</dt><dd style={{ margin: 0 }}>ADI {fmtNum(n.adi, 2)} · CV² {fmtNum(n.cv2, 2)} · {n.nonZeroPeriods}/{n.periods} months with demand</dd>
         <dt style={{ color: 'var(--text-muted)' }}>Lead time</dt><dd style={{ margin: 0 }}>{fmtNum(n.leadTimeMonths, 1)} months</dd>
         <dt style={{ color: 'var(--text-muted)' }}>Compatible models</dt><dd style={{ margin: 0 }}>{data.compatibleModels.join(', ') || '—'}</dd>
@@ -282,7 +278,7 @@ function PartDetail({ data }: { data: PartDetailResponse }) {
                   <td>{r.location}</td>
                   <td><span className={`badge ${demandClassBadge(r.demandClass)}`}>{r.demandClass}</span></td>
                   <td>{r.method}</td>
-                  <td className="num">{fmtDemand(r.predictedMonthlyDemand)}</td>
+                  <td className="num">{fmtNum(r.predictedMonthlyDemand, 2)}</td>
                   <td className="num">{fmtRange(r.stockingRangeLow, r.stockingRangeHigh)}</td>
                   <td>{r.insufficientData ? <span className="badge">low data</span> : <span className={`badge ${riskWordClass(r.stockoutRisk)}`}>{r.stockoutRisk}</span>}</td>
                 </tr>

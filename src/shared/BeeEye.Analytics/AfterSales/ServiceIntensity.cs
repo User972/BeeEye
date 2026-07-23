@@ -29,6 +29,7 @@ public static class ServiceIntensity
             .ToList();
 
         var months = MonthAxis(records, monthlySales);
+        var eventsByModel = records.ToLookup(r => r.Model, StringComparer.Ordinal);
 
         // Fleet ratio over models that actually have vehicles-in-operation, so a model
         // with events but no known fleet does not distort the normaliser.
@@ -40,7 +41,7 @@ public static class ServiceIntensity
             if (vio > 0)
             {
                 fleetVio += vio;
-                fleetEvents += records.Count(r => string.Equals(r.Model, m, StringComparison.Ordinal));
+                fleetEvents += eventsByModel[m].Count();
             }
         }
 
@@ -57,7 +58,7 @@ public static class ServiceIntensity
         var results = new List<ModelServiceIntensity>(models.Count);
         foreach (var model in models)
         {
-            var evts = records.Where(r => string.Equals(r.Model, model, StringComparison.Ordinal)).ToList();
+            var evts = eventsByModel[model].ToList();
             var vio = vehiclesInOperationByModel.GetValueOrDefault(model, 0);
             var totalEvents = evts.Count;
 
@@ -189,11 +190,12 @@ public static class ServiceIntensity
         var service = months.Select(m => serviceByMonth.GetValueOrDefault(m, 0)).ToList();
 
         var lag0 = Statistics.Correlation(sales, service);
-        double? best = null;
+        double? best = lag0;
         var bestLag = 0;
 
+        // lag 0 is already captured by lag0/best above — start at 1 to avoid recomputing it.
         var cap = Math.Min(maxLag, months.Count - 3);
-        for (var lag = 0; lag <= Math.Max(0, cap); lag++)
+        for (var lag = 1; lag <= Math.Max(0, cap); lag++)
         {
             // Service at month t associated with sales at month t-lag (service trails sales).
             var x = new List<double>();

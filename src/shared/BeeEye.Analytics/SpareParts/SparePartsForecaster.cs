@@ -45,14 +45,21 @@ public static class SparePartsForecaster
         var perPeriodStd = Statistics.Std(usageSeries);
         var sigmaLt = perPeriodStd * Math.Sqrt(leadPlusReview);
 
-        var safety = ProcurementOptimiser.Z(settings.ServiceLevel) * sigmaLt;
+        var zService = ProcurementOptimiser.Z(settings.ServiceLevel);
+        var safety = zService * sigmaLt;
         var leadTimeDemand = rate * leadTimeMonths;
         var reorderPoint = leadTimeDemand + safety;
         var orderUpTo = (rate * leadPlusReview) + safety;
 
+        // The range is a 90–99% service band, widened to include the requested service level when it
+        // sits outside that band, so the point estimate (which uses zService) is always bracketed by
+        // [low, high] — mirrors ProcurementOptimiser (UC4).
+        var zLow = Math.Min(ProcurementOptimiser.Z(0.90), zService);
+        var zHigh = Math.Max(ProcurementOptimiser.Z(0.99), zService);
+
         var point = LotCeil(orderUpTo - available);
-        var low = LotCeil((rate * leadPlusReview) + (ProcurementOptimiser.Z(0.90) * sigmaLt) - available);
-        var high = LotCeil((rate * leadPlusReview) + (ProcurementOptimiser.Z(0.99) * sigmaLt) - available);
+        var low = LotCeil((rate * leadPlusReview) + (zLow * sigmaLt) - available);
+        var high = LotCeil((rate * leadPlusReview) + (zHigh * sigmaLt) - available);
 
         var stockoutRisk = available < leadTimeDemand ? "High"
             : available < reorderPoint ? "Medium"

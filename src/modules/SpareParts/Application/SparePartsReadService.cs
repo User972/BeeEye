@@ -19,7 +19,8 @@ public sealed class SparePartsReadService(BeeEyeDbContext db)
     /// <summary>A part × location recommendation plus the supply fields the table shows.</summary>
     public sealed record PartResult(
         string PartNumber, string Name, string Category, string Location,
-        int CurrentStock, int InboundStock, int LeadTimeDays, SparePartRecommendation Recommendation);
+        int CurrentStock, int InboundStock, int LeadTimeDays,
+        IReadOnlyList<string> Models, SparePartRecommendation Recommendation);
 
     private sealed record PartRow(
         Guid Id, string PartNumber, string Name, string Category, decimal UnitCost,
@@ -84,8 +85,7 @@ public sealed class SparePartsReadService(BeeEyeDbContext db)
         var national = SparePartsForecaster.Recommend(nationalInput, nationalSeries, settings);
 
         var history = months.Select((m, i) => new UsagePoint(m, nationalSeries[i])).ToList();
-        var byLocation = BuildRows(ctx, settings)
-            .Where(r => string.Equals(r.PartNumber, part.PartNumber, StringComparison.Ordinal))
+        var byLocation = BuildRowsForPart(ctx, part, settings)
             .OrderByDescending(r => r.Recommendation.PredictedMonthlyDemand ?? -1)
             .ThenBy(r => r.Location, StringComparer.Ordinal)
             .Select(ToRow)
@@ -131,31 +131,43 @@ public sealed class SparePartsReadService(BeeEyeDbContext db)
     {
         foreach (var part in ctx.Parts.Where(p => p.IsActive))
         {
-            var predecessors = TransitivePredecessors(part.Id, ctx);
-            var locations = ctx.LocationsByPart.GetValueOrDefault(part.Id, []);
-            var partTotal = ctx.TotalUsageByPart.GetValueOrDefault(part.Id, 0);
-
-            if (locations.Count == 0)
+            foreach (var row in BuildRowsForPart(ctx, part, settings))
             {
-                // A part with no usage anywhere (e.g. a brand-new niche part) — one flagged, low-data row.
-                var input = new SparePartInput(part.PartNumber, part.Name, part.Category, part.LeadTimeDays, part.CurrentStock, part.InboundStock, part.UnitCost);
-                yield return new PartResult(part.PartNumber, part.Name, part.Category, "(no usage)",
-                    part.CurrentStock, part.InboundStock, part.LeadTimeDays,
-                    SparePartsForecaster.Recommend(input, [], settings));
-                continue;
+                yield return row;
             }
+        }
+    }
 
-            foreach (var location in locations)
-            {
-                var (series, _) = LocationSeries(part, predecessors, location, ctx);
-                var share = partTotal > 0 ? ctx.LocationUsageTotal.GetValueOrDefault((part.Id, location), 0) / partTotal : 0;
-                var stock = DistributeStock(part.CurrentStock, share);
-                var inbound = DistributeStock(part.InboundStock, share);
+    // Rows for a single part (regardless of active status), so the part-detail view still shows a
+    // superseded (inactive) part's per-location breakdown, and a detail request forecasts one part
+    // rather than the whole catalogue.
+    private IEnumerable<PartResult> BuildRowsForPart(Context ctx, PartRow part, SparePartsSettings settings)
+    {
+        var predecessors = TransitivePredecessors(part.Id, ctx);
+        var locations = ctx.LocationsByPart.GetValueOrDefault(part.Id, []);
+        var partTotal = ctx.TotalUsageByPart.GetValueOrDefault(part.Id, 0);
+        var models = ctx.ModelsByPart.GetValueOrDefault(part.Id, []);
 
-                var input = new SparePartInput(part.PartNumber, part.Name, part.Category, part.LeadTimeDays, stock, inbound, part.UnitCost);
-                yield return new PartResult(part.PartNumber, part.Name, part.Category, location,
-                    stock, inbound, part.LeadTimeDays, SparePartsForecaster.Recommend(input, series, settings));
-            }
+        if (locations.Count == 0)
+        {
+            // A part with no usage anywhere (e.g. a brand-new niche part) — one flagged, low-data row.
+            var input = new SparePartInput(part.PartNumber, part.Name, part.Category, part.LeadTimeDays, part.CurrentStock, part.InboundStock, part.UnitCost);
+            yield return new PartResult(part.PartNumber, part.Name, part.Category, "(no usage)",
+                part.CurrentStock, part.InboundStock, part.LeadTimeDays, models,
+                SparePartsForecaster.Recommend(input, [], settings));
+            yield break;
+        }
+
+        foreach (var location in locations)
+        {
+            var (series, _) = LocationSeries(part, predecessors, location, ctx);
+            var share = partTotal > 0 ? ctx.LocationUsageTotal.GetValueOrDefault((part.Id, location), 0) / partTotal : 0;
+            var stock = DistributeStock(part.CurrentStock, share);
+            var inbound = DistributeStock(part.InboundStock, share);
+
+            var input = new SparePartInput(part.PartNumber, part.Name, part.Category, part.LeadTimeDays, stock, inbound, part.UnitCost);
+            yield return new PartResult(part.PartNumber, part.Name, part.Category, location,
+                stock, inbound, part.LeadTimeDays, models, SparePartsForecaster.Recommend(input, series, settings));
         }
     }
 
@@ -222,6 +234,7 @@ public sealed class SparePartsReadService(BeeEyeDbContext db)
     private static IReadOnlyList<Guid> TransitivePredecessors(Guid partId, Context ctx)
     {
         var result = new List<Guid>();
+        var seen = new HashSet<Guid>();
         var queue = new Queue<Guid>();
         queue.Enqueue(partId);
         while (queue.Count > 0)
@@ -231,10 +244,13 @@ public sealed class SparePartsReadService(BeeEyeDbContext db)
                 continue;
             }
 
-            foreach (var p in preds.Where(p => !result.Contains(p)))
+            foreach (var p in preds)
             {
-                result.Add(p);
-                queue.Enqueue(p);
+                if (seen.Add(p))
+                {
+                    result.Add(p);
+                    queue.Enqueue(p);
+                }
             }
         }
 
@@ -266,7 +282,7 @@ public sealed class SparePartsReadService(BeeEyeDbContext db)
 
         foreach (var a in agg)
         {
-            var month = $"{a.UsageDate.Year:D4}-{a.UsageDate.Month:D2}";
+            var month = MonthKey.Of(a.UsageDate);
             var key = (a.PartId, a.Location);
             if (!usageByPartLocation.TryGetValue(key, out var byMonth))
             {

@@ -19,14 +19,6 @@ import { fmtInt, fmtNum, fmtPct, intensityClass, reliabilityClass } from '@/lib/
 
 const PAGE_SIZE = 20;
 
-function fmtIndex(v: number | null): string {
-  return v === null || v === undefined ? '—' : fmtNum(v, 2);
-}
-
-function fmtRate(v: number | null): string {
-  return v === null || v === undefined ? '—' : fmtNum(v, 2);
-}
-
 export default function AfterSalesPage() {
   const [model, setModel] = useState('');
   const [highOnly, setHighOnly] = useState(false);
@@ -92,7 +84,7 @@ export default function AfterSalesPage() {
             <StatCard label="Models tracked" value={fmtInt(s.modelsTracked)} icon="directions_car" />
             <StatCard
               label="Avg. service-intensity"
-              value={fmtIndex(s.averageIntensityIndex)}
+              value={fmtNum(s.averageIntensityIndex, 2)}
               icon="build"
               hint="fleet mean = 1.00"
             />
@@ -110,7 +102,11 @@ export default function AfterSalesPage() {
 
           <Card>
             <CardHeader title="Service-intensity index by model" subtitle="Events per vehicle-in-operation, normalised so the fleet mean is 1.00" />
-            {byModel.data ? (
+            {byModel.isLoading ? (
+              <LoadingState />
+            ) : byModel.isError || !byModel.data ? (
+              <ErrorState onRetry={() => void byModel.refetch()} />
+            ) : (
               <BarDistribution
                 rows={byModel.data.page.items.map((m) => ({
                   key: m.model,
@@ -121,8 +117,6 @@ export default function AfterSalesPage() {
                 format={(v) => fmtNum(v, 2)}
                 caption="Service-intensity index by model"
               />
-            ) : (
-              <LoadingState />
             )}
           </Card>
 
@@ -156,10 +150,10 @@ export default function AfterSalesPage() {
                       {byModel.data.page.items.map((m) => (
                         <tr key={m.model} className="sortable" onClick={() => setSelected(m.model)}>
                           <td>{m.model}</td>
-                          <td className="num"><span className={`badge ${intensityClass(m.intensityIndex, m.highIntensity)}`}>{fmtIndex(m.intensityIndex)}</span></td>
+                          <td className="num"><span className={`badge ${intensityClass(m.intensityIndex, m.highIntensity)}`}>{fmtNum(m.intensityIndex, 2)}</span></td>
                           <td className="num">{fmtInt(m.totalEvents)}</td>
-                          <td className="num">{fmtRate(m.eventsPerVehicle)}</td>
-                          <td className="num">{fmtRate(m.laborHoursPerVehicle)}</td>
+                          <td className="num">{fmtNum(m.eventsPerVehicle, 2)}</td>
+                          <td className="num">{fmtNum(m.laborHoursPerVehicle, 2)}</td>
                           <td className="num">{m.coverageRate === null ? '—' : fmtPct(m.coverageRate * 100, 0)}</td>
                           <td><span className={`badge ${reliabilityClass(m.reliabilityTier)}`}>{m.reliabilityTier}</span></td>
                           <td>{m.highIntensity ? <span className="badge risk-high">high-service</span> : null}</td>
@@ -209,13 +203,13 @@ function ModelDetail({ data }: { data: ModelServiceIntensity }) {
           </div>
         </div>
         <span className={`badge ${intensityClass(data.intensityIndex, data.highIntensity)}`}>
-          index {fmtIndex(data.intensityIndex)}
+          index {fmtNum(data.intensityIndex, 2)}
         </span>
       </div>
 
       <dl style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '6px 14px', margin: 0, fontSize: 12.5 }}>
-        <dt style={{ color: 'var(--text-muted)' }}>Events / vehicle</dt><dd style={{ margin: 0 }}>{fmtRate(data.eventsPerVehicle)}</dd>
-        <dt style={{ color: 'var(--text-muted)' }}>Labour-hours / vehicle</dt><dd style={{ margin: 0 }}>{fmtRate(data.laborHoursPerVehicle)}</dd>
+        <dt style={{ color: 'var(--text-muted)' }}>Events / vehicle</dt><dd style={{ margin: 0 }}>{fmtNum(data.eventsPerVehicle, 2)}</dd>
+        <dt style={{ color: 'var(--text-muted)' }}>Labour-hours / vehicle</dt><dd style={{ margin: 0 }}>{fmtNum(data.laborHoursPerVehicle, 2)}</dd>
         <dt style={{ color: 'var(--text-muted)' }}>Coverage</dt>
         <dd style={{ margin: 0 }}>
           {data.coverage.coverageRate === null ? '—' : fmtPct(data.coverage.coverageRate * 100, 0)} of vehicles ·

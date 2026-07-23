@@ -39,7 +39,7 @@ public sealed class SyntheticAfterSalesImporter(BeeEyeDbContext db)
     private const string SourceObject = "after-sales-parts";
 
     /// <summary>Bump when the generation logic changes so existing synthetic data is regenerated.</summary>
-    private const string CatalogVersion = "v5";
+    private const string CatalogVersion = "v6";
     private const int InsertChunk = 10_000;
 
     private sealed record SalesRow(string Model, string Variant, string Location, string Colour, int Year, int Month, int UnitsSold);
@@ -111,7 +111,6 @@ public sealed class SyntheticAfterSalesImporter(BeeEyeDbContext db)
         var now = DateTimeOffset.UtcNow;
         var generated = Generate(sales, maxMonth, settings, batchId, now);
 
-        await PurgeStaleSyntheticAsync(ct);
         await PersistAsync(batchId, checksum, generated, ct);
         return new SyntheticImportResult(
             "imported", generated.Vehicles.Count, generated.Events.Count, generated.Parts.Count, generated.Usages.Count, checksum);
@@ -136,8 +135,9 @@ public sealed class SyntheticAfterSalesImporter(BeeEyeDbContext db)
 
         var density = Math.Clamp(settings.Density, 0.0001, 1.0);
 
-        foreach (var row in sales)
+        for (var rowOrdinal = 0; rowOrdinal < sales.Count; rowOrdinal++)
         {
+            var row = sales[rowOrdinal];
             var units = ScaleUnits(row.UnitsSold, density);
             var saleMonth = new DateOnly(row.Year, row.Month, 1);
             var monthKey = $"{row.Year:D4}-{row.Month:D2}";
@@ -146,7 +146,7 @@ public sealed class SyntheticAfterSalesImporter(BeeEyeDbContext db)
 
             for (var index = 0; index < units; index++)
             {
-                var vin = Vin(settings.Seed, row.Model, row.Variant, row.Location, monthKey, index);
+                var vin = Vin(settings.Seed, row.Model, row.Variant, row.Location, row.Colour, monthKey, rowOrdinal, index);
                 vehicles.Add(new VehicleSale
                 {
                     Id = DeterministicRandom.DeterministicGuid($"vehicle|{vin}"),
@@ -372,6 +372,9 @@ public sealed class SyntheticAfterSalesImporter(BeeEyeDbContext db)
         await using var tx = await db.Database.BeginTransactionAsync(ct);
         try
         {
+            // Purge the prior generation inside the same transaction as the insert, so a failed
+            // persist rolls back to the previous dataset rather than leaving the six tables empty.
+            await PurgeStaleSyntheticAsync(ct);
             await InsertChunkedAsync(g.Parts, ct);
             await InsertChunkedAsync(g.Compatibilities, ct);
             await InsertChunkedAsync(g.Supersessions, ct);
@@ -428,9 +431,13 @@ public sealed class SyntheticAfterSalesImporter(BeeEyeDbContext db)
         return density >= 1.0 ? units : Math.Max(1, (int)Math.Round(units * density, MidpointRounding.AwayFromZero));
     }
 
-    private static string Vin(ulong seed, string model, string variant, string location, string monthKey, int index)
+    private static string Vin(ulong seed, string model, string variant, string location, string colour, string monthKey, int rowOrdinal, int index)
     {
-        var cell = DeterministicRandom.Hash(seed, $"{model}|{variant}|{location}|{monthKey}");
+        // The cell key includes Colour and the row's position in the (deterministically ordered) sales
+        // list, so two sales rows that share model|variant|location|month but differ in colour — or in
+        // any dimension SalesRow drops — never collide: every vehicle gets a unique VIN and thus a
+        // unique VehicleSale.Id.
+        var cell = DeterministicRandom.Hash(seed, $"{model}|{variant}|{location}|{colour}|{monthKey}|{rowOrdinal}");
         return "SYN" + DeterministicRandom.ToBase36(cell, 11) + DeterministicRandom.ToBase36((ulong)index, 3);
     }
 

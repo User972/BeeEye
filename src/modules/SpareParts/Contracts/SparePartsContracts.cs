@@ -9,6 +9,29 @@ public sealed record SparePartsScenario(double ServiceLevel, double ReviewPeriod
     public static SparePartsScenario From(double? serviceLevel, double? reviewPeriodMonths)
         => new(serviceLevel ?? 0.95, reviewPeriodMonths ?? 1.0);
 
+    /// <summary>
+    /// Guards the forecaster's numeric domain: query-bound doubles admit negatives, NaN
+    /// ("NaN" parses as a valid double) and huge finite values, which would drive
+    /// <c>Math.Sqrt</c> of a negative protection interval to NaN (or overflow to Infinity)
+    /// and crash JSON serialisation with a 500 instead of a client error. Mirrors
+    /// <c>ProcurementScenario.Validate()</c> / <c>OrderScenario.Validate()</c>.
+    /// </summary>
+    public IReadOnlyList<string> Validate()
+    {
+        var errors = new List<string>();
+        if (!double.IsFinite(ServiceLevel) || ServiceLevel is <= 0 or >= 1)
+        {
+            errors.Add("serviceLevel must be between 0 and 1 (exclusive).");
+        }
+
+        if (!double.IsFinite(ReviewPeriodMonths) || ReviewPeriodMonths is < 0 or > 120)
+        {
+            errors.Add("reviewPeriodMonths must be between 0 and 120 months.");
+        }
+
+        return errors;
+    }
+
     public SparePartsSettings ToSettings() => new()
     {
         ServiceLevel = ServiceLevel,

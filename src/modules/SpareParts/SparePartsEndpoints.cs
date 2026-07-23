@@ -31,6 +31,13 @@ internal static class SparePartsEndpoints
                 }
 
                 var scenario = SparePartsScenario.From(serviceLevel, reviewPeriodMonths);
+                var errors = scenario.Validate();
+                if (errors.Count > 0)
+                {
+                    return Results.Problem(statusCode: StatusCodes.Status400BadRequest,
+                        title: "Invalid scenario", detail: string.Join(" ", errors));
+                }
+
                 var summary = await svc.SummaryAsync(scenario.ToSettings(), ct);
                 return Results.Ok(new SparePartsSummaryResponse(scenario, summary, SparePartsProvenance.Now()));
             })
@@ -48,12 +55,24 @@ internal static class SparePartsEndpoints
                 }
 
                 var scenario = SparePartsScenario.From(serviceLevel, reviewPeriodMonths);
+                var errors = scenario.Validate();
+                if (errors.Count > 0)
+                {
+                    return Results.Problem(statusCode: StatusCodes.Status400BadRequest,
+                        title: "Invalid scenario", detail: string.Join(" ", errors));
+                }
+
                 var all = await svc.RecommendAllAsync(scenario.ToSettings(), ct);
 
                 IEnumerable<SparePartsReadService.PartResult> filtered = all;
                 if (category is { Length: > 0 })
                 {
                     filtered = filtered.Where(r => category.Contains(r.Category, StringComparer.OrdinalIgnoreCase));
+                }
+
+                if (model is { Length: > 0 })
+                {
+                    filtered = filtered.Where(r => r.Models.Any(m => model.Contains(m, StringComparer.OrdinalIgnoreCase)));
                 }
 
                 if (lowDataOnly == true)
@@ -79,6 +98,13 @@ internal static class SparePartsEndpoints
                 string partNumber, SparePartsReadService svc, CancellationToken ct, double? serviceLevel, double? reviewPeriodMonths) =>
             {
                 var scenario = SparePartsScenario.From(serviceLevel, reviewPeriodMonths);
+                var errors = scenario.Validate();
+                if (errors.Count > 0)
+                {
+                    return Results.Problem(statusCode: StatusCodes.Status400BadRequest,
+                        title: "Invalid scenario", detail: string.Join(" ", errors));
+                }
+
                 var detail = await svc.PartDetailAsync(partNumber, scenario, ct);
                 return detail is null
                     ? Results.Problem(statusCode: StatusCodes.Status404NotFound, title: "Unknown part",

@@ -66,6 +66,12 @@ public sealed class ForecastingReadService(BeeEyeDbContext db)
 
         var selector = DimensionSelector(dimension);
         var filtered = rows.Where(r => Matches(r, filter)).ToList();
+        if (filtered.Count == 0)
+        {
+            // Mirror ForecastAsync: a no-match filter is a 404 no_match, not a bogus all-zero success.
+            return Result<AccuracyByResponse>.Failure(NoMatch);
+        }
+
         var options = new ForecastOptions(Horizon: 1, Holdout: holdout);
 
         var result = filtered
