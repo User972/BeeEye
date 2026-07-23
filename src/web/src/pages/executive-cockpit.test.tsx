@@ -401,7 +401,7 @@ describe('Decision Cockpit — explainability (V3-UC0x-002)', () => {
     // v3's ckExplainSummary — the brief is itself a thing that needs explaining.
     fireEvent.click(
       await screen.findByRole('button', {
-        name: /why this recommendation\? how this monthly brief was generated/i,
+        name: /why this brief\? how this monthly brief was generated/i,
       }),
     );
 

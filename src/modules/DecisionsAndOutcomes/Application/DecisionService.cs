@@ -171,6 +171,25 @@ public sealed class DecisionService(
             AvailableActions(recommendation, decision, permissions)));
     }
 
+    /// <summary>
+    /// The frozen recommendation, by its own id, for the explainability drawer.
+    /// <para>
+    /// Keyed on the recommendation's <b>unique</b> id, never its rule id: the log is append-only history
+    /// holding many records under one rule id (one per generation run, each about a different subject),
+    /// so a rule id explains nothing on its own. This returns the exact frozen record the drawer was
+    /// opened over — or nothing, which the provider turns into a 404.
+    /// </para>
+    /// </summary>
+    public async Task<RecommendationSnapshotDto?> GetSnapshotAsync(
+        Guid recommendationId, CancellationToken cancellationToken)
+    {
+        var recommendation = await db.Recommendations
+            .AsNoTracking()
+            .SingleOrDefaultAsync(r => r.Id == recommendationId, cancellationToken);
+
+        return recommendation is null ? null : ToSnapshot(recommendation);
+    }
+
     // ------------------------------------------------------------------ writing
 
     /// <summary>

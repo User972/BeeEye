@@ -109,9 +109,10 @@ public sealed class ModuleBoundaryTests
             .Where(x => contract.IsAssignableFrom(x.Type) && x.Type is { IsInterface: false, IsAbstract: false })
             .ToList();
 
-        // Eight live contexts implement it. A drop to seven means a provider was lost in a refactor
-        // and a screen quietly stopped being able to explain itself.
-        Assert.Equal(8, implementations.Count);
+        // Nine contexts implement it: the eight live intelligence contexts plus DecisionsAndOutcomes,
+        // which explains a frozen Decision Log record by its unique id. A drop means a provider was lost
+        // in a refactor and a screen quietly stopped being able to explain itself.
+        Assert.Equal(9, implementations.Count);
 
         foreach (var (assembly, type) in implementations)
         {

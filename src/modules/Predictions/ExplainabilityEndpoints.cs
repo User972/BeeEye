@@ -50,6 +50,7 @@ internal static class ExplainabilityEndpoints
                 [FromQuery(Name = "ref")] string? subjectRef,
                 ExplainabilityService svc,
                 ExplainabilityFeedbackService feedback,
+                ClaimsPrincipal user,
                 IClock clock,
                 CancellationToken ct) =>
             {
@@ -93,6 +94,10 @@ internal static class ExplainabilityEndpoints
                             + "may have been removed from the dataset since the screen loaded.");
                 }
 
+                // Only the caller's own feedback crosses the wire. The drawer surfaces nobody else's,
+                // and a candid note is not something to hand every colleague who can view the figure.
+                var actor = user.SubjectId()?.Trim() ?? string.Empty;
+
                 // Explained, or Failed. A failed provider is a *gap*, never a 500 and never a silent
                 // omission: the drawer says what is missing. Exception detail stayed in the log.
                 return Results.Ok(new ExplanationResponse(
@@ -100,7 +105,7 @@ internal static class ExplainabilityEndpoints
                     trimmedRef,
                     outcome.Explanation is null ? null : ExplanationDto.From(outcome.Explanation),
                     [.. outcome.Gaps.Select(ExplanationGapDto.From)],
-                    await feedback.LatestAsync(trimmedKind, trimmedRef, ct),
+                    await feedback.MineAsync(trimmedKind, trimmedRef, actor, ct),
                     ExplainabilityFeedbackService.RetrainingCaveat,
                     clock.UtcNow));
             })

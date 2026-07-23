@@ -8,7 +8,7 @@ import type { AiLabelKind } from '@/components/ui/aiLabels';
 // Types — mirroring the DTOs in BeeEye.Modules.Predictions.Contracts.
 // ---------------------------------------------------------------------------
 
-/** The subject kinds the eight providers claim. One provider per kind, enforced at server start-up. */
+/** The subject kinds the nine providers claim. One provider per kind, enforced at server start-up. */
 export type SubjectKind =
   | 'order-configuration'
   | 'forecast-scope'
@@ -17,7 +17,11 @@ export type SubjectKind =
   | 'inventory-unit'
   | 'service-model'
   | 'part'
+  // `decision` is a *live* cockpit decision, resolved from the current feed by rule id.
+  // `decision-record` is a *frozen* Decision Log record, resolved by its unique id — the two are
+  // different subjects and cannot share a provider (one feed row per rule vs. append-only history).
   | 'decision'
+  | 'decision-record'
   | 'brief';
 
 export type ImpactTone = 'neutral' | 'positive' | 'negative' | 'warning';
@@ -73,6 +77,11 @@ export interface ModelInfo {
 export interface Ownership {
   ownerRole: string;
   status: string;
+  /**
+   * The clean business subject the footer searches the Decision Log by — what a persisted
+   * recommendation actually stores, not the drawer's display title. Null falls back to the title.
+   */
+  decisionSubjectRef: string | null;
 }
 
 export interface Explanation {
@@ -138,6 +147,30 @@ export const feedbackVerdicts: { value: FeedbackVerdict; label: string; icon: st
   { value: 'Incorrect', label: 'Incorrect', icon: 'close' },
   { value: 'MissingContext', label: 'Missing context', icon: 'help' },
 ];
+
+/**
+ * The question the drawer header and every trigger ask, matched to the *kind* of output.
+ *
+ * Not a blanket "Why this recommendation?": that calls a forecast, an observation or the monthly
+ * brief a recommendation the engine never made — the exact mislabelling the OutputLabel system goes
+ * to lengths to avoid. Kinds that carry an advised action keep "recommendation"; the rest say what
+ * they are.
+ */
+export function explainQuestion(kind: SubjectKind): string {
+  switch (kind) {
+    case 'forecast-scope':
+      return 'Why this forecast?';
+    case 'configuration':
+    case 'service-model':
+      return 'Why this figure?';
+    case 'brief':
+      return 'Why this brief?';
+    default:
+      // order-configuration, procurement-item, inventory-unit, part, decision, decision-record —
+      // each is an advised action or a frozen recommendation, so "recommendation" is accurate.
+      return 'Why this recommendation?';
+  }
+}
 
 /** Lineage chip icon per kind. Colour lives in `components.css` as `.ex__chip--{kind}`. */
 export const lineageIcons: Record<LineageKind, string> = {

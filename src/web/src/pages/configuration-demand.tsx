@@ -135,6 +135,7 @@ export default function ConfigurationDemand() {
                           </td>
                           <td>
                             <ExplainButton
+                              kind="configuration"
                               label={`${c.model} ${c.variant} ${c.colour}`}
                               onClick={() =>
                                 explain.open({

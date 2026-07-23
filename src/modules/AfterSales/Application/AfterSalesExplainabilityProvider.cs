@@ -83,9 +83,13 @@ public sealed class AfterSalesExplainabilityProvider(AfterSalesReadService after
             ],
             Confidence: new ConfidenceStatement(
                 Band(model.Coverage.ReliabilityTier),
-                Percent: model.Coverage.CoverageRate is { } rate
-                    ? (int)Math.Round(rate * 100, MidpointRounding.AwayFromZero)
-                    : null,
+
+                // No percentage. Coverage is the fraction of the fleet with a recorded service event —
+                // not a confidence probability — and rendering it beside the band as "{band} · {n}%"
+                // reads as "how sure are we", producing contradictions like "Low · 85%" (thin history,
+                // wide coverage). The coverage rate is stated in the reasons below and as a driver,
+                // where it means what it says; the band comes from the reliability tier alone.
+                Percent: null,
                 Why: Why(model, settings)),
             Drivers: Drivers(model, settings),
 

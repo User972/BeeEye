@@ -104,7 +104,7 @@ function DecisionCard({ decision, onExplain }: { decision: Decision; onExplain: 
 
       <div className="decision-card__foot">
         <span className="decision-card__evidence">{decision.evidence}</span>
-        <ExplainButton label={decision.title} onClick={onExplain} />
+        <ExplainButton kind="decision" label={decision.title} onClick={onExplain} />
         {target ? (
           <Link to={target.path} className="decision-card__link">
             Open {target.label}
@@ -178,6 +178,7 @@ export default function ExecutiveCockpit() {
             // v3's ckExplainSummary: the brief itself is a thing that needs explaining, and it is
             // the one subject where a failure elsewhere changes the answer.
             <ExplainButton
+              kind="brief"
               label="How this monthly brief was generated"
               onClick={() => explain.open({ kind: 'brief', ref: 'current' })}
             />

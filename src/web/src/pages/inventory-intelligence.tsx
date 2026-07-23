@@ -162,6 +162,7 @@ export default function InventoryIntelligence() {
         ) : (
           <>
             <ExplainButton
+              kind="inventory-unit"
               label={`${detail.data.model} ${detail.data.variant} · ${detail.data.stockId}`}
               onClick={() => explain.open({ kind: 'inventory-unit', ref: detail.data.stockId })}
             />

@@ -79,7 +79,9 @@ public sealed class SparePartsExplainabilityProvider(SparePartsReadService spare
                 // is no hold-out error to report. Saying "rule-based" is the honest answer; putting a
                 // number here would imply a validation that never ran.
                 Error: "rule-based — classification, not back-test"),
-            Ownership: new Ownership("Parts Manager", $"Stockout risk {r.StockoutRisk}"),
+            // Searched by the part name the on-screen footer uses, not the "{PartNumber} · {Name}"
+            // display title — the "· {Name}" qualifier matches no persisted recommendation.
+            Ownership: new Ownership("Parts Manager", $"Stockout risk {r.StockoutRisk}", r.Name),
             IsDemoData: true);
     }
 

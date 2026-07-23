@@ -621,7 +621,7 @@ describe('V3-UC0x-002 — the drawer is wired into every intelligence screen', (
 
     // "|" is the unfiltered scope: no model, no location. The screen must send exactly that rather
     // than inventing a default model.
-    await expectOpensDrawerFor(/why this recommendation\? total business/i, '|', 'Total business');
+    await expectOpensDrawerFor(/why this forecast\? total business/i, '|', 'Total business');
   });
 
   it('UC3 — a configuration row explains its four-part subject reference', async () => {
@@ -629,7 +629,7 @@ describe('V3-UC0x-002 — the drawer is wired into every intelligence screen', (
     renderScreen(ConfigurationDemand);
 
     await expectOpensDrawerFor(
-      /why this recommendation\? es 350 zx pearl white/i,
+      /why this figure\? es 350 zx pearl white/i,
       'ES 350|ZX|Pearl White|Black',
       'ES 350 ZX · Pearl White · Black',
     );
@@ -661,7 +661,7 @@ describe('V3-UC0x-002 — the drawer is wired into every intelligence screen', (
     fireEvent.click(await screen.findByRole('row', { name: /Haval H9/ }));
 
     await expectOpensDrawerFor(
-      /why this recommendation\? haval h9/i,
+      /why this figure\? haval h9/i,
       'Haval H9',
       'Haval H9 — service intensity',
     );

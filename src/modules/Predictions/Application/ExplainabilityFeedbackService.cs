@@ -101,33 +101,36 @@ public sealed class ExplainabilityFeedbackService(
     }
 
     /// <summary>
-    /// The current verdict per person for one subject — the latest row each submitter left.
+    /// The caller's <b>own</b> current verdict on one subject — the latest row they left, or nothing.
     /// <para>
-    /// Latest-per-submitter rather than every row: the drawer asks "what do I currently think?", and
-    /// showing someone their three superseded answers beside their current one would be noise. The
-    /// superseded rows are still there, which is the point of appending.
+    /// Deliberately scoped to the caller rather than every submitter. A verdict carries a candid note
+    /// ("this safety-stock assumption is wrong") and a stable subject id; the drawer only ever surfaces
+    /// the reader's own answer, so returning colleagues' notes on the wire would disclose them to every
+    /// viewer for no feature that consumes them. The superseded rows are still there — that is the point
+    /// of appending — but "what do I currently think?" is a question about one person, and this answers
+    /// exactly that person.
     /// </para>
     /// </summary>
-    public async Task<IReadOnlyList<FeedbackEntryDto>> LatestAsync(
-        string subjectKind, string subjectRef, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<FeedbackEntryDto>> MineAsync(
+        string subjectKind, string subjectRef, string submittedBy, CancellationToken cancellationToken)
     {
-        var rows = await db.ExplainabilityFeedback.AsNoTracking()
-            .Where(f => f.SubjectKind == subjectKind && f.SubjectRef == subjectRef)
+        // An unidentifiable caller has no "own" verdict to read back. Attribution is required to write
+        // (TryActor on the feedback endpoint), so this only happens on a read by an anonymous principal
+        // in a relaxed posture — which should see an empty control, not someone else's.
+        if (string.IsNullOrEmpty(submittedBy))
+        {
+            return [];
+        }
+
+        var latest = await db.ExplainabilityFeedback.AsNoTracking()
+            .Where(f => f.SubjectKind == subjectKind && f.SubjectRef == subjectRef && f.SubmittedBy == submittedBy)
             .OrderByDescending(f => f.SubmittedAtUtc)
             .ThenByDescending(f => f.Id)
-            .ToListAsync(cancellationToken);
+            .FirstOrDefaultAsync(cancellationToken);
 
-        // Grouped in memory rather than with a window function: this is a handful of rows per
-        // subject, and the read-store seam that would justify hand-written SQL is deferred (TD-1).
-        return
-        [
-            .. rows
-                .GroupBy(f => f.SubmittedBy, StringComparer.Ordinal)
-                .Select(g => g.First())
-                .OrderByDescending(f => f.SubmittedAtUtc)
-                .Select(f => new FeedbackEntryDto(
-                    f.Verdict.ToString(), f.Note, f.SubmittedBy, f.SubmittedAtUtc)),
-        ];
+        return latest is null
+            ? []
+            : [new FeedbackEntryDto(latest.Verdict.ToString(), latest.Note, latest.SubmittedBy, latest.SubmittedAtUtc)];
     }
 
     /// <summary>Matches the column length, so a rejection happens before the database refuses it.</summary>

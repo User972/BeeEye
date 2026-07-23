@@ -1,3 +1,4 @@
+using BeeEye.Analytics.Explainability;
 using BeeEye.Modules.DecisionsAndOutcomes.Application;
 using BeeEye.Shared.Modularity;
 using Microsoft.AspNetCore.Routing;
@@ -21,6 +22,10 @@ public sealed class DecisionsAndOutcomesModule : IModule
         // The only writer of recommendation lifecycle state anywhere in the platform (ADR 0006 §6).
         services.AddScoped<RecommendationTransitionService>();
         services.AddScoped<DecisionService>();
+
+        // Explains a frozen Decision Log record by its unique id — the record the reader is looking at,
+        // not whatever the live cockpit feed currently surfaces under the same rule id (S3).
+        services.AddScoped<IExplainabilityProvider, DecisionRecordExplainabilityProvider>();
     }
 
     public void MapEndpoints(IEndpointRouteBuilder endpoints) => DecisionEndpoints.Map(endpoints);

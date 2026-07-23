@@ -61,7 +61,11 @@ function explanation(overrides: Partial<Explanation> = {}): Explanation {
       validation: 'Deterministic rule set — reproducible from the same inputs',
       error: 'rule-based',
     },
-    ownership: { ownerRole: 'Inventory Manager', status: 'High risk · Critical aging' },
+    ownership: {
+      ownerRole: 'Inventory Manager',
+      status: 'High risk · Critical aging',
+      decisionSubjectRef: 'ES 350 ZX',
+    },
     isDemoData: false,
     ...overrides,
   };
@@ -204,6 +208,7 @@ function Screen() {
   return (
     <>
       <ExplainButton
+        kind="inventory-unit"
         label="ES 350 ZX"
         onClick={() => drawer.open({ kind: 'inventory-unit', ref: 'STK-1' })}
       />
@@ -779,6 +784,7 @@ function StackedScreen() {
       <Drawer open={detailOpen} title="D-INV-1 · ES 350 ZX" onClose={() => setDetailOpen(false)}>
         <button type="button">Open evidence</button>
         <ExplainButton
+          kind="inventory-unit"
           label="ES 350 ZX"
           onClick={() => drawer.open({ kind: 'inventory-unit', ref: 'STK-1' })}
         />

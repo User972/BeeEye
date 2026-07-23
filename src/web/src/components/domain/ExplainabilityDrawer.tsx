@@ -9,6 +9,7 @@ import { DecisionFooter } from '@/components/domain/DecisionFooter';
 import { ApiError, apiErrorMessage } from '@/lib/api/client';
 import { useCurrentUser } from '@/lib/api/identity';
 import {
+  explainQuestion,
   feedbackVerdicts,
   lineageIcons,
   useExplanation,
@@ -25,6 +26,7 @@ import type {
   LineageNode,
   ModelInfo,
   Ownership,
+  SubjectKind,
 } from '@/lib/api/explainability';
 
 /** Above this many drivers the panel becomes a scroll trap, so the rest go behind a disclosure. */
@@ -350,8 +352,9 @@ function Gaps({ gaps }: { gaps: ExplanationGap[] }) {
   );
 }
 
-function Body({ subject }: { subject: ExplainSubject }) {
-  const query = useExplanation(subject);
+// The explanation query is subscribed *once*, in the parent, and handed down — the header/footer and
+// the body render one payload through one observer rather than each opening its own subscription.
+function Body({ subject, query }: { subject: ExplainSubject; query: ReturnType<typeof useExplanation> }) {
   const subjectId = useCurrentUser().data?.subjectId ?? null;
 
   if (query.isLoading) {
@@ -492,8 +495,11 @@ export function ExplainabilityDrawer({ subject, onClose }: ExplainabilityDrawerP
           </span>
           <div className="ex__heading">
             <p className="ex__title">{explanation?.title ?? subject?.ref ?? 'Explanation'}</p>
+            {/* The question fits the subject — a forecast, an observation and the brief are not
+                recommendations, and the header must not call them one. */}
             <p className="ex__subtitle">
-              Why this recommendation?{explanation ? ` · ${explanation.module}` : ''}
+              {subject ? explainQuestion(subject.kind) : 'Why?'}
+              {explanation ? ` · ${explanation.module}` : ''}
             </p>
           </div>
         </div>
@@ -501,16 +507,21 @@ export function ExplainabilityDrawer({ subject, onClose }: ExplainabilityDrawerP
       footer={
         // Workflow actions only where the subject *is* a decision. DecisionFooter owns the claim
         // logic and the "no record exists yet" copy; duplicating either here would give the platform
-        // two answers to the same question.
-        explanation?.ownership ? <DecisionFooter subjectRef={explanation.title} /> : undefined
+        // two answers to the same question. It is handed the clean subject the Decision Log stores —
+        // never the display title, whose "· StockId"/"· Name" qualifier matches no persisted record.
+        explanation?.ownership ? (
+          <DecisionFooter subjectRef={explanation.ownership.decisionSubjectRef ?? explanation.title} />
+        ) : undefined
       }
     >
-      {subject ? <Body subject={subject} /> : null}
+      {subject ? <Body subject={subject} query={query} /> : null}
     </Drawer>
   );
 }
 
 interface ExplainButtonProps {
+  /** The subject kind, so the accessible name asks the right question — a forecast is not a recommendation. */
+  kind: SubjectKind;
   /** Names the subject in the accessible name, e.g. "Why this recommendation? ES 350 ZX". */
   label: string;
   onClick: () => void;
@@ -522,14 +533,15 @@ interface ExplainButtonProps {
  *
  * A real `<button>` whose accessible name states the subject — never a bare icon. An icon-only
  * control here fails a screen-reader user (nine identical "info" buttons on one screen) and a touch
- * user (below the 44px target), and this control appears on every row of every table.
+ * user (below the 44px target), and this control appears on every row of every table. The question is
+ * matched to the subject kind, so the name of a forecast or observation never says "recommendation".
  */
-export function ExplainButton({ label, onClick, className }: ExplainButtonProps) {
+export function ExplainButton({ kind, label, onClick, className }: ExplainButtonProps) {
   return (
     <button
       type="button"
       className={className ? `ex-trigger ${className}` : 'ex-trigger'}
-      aria-label={`Why this recommendation? ${label}`}
+      aria-label={`${explainQuestion(kind)} ${label}`}
       onClick={onClick}
     >
       <Icon name="auto_awesome" />

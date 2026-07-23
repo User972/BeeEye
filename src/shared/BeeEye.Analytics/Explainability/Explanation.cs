@@ -104,7 +104,15 @@ public sealed record ModelInfo(
 /// </summary>
 /// <param name="OwnerRole">The role expected to act, never a person's display name.</param>
 /// <param name="Status">Where it stands, in the Decision Log's own vocabulary.</param>
-public sealed record Ownership(string OwnerRole, string Status);
+/// <param name="DecisionSubjectRef">
+/// The clean business subject the drawer's footer searches the governed Decision Log by — the value a
+/// persisted recommendation stores in its subject reference, not <see cref="Explanation.Title"/>. The
+/// title is a display string and may carry a disambiguating qualifier (e.g. "… · STK-1", "… · Name")
+/// that never appears in any stored record, so searching by it silently finds nothing. A provider that
+/// sets this makes the footer match the same record the equivalent on-screen footer does. Null falls
+/// back to the title, which is correct only where the title already equals the stored subject.
+/// </param>
+public sealed record Ownership(string OwnerRole, string Status, string? DecisionSubjectRef = null);
 
 /// <summary>
 /// The complete answer to "why does the platform say this?" for one subject.

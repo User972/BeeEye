@@ -215,6 +215,7 @@ export default function SparePartsPage() {
         ) : (
           <>
             <ExplainButton
+              kind="part"
               label={`${detail.data.national.partNumber} ${detail.data.national.name}`}
               onClick={() => explain.open({ kind: 'part', ref: detail.data.national.partNumber })}
             />

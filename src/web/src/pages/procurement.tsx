@@ -89,6 +89,7 @@ export default function Procurement() {
                       <td>{r.confidence}</td>
                       <td>
                         <ExplainButton
+                          kind="procurement-item"
                           label={`${r.model} ${r.variant}`}
                           onClick={() =>
                             explain.open({ kind: 'procurement-item', ref: `${r.model}|${r.variant}` })

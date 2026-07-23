@@ -424,7 +424,7 @@ function DetailPanel({ detail, onExplain }: { detail: DecisionDetail; onExplain:
 
         {/* Opens over this drawer, which is what the drawer stack exists for: Escape closes the
             explanation and leaves the decision the user was reading exactly where it was. */}
-        <ExplainButton label={r.subjectRef} onClick={onExplain} />
+        <ExplainButton kind="decision-record" label={r.subjectRef} onClick={onExplain} />
 
         <dl className="dl-detail__list">
           <dt>Action</dt>
@@ -834,7 +834,12 @@ export default function DecisionLog() {
         ) : (
           <DetailPanel
             detail={detail.data}
-            onExplain={() => explain.open({ kind: 'decision', ref: detail.data.recommendation.ruleId })}
+            // The *frozen* record by its unique id — not the live cockpit's `decision` kind by rule id,
+            // which holds one current row per rule and would explain a different subject (or 404) for a
+            // historical record. See DecisionRecordExplainabilityProvider.
+            onExplain={() =>
+              explain.open({ kind: 'decision-record', ref: detail.data.recommendation.id })
+            }
           />
         )}
       </Drawer>

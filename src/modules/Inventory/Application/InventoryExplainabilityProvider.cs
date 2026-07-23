@@ -82,7 +82,10 @@ public sealed class InventoryExplainabilityProvider(InventoryReadService invento
                 // no hold-out error because there is nothing to back-test.
                 Validation: "Deterministic rule set — reproducible from the same inputs",
                 Error: "rule-based"),
-            Ownership: new Ownership("Inventory Manager", $"{unit.RiskBand} risk · {unit.AgingBand}"),
+            // The footer searches the Decision Log by the clean "{Model} {Variant}" subject the on-screen
+            // footer uses — never the "· {StockId}" display title, which no persisted recommendation holds.
+            Ownership: new Ownership(
+                "Inventory Manager", $"{unit.RiskBand} risk · {unit.AgingBand}", $"{unit.Model} {unit.Variant}"),
             IsDemoData: false);
     }
 

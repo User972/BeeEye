@@ -105,6 +105,7 @@ export default function SalesForecasting() {
                 // The scope, not a row: UC2 forecasts whatever the filters currently select, and
                 // "|" is the unfiltered total business.
                 <ExplainButton
+                  kind="forecast-scope"
                   label={model || location ? [location, model].filter(Boolean).join(' · ') : 'total business'}
                   onClick={() => explain.open({ kind: 'forecast-scope', ref: `${model}|${location}` })}
                 />

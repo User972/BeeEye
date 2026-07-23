@@ -70,9 +70,14 @@ public sealed record ModelInfoDto(
 }
 
 /// <summary>Who owns the decision and where it stands.</summary>
-public sealed record OwnershipDto(string OwnerRole, string Status)
+/// <param name="DecisionSubjectRef">
+/// The clean subject the governed Decision Log is searched by when routing this figure into the
+/// workflow — the business subject a persisted recommendation actually stores, not the drawer's
+/// display title. Null falls back to the title. See <see cref="Ownership.DecisionSubjectRef"/>.
+/// </param>
+public sealed record OwnershipDto(string OwnerRole, string Status, string? DecisionSubjectRef)
 {
-    public static OwnershipDto From(Ownership o) => new(o.OwnerRole, o.Status);
+    public static OwnershipDto From(Ownership o) => new(o.OwnerRole, o.Status, o.DecisionSubjectRef);
 }
 
 /// <summary>
@@ -181,7 +186,9 @@ public sealed record FeedbackResponse(
 /// <param name="Explanation">Null only when every claimant failed — see <paramref name="Gaps"/>.</param>
 /// <param name="Gaps">Empty on a complete answer.</param>
 /// <param name="Feedback">
-/// The current verdict each person has left on this explanation — latest row per submitter. Returned
+/// The <b>caller's own</b> current verdict on this explanation — their latest row, or empty. Scoped to
+/// the caller, not every submitter: the drawer only ever shows the reader their own answer, and a
+/// colleague's candid note is not something to disclose to everyone who can view the figure. Returned
 /// with the explanation rather than behind a second request, so the drawer opens in one round trip and
 /// a reader immediately sees their own last answer instead of an empty control.
 /// </param>

@@ -5317,7 +5317,8 @@
       "OwnershipDto": {
         "required": [
           "ownerRole",
-          "status"
+          "status",
+          "decisionSubjectRef"
         ],
         "type": "object",
         "properties": {
@@ -5326,6 +5327,12 @@
           },
           "status": {
             "type": "string"
+          },
+          "decisionSubjectRef": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

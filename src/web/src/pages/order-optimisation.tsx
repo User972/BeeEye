@@ -91,6 +91,7 @@ export default function OrderOptimisation() {
                       <td className="num">{fmtPct(r.wmape)}</td>
                       <td>
                         <ExplainButton
+                          kind="order-configuration"
                           label={`${r.model} ${r.variant}`}
                           onClick={() =>
                             explain.open({ kind: 'order-configuration', ref: `${r.model}|${r.variant}` })

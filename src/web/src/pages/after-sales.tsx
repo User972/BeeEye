@@ -196,6 +196,7 @@ export default function AfterSalesPage() {
         ) : (
           <>
             <ExplainButton
+              kind="service-model"
               label={detail.data.model.model}
               onClick={() => explain.open({ kind: 'service-model', ref: detail.data.model.model })}
             />
