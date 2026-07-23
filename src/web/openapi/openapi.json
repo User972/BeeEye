@@ -1777,6 +1777,111 @@
         }
       }
     },
+    "/api/v1/recommendations/records": {
+      "get": {
+        "tags": [
+          "Recommendation Records"
+        ],
+        "summary": "Recorded recommendations, newest and highest-priority first",
+        "operationId": "Recommendations_Records",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecommendationRecordPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/recommendations/records/generate": {
+      "post": {
+        "tags": [
+          "Recommendation Records"
+        ],
+        "summary": "Run the ruleset and persist any recommendation not already recorded",
+        "operationId": "Recommendations_GenerateRecords",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerationResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/decisions": {
       "get": {
         "tags": [
@@ -1812,6 +1917,27 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ModuleInfo"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/executive-insights/decision-feed": {
+      "get": {
+        "tags": [
+          "Executive Insights"
+        ],
+        "summary": "Ranked cross-module decisions needing attention, with headline aggregates",
+        "operationId": "ExecutiveInsights_DecisionFeed",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecisionFeedResponse"
                 }
               }
             }
@@ -2028,6 +2154,243 @@
               "string"
             ],
             "format": "double"
+          }
+        }
+      },
+      "DecisionDto": {
+        "required": [
+          "id",
+          "title",
+          "area",
+          "screen",
+          "severity",
+          "impactSar",
+          "kind",
+          "priority",
+          "confidence",
+          "confidencePct",
+          "dueDays",
+          "whyNow",
+          "action",
+          "evidence",
+          "ownerRole",
+          "isDemo",
+          "factors"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "area": {
+            "type": "string"
+          },
+          "screen": {
+            "type": "string"
+          },
+          "severity": {
+            "type": "string"
+          },
+          "impactSar": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "priority": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "confidence": {
+            "type": "string"
+          },
+          "confidencePct": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "dueDays": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "whyNow": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "string"
+          },
+          "ownerRole": {
+            "type": "string"
+          },
+          "isDemo": {
+            "type": "boolean"
+          },
+          "factors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DecisionFactorDto"
+            }
+          }
+        }
+      },
+      "DecisionFactorDto": {
+        "required": [
+          "name",
+          "percent"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "percent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "DecisionFeedGapDto": {
+        "required": [
+          "area",
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "area": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      },
+      "DecisionFeedResponse": {
+        "required": [
+          "decisions",
+          "summary",
+          "narrative",
+          "gaps",
+          "generatedAtUtc"
+        ],
+        "type": "object",
+        "properties": {
+          "decisions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DecisionDto"
+            }
+          },
+          "summary": {
+            "$ref": "#/components/schemas/DecisionFeedSummaryDto"
+          },
+          "narrative": {
+            "type": "string"
+          },
+          "gaps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DecisionFeedGapDto"
+            }
+          },
+          "generatedAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "DecisionFeedSummaryDto": {
+        "required": [
+          "total",
+          "critical",
+          "lowConfidence",
+          "dueThisWeek",
+          "opportunityValueSar",
+          "riskValueSar",
+          "demoDataCount"
+        ],
+        "type": "object",
+        "properties": {
+          "total": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "critical": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "lowConfidence": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "dueThisWeek": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "opportunityValueSar": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "riskValueSar": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "demoDataCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -2335,6 +2698,36 @@
               "string"
             ],
             "format": "double"
+          }
+        }
+      },
+      "GenerationResponse": {
+        "required": [
+          "created",
+          "alreadyPresent",
+          "analysisDate"
+        ],
+        "type": "object",
+        "properties": {
+          "created": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "alreadyPresent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "analysisDate": {
+            "type": "string",
+            "format": "date"
           }
         }
       },
@@ -3192,6 +3585,165 @@
           }
         }
       },
+      "RecommendationRecordDto": {
+        "required": [
+          "id",
+          "subjectRef",
+          "area",
+          "ruleId",
+          "action",
+          "rationale",
+          "evidence",
+          "expectedOutcome",
+          "confidence",
+          "assumptions",
+          "impactSar",
+          "priority",
+          "ownerRole",
+          "isDemoData",
+          "rulesetVersion",
+          "datasetVersion",
+          "analysisDate",
+          "currentStatus",
+          "validUntilUtc",
+          "supersededByRecommendationId",
+          "createdAtUtc"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "subjectRef": {
+            "type": "string"
+          },
+          "area": {
+            "type": "string"
+          },
+          "ruleId": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string"
+          },
+          "rationale": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "expectedOutcome": {
+            "type": "string"
+          },
+          "confidence": {
+            "type": "string"
+          },
+          "assumptions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "impactSar": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "priority": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "ownerRole": {
+            "type": "string"
+          },
+          "isDemoData": {
+            "type": "boolean"
+          },
+          "rulesetVersion": {
+            "type": "string"
+          },
+          "datasetVersion": {
+            "type": "string"
+          },
+          "analysisDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "currentStatus": {
+            "type": "string"
+          },
+          "validUntilUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "supersededByRecommendationId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "createdAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "RecommendationRecordPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecommendationRecordDto"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "RiskFactor": {
         "required": [
           "key",
@@ -3267,6 +3819,9 @@
     },
     {
       "name": "Order Optimisation"
+    },
+    {
+      "name": "Recommendation Records"
     },
     {
       "name": "Decisions and Outcomes"

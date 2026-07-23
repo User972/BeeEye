@@ -69,12 +69,27 @@ public sealed class RecommendationRecordService(
         var alreadyPresent = 0;
         var now = clock.UtcNow;
 
+        // One lookup for the whole run rather than one per candidate: the common path is a re-run
+        // where every key already exists, and that must not cost a round trip each.
+        var keys = candidates
+            .Select(c => IdempotencyKey(c, analysisDate))
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+
+        var present = new HashSet<string>(
+            await db.Recommendations.AsNoTracking()
+                .Where(r => keys.Contains(r.IdempotencyKey))
+                .Select(r => r.IdempotencyKey)
+                .ToListAsync(cancellationToken),
+            StringComparer.Ordinal);
+
         foreach (var candidate in candidates)
         {
             var key = IdempotencyKey(candidate, analysisDate);
 
-            // Checked first so the common re-run path costs a lookup rather than a failed insert.
-            if (await db.Recommendations.AsNoTracking().AnyAsync(r => r.IdempotencyKey == key, cancellationToken))
+            // `present` also absorbs duplicates *within* one run: two providers emitting the same
+            // rule id and subject would otherwise collide on the unique index at save time.
+            if (!present.Add(key))
             {
                 alreadyPresent++;
                 continue;
@@ -123,29 +138,29 @@ public sealed class RecommendationRecordService(
             });
 
             db.Recommendations.Add(recommendation);
-            created++;
-        }
 
-        if (created > 0)
-        {
+            // Saved one at a time, deliberately. A batched save is a single transaction, so one
+            // candidate losing a race to a concurrent run would roll back every *other* record in
+            // the batch — silently dropping genuinely new recommendations and reporting them as an
+            // idempotent no-op. Runs produce a handful of candidates, so the extra round trips cost
+            // little beside losing a decision.
             try
             {
                 await db.SaveChangesAsync(cancellationToken);
+                created++;
             }
             catch (DbUpdateException ex) when (IsUniqueViolation(ex))
             {
-                // Two concurrent runs raced past the existence check. The unique index is the real
-                // guarantee; losing the race is a successful no-op, not an error.
+                // A concurrent run recorded this same recommendation first. The unique index is the
+                // real guarantee; losing the race is a successful no-op, not an error.
                 logger.LogInformation(
                     ex,
-                    "A concurrent generation run already recorded these recommendations; treating as idempotent.");
+                    "A concurrent generation run already recorded {RuleId} for {AnalysisDate}; treating as idempotent.",
+                    candidate.Id,
+                    analysisDate);
 
-                foreach (var entry in db.ChangeTracker.Entries().ToList())
-                {
-                    entry.State = EntityState.Detached;
-                }
-
-                return new GenerationResult(0, candidates.Count, analysisDate);
+                Detach(recommendation);
+                alreadyPresent++;
             }
         }
 
@@ -251,6 +266,20 @@ public sealed class RecommendationRecordService(
         }
 
         return collected;
+    }
+
+    /// <summary>
+    /// Drops a failed insert and its status events from the change tracker, so a lost race does not
+    /// leave the context holding entities that every later save would retry.
+    /// </summary>
+    private void Detach(Recommendation recommendation)
+    {
+        foreach (var statusEvent in recommendation.StatusEvents)
+        {
+            db.Entry(statusEvent).State = EntityState.Detached;
+        }
+
+        db.Entry(recommendation).State = EntityState.Detached;
     }
 
     /// <summary>

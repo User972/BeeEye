@@ -245,7 +245,7 @@ public sealed class RecommendationRecordApiTests(IntegrationTestFactory factory)
 
         foreach (var record in records)
         {
-            var opening = Assert.Single(record.StatusEvents.Where(e => e.FromStatus == null));
+            var opening = Assert.Single(record.StatusEvents, e => e.FromStatus == null);
 
             Assert.Equal(RecommendationStatus.Generated, opening.ToStatus);
             // The engine acted, not a person. Attributing generation to a human would corrupt the

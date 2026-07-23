@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 
 namespace BeeEye.Shared.Web.Security;
@@ -50,6 +51,14 @@ public static class SecurityRegistration
 
         services.AddSingleton(options);
         services.AddSingleton<IAuthorizationHandler, PermissionAuthorizationHandler>();
+
+        // A deployed host running with reads open is a legitimate rollout posture (ADR 0008 §2.4) but
+        // never a quiet one — it must be visible in the logs of the environment it is running in.
+        if (!options.RequireAuthenticatedReads && !environment.IsDevelopment())
+        {
+            services.AddHostedService(provider => new RelaxedReadPostureAnnouncer(
+                provider.GetRequiredService<ILogger<RelaxedReadPostureAnnouncer>>(), environment));
+        }
 
         if (options.Provider == AuthProvider.LocalDev)
         {
@@ -194,4 +203,30 @@ public static class SecurityRegistration
                 + "issued for another application would be accepted.");
         }
     }
+}
+
+/// <summary>
+/// Logs a warning at start-up when a deployed host is serving reads anonymously.
+/// <para>
+/// This posture is permitted while the SPA sign-in flow is outstanding, so it is not a start-up
+/// failure like the guards in <see cref="SecurityRegistration"/>. But a temporary flag that relaxes
+/// authorization and leaves no trace is exactly how a temporary flag becomes permanent — ADR 0008
+/// names that as a risk — so every deployed boot in this posture says so out loud.
+/// </para>
+/// </summary>
+internal sealed class RelaxedReadPostureAnnouncer(
+    ILogger<RelaxedReadPostureAnnouncer> logger, IHostEnvironment environment) : IHostedService
+{
+    public Task StartAsync(CancellationToken cancellationToken)
+    {
+        logger.LogWarning(
+            "Auth:RequireAuthenticatedReads is false in the '{Environment}' environment: read endpoints "
+            + "are served anonymously. This is a rollout-only posture pending the SPA sign-in flow; set it "
+            + "to true once that ships. State-changing operations remain enforced.",
+            environment.EnvironmentName);
+
+        return Task.CompletedTask;
+    }
+
+    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 }
