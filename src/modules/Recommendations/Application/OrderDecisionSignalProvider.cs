@@ -1,7 +1,5 @@
 using BeeEye.Analytics.Decisions;
 using BeeEye.Modules.Recommendations.Contracts;
-using BeeEye.Persistence;
-using Microsoft.EntityFrameworkCore;
 
 namespace BeeEye.Modules.Recommendations.Application;
 
@@ -14,8 +12,7 @@ namespace BeeEye.Modules.Recommendations.Application;
 /// derived from real sales history rather than assumed.
 /// </para>
 /// </summary>
-public sealed class OrderDecisionSignalProvider(OrderReadService orders, BeeEyeDbContext db)
-    : IDecisionSignalProvider
+public sealed class OrderDecisionSignalProvider(OrderReadService orders) : IDecisionSignalProvider
 {
     /// <summary>Only configurations needing at least this many units are worth an executive decision.</summary>
     private const int MinimumNetRequirement = 1;
@@ -34,7 +31,7 @@ public sealed class OrderDecisionSignalProvider(OrderReadService orders, BeeEyeD
             return [];
         }
 
-        var prices = await AveragePricesAsync(cancellationToken);
+        var prices = await orders.AverageSellingPricesAsync(cancellationToken);
 
         var best = candidates
             .Select(r => new { Row = r, Exposure = r.NetRequirement * Price(prices, r.Model, r.Variant) })
@@ -69,32 +66,6 @@ public sealed class OrderDecisionSignalProvider(OrderReadService orders, BeeEyeD
                 Urgency: urgent ? 0.85 : 0.6,
                 Controllability: 0.8),
         ];
-    }
-
-    /// <summary>
-    /// Observed average selling price per model · variant. Computed in the database rather than by
-    /// materialising sales history, and weighted by units so high-volume months dominate — the same
-    /// basis the UC1 screen values an order at.
-    /// </summary>
-    private async Task<Dictionary<(string Model, string Variant), decimal>> AveragePricesAsync(
-        CancellationToken cancellationToken)
-    {
-        var rows = await db.SalesFacts
-            .AsNoTracking()
-            .Where(f => f.UnitsSold > 0)
-            .GroupBy(f => new { f.Model, f.Variant })
-            .Select(g => new
-            {
-                g.Key.Model,
-                g.Key.Variant,
-                Revenue = g.Sum(f => f.Revenue),
-                Units = g.Sum(f => f.UnitsSold),
-            })
-            .ToListAsync(cancellationToken);
-
-        return rows
-            .Where(r => r.Units > 0)
-            .ToDictionary(r => (r.Model, r.Variant), r => r.Revenue / r.Units);
     }
 
     private static decimal Price(

@@ -1,7 +1,5 @@
 using BeeEye.Analytics.Configuration;
 using BeeEye.Analytics.Decisions;
-using BeeEye.Persistence;
-using Microsoft.EntityFrameworkCore;
 
 namespace BeeEye.Modules.SalesActuals.Application;
 
@@ -15,13 +13,20 @@ namespace BeeEye.Modules.SalesActuals.Application;
 /// falling demand.
 /// </para>
 /// </summary>
-public sealed class ConfigurationDecisionSignalProvider(ConfigurationReadService configurations, BeeEyeDbContext db)
+public sealed class ConfigurationDecisionSignalProvider(ConfigurationReadService configurations)
     : IDecisionSignalProvider
 {
     /// <summary>Decay at or beyond this percentage is treated as severe rather than a watch item.</summary>
     private const double SevereDecayPct = -60.0;
 
-    public string Area => "Procurement";
+    /// <summary>
+    /// Where the decision is filed for the executive: the action lands with procurement, which is
+    /// how v3 files D-PRC-1. Deliberately different from <see cref="Area"/>, which names the context
+    /// that computes the signal so a failure is attributed to the module that actually failed.
+    /// </summary>
+    private const string DecisionArea = "Procurement";
+
+    public string Area => "Configuration Demand";
 
     public async Task<IReadOnlyList<Decision>> GetDecisionsAsync(CancellationToken cancellationToken)
     {
@@ -34,7 +39,7 @@ public sealed class ConfigurationDecisionSignalProvider(ConfigurationReadService
             return [];
         }
 
-        var prices = await AveragePricesAsync(cancellationToken);
+        var prices = await configurations.AverageSellingPricesAsync(cancellationToken);
 
         var best = alerts
             .Select(c => new { Config = c, Exposure = c.CurrentStock * Price(prices, c.Model, c.Variant) })
@@ -51,7 +56,7 @@ public sealed class ConfigurationDecisionSignalProvider(ConfigurationReadService
             new Decision(
                 Id: "D-PRC-1",
                 Title: $"Reduce procurement — {config.Model} {config.Variant} · {config.Colour}",
-                Area: Area,
+                Area: DecisionArea,
                 Screen: "configuration-demand",
                 Severity: severe ? DecisionSeverity.High : DecisionSeverity.Medium,
                 ImpactSar: best.Exposure,
@@ -68,28 +73,6 @@ public sealed class ConfigurationDecisionSignalProvider(ConfigurationReadService
                 Urgency: 0.7,
                 Controllability: 0.9),
         ];
-    }
-
-    /// <summary>Units-weighted average selling price per model · variant, computed in the database.</summary>
-    private async Task<Dictionary<(string Model, string Variant), decimal>> AveragePricesAsync(
-        CancellationToken cancellationToken)
-    {
-        var rows = await db.SalesFacts
-            .AsNoTracking()
-            .Where(f => f.UnitsSold > 0)
-            .GroupBy(f => new { f.Model, f.Variant })
-            .Select(g => new
-            {
-                g.Key.Model,
-                g.Key.Variant,
-                Revenue = g.Sum(f => f.Revenue),
-                Units = g.Sum(f => f.UnitsSold),
-            })
-            .ToListAsync(cancellationToken);
-
-        return rows
-            .Where(r => r.Units > 0)
-            .ToDictionary(r => (r.Model, r.Variant), r => r.Revenue / r.Units);
     }
 
     private static decimal Price(

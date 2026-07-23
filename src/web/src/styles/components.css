@@ -144,12 +144,14 @@
 }
 
 /* Mobile navigation: the rail slides in over the content instead of stacking
-   above it (which previously pushed all content below the fold at <=900px). */
-.nav-toggle { display: none; }
+   above it (which previously pushed all content below the fold at <=900px).
+   The toggle rules are scoped to .app-header so they outrank the single-class
+   `.icon-btn { display: grid }` declared further down this file. */
+.app-header .nav-toggle { display: none; }
 .nav-scrim { display: none; }
 
 @media (max-width: 900px) {
-  .nav-toggle { display: grid; }
+  .app-header .nav-toggle { display: grid; }
   .nav-rail {
     position: fixed;
     top: 0;
@@ -159,9 +161,16 @@
     max-width: 84vw;
     z-index: 40;
     transform: translateX(-100%);
-    transition: transform 0.2s ease;
+    /* visibility (not just the off-screen transform) so the collapsed rail's
+       links leave the tab order — otherwise keyboard focus lands on invisible
+       controls (WCAG 2.4.7). Transitioned so it stays visible while sliding out. */
+    visibility: hidden;
+    transition: transform 0.2s ease, visibility 0.2s ease;
   }
-  .nav-rail--open { transform: translateX(0); }
+  .nav-rail--open {
+    transform: translateX(0);
+    visibility: visible;
+  }
   .nav-scrim {
     display: block;
     position: fixed;
@@ -172,7 +181,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .nav-rail { transition: none; }
+  .nav-rail { transition: visibility 0s; }
   .skip-link { transition: none; }
 }
 

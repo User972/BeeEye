@@ -6,8 +6,25 @@ import { Icon } from '@/components/ui/Icon';
 import { LoadingState, ErrorState, EmptyState } from '@/components/ui/states';
 import { useDecisionFeed } from '@/lib/api/executive';
 import type { Decision, DecisionSeverity } from '@/lib/api/executive';
+import { ApiError } from '@/lib/api/client';
 import { navItemById } from '@/config/navigation';
 import { fmtSar } from '@/lib/format';
+
+/**
+ * A message an executive can act on. Only an API-shaped failure carries anything worth
+ * showing; anything else (a DNS failure, a dropped connection) surfaces as an opaque
+ * browser string like "Failed to fetch", so it is replaced with the actual next step.
+ */
+function feedErrorMessage(error: unknown): string {
+  if (error instanceof ApiError) {
+    return (
+      error.problem?.detail ??
+      error.problem?.title ??
+      `The BeeEye API responded with status ${error.status}. Try again in a moment.`
+    );
+  }
+  return 'The BeeEye API did not respond. Start the API host (dotnet run) and try again.';
+}
 
 /** Severity → risk token class. Severity is always also stated in text, never colour alone. */
 const severityClass: Record<DecisionSeverity, string> = {
@@ -164,11 +181,7 @@ export default function ExecutiveCockpit() {
         ) : isError ? (
           <ErrorState
             title="Could not load the decision feed"
-            message={
-              error instanceof Error
-                ? error.message
-                : 'The BeeEye API did not respond. Start the API host and try again.'
-            }
+            message={feedErrorMessage(error)}
             onRetry={() => void refetch()}
           />
         ) : !data || data.decisions.length === 0 ? (

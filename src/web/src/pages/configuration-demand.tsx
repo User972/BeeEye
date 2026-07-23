@@ -42,7 +42,7 @@ export default function ConfigurationDemand() {
   return (
     <>
       <PageHeader
-        title="Configuration Demand"
+        title="Configuration Insights"
         summary="Which model·variant·colour·interior combinations drive demand and which are becoming dead stock."
         useCase="UC3"
         meta={[

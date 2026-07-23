@@ -24,7 +24,7 @@ export default function Procurement() {
   return (
     <>
       <PageHeader
-        title="Procurement"
+        title="Procurement Optimisation"
         summary="How much to procure to balance demand, lead time and inventory cost — recommended as a range, not false precision."
         useCase="UC4"
         meta={[

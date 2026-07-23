@@ -1,5 +1,4 @@
 using BeeEye.Analytics.Decisions;
-using BeeEye.Analytics.Inventory;
 
 namespace BeeEye.Modules.Inventory.Application;
 
@@ -25,7 +24,10 @@ public sealed class InventoryDecisionSignalProvider(InventoryReadService invento
 
     public async Task<IReadOnlyList<Decision>> GetDecisionsAsync(CancellationToken cancellationToken)
     {
-        var units = await inventory.ComputeAsync(RiskSettings.Default, cancellationToken);
+        // Same data-anchored analysis date the UC5 endpoints use, so the cockpit and the screen it
+        // drills into never disagree on unit ages, risk scores or recommendations.
+        var settings = await inventory.BuildSettingsAsync(null, cancellationToken);
+        var units = await inventory.ComputeAsync(settings, cancellationToken);
 
         var transfers = units
             .Where(u => string.Equals(u.Recommendation.Action, TransferAction, StringComparison.Ordinal))

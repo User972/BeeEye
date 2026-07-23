@@ -48,7 +48,7 @@ export default function AfterSalesPage() {
   return (
     <>
       <PageHeader
-        title="After-Sales Correlation"
+        title="Sales ↔ Service Correlation"
         summary="How much workshop and parts demand each vehicle sale generates — service intensity by model, mileage, age and service type."
         useCase="UC6"
         meta={[

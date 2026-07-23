@@ -15,6 +15,7 @@ export function RootLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   const closeNav = useCallback(() => setNavOpen(false), []);
+  const toggleNav = useCallback(() => setNavOpen((v) => !v), []);
 
   // Close the mobile rail on route change, so following a link never leaves it
   // open over the screen it navigated to.
@@ -33,14 +34,14 @@ export function RootLayout() {
   }, [navOpen]);
 
   return (
-    <div className={`app-shell${navOpen ? ' app-shell--nav-open' : ''}`}>
+    <div className="app-shell">
       <a className="skip-link" href="#main-content">
         Skip to main content
       </a>
       <NavRail open={navOpen} onNavigate={closeNav} />
       {navOpen ? <div className="nav-scrim" onClick={closeNav} aria-hidden="true" /> : null}
       <div className="app-main">
-        <AppHeader navOpen={navOpen} onToggleNav={() => setNavOpen((v) => !v)} />
+        <AppHeader navOpen={navOpen} onToggleNav={toggleNav} />
         <main className="app-content" id="main-content" tabIndex={-1}>
           <Suspense fallback={<LoadingState label="Loading screen…" />}>
             <Outlet />

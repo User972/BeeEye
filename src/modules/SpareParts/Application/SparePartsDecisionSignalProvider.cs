@@ -1,7 +1,5 @@
 using BeeEye.Analytics.Decisions;
 using BeeEye.Analytics.SpareParts;
-using BeeEye.Persistence;
-using Microsoft.EntityFrameworkCore;
 
 namespace BeeEye.Modules.SpareParts.Application;
 
@@ -18,8 +16,7 @@ namespace BeeEye.Modules.SpareParts.Application;
 /// is displayed.
 /// </para>
 /// </summary>
-public sealed class SparePartsDecisionSignalProvider(SparePartsReadService parts, BeeEyeDbContext db)
-    : IDecisionSignalProvider
+public sealed class SparePartsDecisionSignalProvider(SparePartsReadService parts) : IDecisionSignalProvider
 {
     private const string HighStockoutRisk = "High";
 
@@ -42,10 +39,7 @@ public sealed class SparePartsDecisionSignalProvider(SparePartsReadService parts
             return [];
         }
 
-        var costs = await db.Parts
-            .AsNoTracking()
-            .Select(p => new { p.PartNumber, p.UnitCost })
-            .ToDictionaryAsync(p => p.PartNumber, p => p.UnitCost, cancellationToken);
+        var costs = await parts.UnitCostsAsync(cancellationToken);
 
         var best = atRisk
             .GroupBy(p => p.PartNumber, StringComparer.Ordinal)

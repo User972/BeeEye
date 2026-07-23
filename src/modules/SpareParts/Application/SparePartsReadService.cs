@@ -39,6 +39,12 @@ public sealed class SparePartsReadService(BeeEyeDbContext db)
 
     public async Task<bool> HasDataAsync(CancellationToken ct) => await db.Parts.AsNoTracking().AnyAsync(ct);
 
+    /// <summary>Catalogue unit cost by part number. PartNumber is uniquely indexed, so the key is safe.</summary>
+    public async Task<IReadOnlyDictionary<string, decimal>> UnitCostsAsync(CancellationToken ct) =>
+        await db.Parts.AsNoTracking()
+            .Select(p => new { p.PartNumber, p.UnitCost })
+            .ToDictionaryAsync(p => p.PartNumber, p => p.UnitCost, StringComparer.Ordinal, ct);
+
     public async Task<IReadOnlyList<PartResult>> RecommendAllAsync(SparePartsSettings settings, CancellationToken ct)
     {
         var ctx = await LoadAsync(ct);

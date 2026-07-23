@@ -30,6 +30,31 @@ public sealed class ConfigurationReadService(BeeEyeDbContext db)
         return (SortedDistinct(s => s.Model), SortedDistinct(s => s.Variant), SortedDistinct(s => s.Colour), SortedDistinct(s => s.Interior));
     }
 
+    /// <summary>
+    /// Units-weighted average selling price per model · variant, aggregated in the database rather
+    /// than by materialising sales history. Weighting by units means high-volume months dominate,
+    /// which is the same basis the UC3 screen values stock at.
+    /// </summary>
+    public async Task<IReadOnlyDictionary<(string Model, string Variant), decimal>> AverageSellingPricesAsync(
+        CancellationToken ct)
+    {
+        var rows = await db.SalesFacts.AsNoTracking()
+            .Where(f => f.UnitsSold > 0)
+            .GroupBy(f => new { f.Model, f.Variant })
+            .Select(g => new
+            {
+                g.Key.Model,
+                g.Key.Variant,
+                Revenue = g.Sum(f => f.Revenue),
+                Units = g.Sum(f => f.UnitsSold),
+            })
+            .ToListAsync(ct);
+
+        return rows
+            .Where(r => r.Units > 0)
+            .ToDictionary(r => (r.Model, r.Variant), r => r.Revenue / r.Units);
+    }
+
     private async Task<IReadOnlyList<SalesRow>> LoadSalesAsync(CancellationToken ct)
     {
         var rows = await db.SalesFacts.AsNoTracking()

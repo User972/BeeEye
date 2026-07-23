@@ -27,7 +27,7 @@ internal static class InventoryEndpoints
                 string[]? brand, string[]? model, string[]? variant, string[]? type,
                 string[]? location, string[]? colour, string[]? interior, string[]? riskBand) =>
             {
-                var settings = await BuildSettingsAsync(analysisDate, svc, ct);
+                var settings = await svc.BuildSettingsAsync(analysisDate, ct);
                 var all = await svc.ComputeAsync(settings, ct);
                 var filter = InventoryFilter.From(brand, model, variant, type, location, colour, interior, riskBand);
                 var filtered = all.Where(filter.Matches).ToList();
@@ -43,7 +43,7 @@ internal static class InventoryEndpoints
                 string[]? brand, string[]? model, string[]? variant, string[]? type,
                 string[]? location, string[]? colour, string[]? interior, string[]? riskBand) =>
             {
-                var settings = await BuildSettingsAsync(analysisDate, svc, ct);
+                var settings = await svc.BuildSettingsAsync(analysisDate, ct);
                 var all = await svc.ComputeAsync(settings, ct);
                 var filter = InventoryFilter.From(brand, model, variant, type, location, colour, interior, riskBand);
                 var filtered = all.Where(filter.Matches).ToList();
@@ -58,7 +58,7 @@ internal static class InventoryEndpoints
         group.MapGet("/items/{stockId}", async (
                 string stockId, InventoryReadService svc, CancellationToken ct, DateOnly? analysisDate) =>
             {
-                var all = await svc.ComputeAsync(await BuildSettingsAsync(analysisDate, svc, ct), ct);
+                var all = await svc.ComputeAsync(await svc.BuildSettingsAsync(analysisDate, ct), ct);
                 var unit = all.FirstOrDefault(u => u.StockId == stockId);
                 return unit is null
                     ? Results.Problem(statusCode: StatusCodes.Status404NotFound, title: "Inventory unit not found",
@@ -72,7 +72,7 @@ internal static class InventoryEndpoints
 
         group.MapGet("/filter-options", async (InventoryReadService svc, CancellationToken ct) =>
             {
-                var all = await svc.ComputeAsync(await BuildSettingsAsync(null, svc, ct), ct);
+                var all = await svc.ComputeAsync(await svc.BuildSettingsAsync(null, ct), ct);
                 return Results.Ok(new FilterOptions(
                     Distinct(all, u => u.Brand), Distinct(all, u => u.Model), Distinct(all, u => u.Variant),
                     Distinct(all, u => u.Type), Distinct(all, u => u.Location), Distinct(all, u => u.Colour),
@@ -81,20 +81,6 @@ internal static class InventoryEndpoints
             .WithName("Inventory_FilterOptions")
             .WithSummary("Available filter dimension values");
     }
-
-    // Without an explicit analysisDate the risk model runs as of the latest observed data
-    // date. The API contract forbids a silent wall-clock "now" (docs/architecture/api-design.md
-    // "never a silent server now"), and the frozen RiskSettings default — kept only for
-    // wireframe-parity tests and the empty-database case — would freeze aging and produce
-    // negative ages once newer stock is ingested. The data-anchored default does neither.
-    private static async Task<RiskSettings> BuildSettingsAsync(
-        DateOnly? analysisDate, InventoryReadService svc, CancellationToken ct)
-        => RiskSettings.Default with
-        {
-            AnalysisDate = analysisDate
-                ?? await svc.LatestDataDateAsync(ct)
-                ?? RiskSettings.Default.AnalysisDate,
-        };
 
     private static InventoryMeta Meta(RiskSettings settings, int total, int filtered)
         => new(settings.AnalysisDate, total, filtered, DateTimeOffset.UtcNow);

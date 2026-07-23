@@ -5,8 +5,9 @@ namespace BeeEye.Modules.AfterSales.Application;
 /// <summary>
 /// Raises <b>D-SVC-1 — Prepare workshop capacity</b> for the Executive Decision Cockpit (UC8).
 /// <para>
-/// Surfaces the model cohort whose service intensity is running highest against its installed base,
-/// so workshop capacity and common parts can be positioned before demand lands.
+/// Of the cohorts the UC6 engine flags as high-intensity against their installed base, surfaces the
+/// one carrying the greatest workshop-hours exposure (intensity index breaks ties), so capacity and
+/// common parts can be positioned before demand lands.
 /// </para>
 /// <para>
 /// <b>Stated assumption.</b> Service history records labour hours but carries no monetary rate, so

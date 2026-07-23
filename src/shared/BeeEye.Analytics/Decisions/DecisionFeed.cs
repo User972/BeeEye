@@ -71,16 +71,27 @@ public sealed record DecisionFeedSummary(
 /// Ranking and aggregation for the Executive Decision Cockpit (UC8), ported from
 /// <c>decisionFeed()</c> in <c>docs/wireframes-v3/engine2.js</c> (L515–557).
 /// <para>
-/// This type deliberately holds <b>no</b> module-specific rules. The six v3 decision rules
-/// (D-ORD-1, D-PRC-1, D-INV-1, D-SUP-1, D-PRT-1, D-SVC-1) read data from several bounded contexts, so
-/// they are built by the ExecutiveInsights read service and passed in here as candidates. Keeping the
-/// engine free of module knowledge preserves module isolation (CLAUDE.md rule 3) and keeps ranking
-/// exhaustively unit-testable.
+/// This type deliberately holds <b>no</b> module-specific rules. Each v3 decision rule is built by
+/// the bounded context that owns its data and published through <c>IDecisionSignalProvider</c>; this
+/// engine only ranks and aggregates whatever candidates it is handed. Keeping the engine free of
+/// module knowledge preserves module isolation (CLAUDE.md rule 3) and keeps ranking exhaustively
+/// unit-testable.
+/// </para>
+/// <para>
+/// Five of the six v3 rules are live: D-ORD-1 (Recommendations), D-PRC-1 (SalesActuals), D-INV-1
+/// (Inventory), D-PRT-1 (SpareParts) and D-SVC-1 (AfterSales). <b>D-SUP-1 — supplier delay
+/// exposure</b> has no provider yet: the Procurement module registers no
+/// <c>IDecisionSignalProvider</c>, so supplier risk never reaches the cockpit.
 /// </para>
 /// </summary>
 public static class DecisionFeed
 {
-    /// <summary>Confidence at or below which a decision is counted as low-confidence.</summary>
+    /// <summary>
+    /// Confidence <b>strictly below</b> which a decision is counted as low-confidence, matching
+    /// <c>lowConf</c> in <c>engine2.js</c>. Note this is exclusive while
+    /// <see cref="DecisionPriority.ConfidenceBand"/> labels exactly 0.5 as "Low", so a decision shown
+    /// as "Low" at exactly 0.5 is not included in this count — a v3 quirk preserved for parity.
+    /// </summary>
     public const double LowConfidenceThreshold = 0.5;
 
     /// <summary>Review window, in days, for the "due this week" count.</summary>

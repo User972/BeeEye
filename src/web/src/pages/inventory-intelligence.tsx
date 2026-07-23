@@ -49,7 +49,7 @@ export default function InventoryIntelligence() {
   return (
     <>
       <PageHeader
-        title="Inventory Intelligence"
+        title="Inventory Aging & Overstock"
         summary="Aging, overstock risk and explainable risk scoring across the vehicle stock."
         useCase="UC5"
         wireframed

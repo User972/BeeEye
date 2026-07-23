@@ -60,7 +60,7 @@ export default function SparePartsPage() {
   return (
     <>
       <PageHeader
-        title="Spare Parts"
+        title="Spare Parts Prediction"
         summary="Intermittent spare-parts demand and stocking ranges per workshop — Croston/SBA/TSB where demand is lumpy, with honest confidence and low-data flags."
         useCase="UC7"
         meta={[

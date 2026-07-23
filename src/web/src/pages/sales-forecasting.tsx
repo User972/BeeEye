@@ -50,7 +50,7 @@ export default function SalesForecasting() {
   return (
     <>
       <PageHeader
-        title="Sales Forecasting"
+        title="Forecast Accuracy"
         summary="Model-vs-baseline accuracy, forecast bias and future demand with confidence intervals."
         useCase="UC2"
         wireframed
