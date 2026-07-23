@@ -8,7 +8,7 @@
 
 | Slice | Title | Priority | Status |
 |-------|-------|----------|--------|
-| S0 | Dependency & warning hygiene | P1 | Ready |
+| **S0** | **Dependency & warning hygiene** | P1 | **Complete** |
 | **S1** | **Application shell & grouped navigation** | P1 | **Complete** |
 | **S2** | **UC8 Executive Decision Cockpit** | P1 | **Complete** |
 | S3 | Explainability drawer & AI label system | P1 | Ready |
@@ -43,6 +43,37 @@ Backend breakdown after S6: `BeeEye.UnitTests` **259** (was 129) · `BeeEye.Anal
 All green, 0 failures, 0 skipped.
 
 ---
+
+## S0 — Dependency & warning hygiene · **Complete**
+
+- **Requirements.** V3-QA-005, V3-QA-006.
+- **Why it ran now.** The build carried 18 `NU1903` advisories and 5 `CS8604` warnings, which made
+  "this slice introduced no new warnings" unverifiable — the claim every subsequent slice's
+  verification section makes. Clearing them first turns that claim into an assertion.
+
+### What changed
+
+- **`Microsoft.OpenApi` pinned to 2.11.0.** It arrives transitively via `Microsoft.AspNetCore.OpenApi`
+  10.0.0, which resolves 2.0.0. GHSA-v5pm-xwqc-g5wc (circular schema references terminate parsing) is
+  patched in 2.7.5. Held on the **2.x line** rather than moved to 3.x: 3.x is a new major the ASP.NET
+  Core package is not built against, and the advisory does not require crossing it.
+- **`System.Security.Cryptography.Xml` pinned to 10.0.10.** It arrives at 9.0.0 through the EF Core
+  design-time graph — one major behind this solution's target framework. 10.0.x clears all seven
+  advisories reported against 9.0.0.
+- **5 `CS8604` warnings cleared** in `ConfigurationDemand.cs` (3) and `ForecastingReadService.cs` (2).
+  All five are `Min`/`Max` over a reference-typed selector, which the BCL declares nullable because it
+  must answer for an empty sequence. Every call site is already guarded by an emptiness check, or
+  operates on a LINQ grouping that holds at least one row by construction — so the fix is a
+  null-forgiving operator with a comment naming the guard, not a defensive null check for a case that
+  cannot arise.
+
+### Verification
+
+`dotnet build BeeEye.slnx` → **0 warnings, 0 errors** (was 23 warnings). Test totals unchanged at
+**814/814 backend** — 384 analytics · 259 unit · 5 architecture · 166 integration. No formula, entity
+or contract changed.
+
+**Next action.** None — slice closed.
 
 ## S1 — Application shell & grouped navigation · **Complete**
 

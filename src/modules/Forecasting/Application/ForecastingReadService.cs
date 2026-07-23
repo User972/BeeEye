@@ -131,8 +131,10 @@ public sealed class ForecastingReadService(BeeEyeDbContext db)
             return (rows, []);
         }
 
-        var min = rows.Min(r => r.MonthKey);
-        var max = rows.Max(r => r.MonthKey);
+        // Declared string? only because Min/Max must answer for an empty sequence; the guard above
+        // already returned for that case, and Row.MonthKey is a non-nullable formatted month key.
+        var min = rows.Min(r => r.MonthKey)!;
+        var max = rows.Max(r => r.MonthKey)!;
         return (rows, MonthKey.Range(min, max));
     }
 

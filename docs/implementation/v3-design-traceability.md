@@ -11,8 +11,8 @@
 
 | Status | Count |
 |--------|-------|
-| Implemented | 32 |
-| Planned | 16 |
+| Implemented | 34 |
+| Planned | 14 |
 | Deferred | 4 |
 | Rejected | 2 |
 | Blocked | 1 |
@@ -130,8 +130,8 @@
 | V3-QA-002 | Visual regression at 7 viewports | **None exist** | P2 | L | S12 | Planned |
 | V3-QA-003 | Automated accessibility scans on all routes | **None exist** | P1 | M | S12 | Planned |
 | V3-QA-004 | Coverage tooling + threshold | **None configured** | P2 | S | S12 | Planned |
-| V3-QA-005 | Remediate `NU1903` high-severity advisories (`Microsoft.OpenApi` 2.0.0, `System.Security.Cryptography.Xml` 9.0.0) | 18 warnings | P1 | S | S0 | Planned |
-| V3-QA-006 | Clear the 5 pre-existing `CS8604` nullable warnings | 5 warnings | P2 | XS | S0 | Planned |
+| V3-QA-005 | Remediate `NU1903` high-severity advisories (`Microsoft.OpenApi` 2.0.0, `System.Security.Cryptography.Xml` 9.0.0) | 18 warnings | P1 | S | S0 | **Implemented** (transitive pins: `Microsoft.OpenApi` 2.11.0, `System.Security.Cryptography.Xml` 10.0.10) |
+| V3-QA-006 | Clear the 5 pre-existing `CS8604` nullable warnings | 5 warnings | P2 | XS | S0 | **Implemented** (build is 0-warning) |
 
 ---
 
@@ -155,7 +155,7 @@
 
 | Slice | Title | Requirement IDs | Status |
 |-------|-------|-----------------|--------|
-| S0 | Dependency & warning hygiene | V3-QA-005/006 | Planned |
+| **S0** | **Dependency & warning hygiene** | V3-QA-005/006 | **Complete** |
 | **S1** | **Shell & grouped navigation** | V3-NAV-001/002/003 | **Complete** |
 | **S2** | **UC8 Decision Cockpit** | V3-UC08-001…007, 009 | **Complete** (V3-UC08-008 blocked on data) |
 | S3 | Explainability drawer + label system | V3-DS-002/006/007, V3-UC0x-002 | Planned |
