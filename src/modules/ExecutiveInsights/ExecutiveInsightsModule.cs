@@ -1,5 +1,8 @@
+using BeeEye.Modules.ExecutiveInsights.Application;
+using BeeEye.Modules.ExecutiveInsights.Contracts;
 using BeeEye.Shared.Api;
 using BeeEye.Shared.Modularity;
+using BeeEye.Shared.Time;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -14,10 +17,11 @@ public sealed class ExecutiveInsightsModule : IModule
     public string Name => "Executive Insights";
     public string RoutePrefix => "executive-insights";
     public string Description => "Executive decision cockpit aggregating material module exceptions (UC8).";
+    public string Status => "operational";
 
     public void RegisterServices(IServiceCollection services, IConfiguration configuration)
     {
-        // Scaffolded: Executive Insights application, domain and persistence services register here.
+        services.AddScoped<DecisionFeedService>();
     }
 
     public void MapEndpoints(IEndpointRouteBuilder endpoints)
@@ -25,8 +29,17 @@ public sealed class ExecutiveInsightsModule : IModule
         var group = endpoints.MapGroup($"{ApiRoutes.V1}/{RoutePrefix}");
         group.WithTags(Name);
 
-        var info = group.MapGet("/", () => new ModuleInfo(Name, RoutePrefix, Description, "scaffolded"));
+        var info = group.MapGet("/", () => new ModuleInfo(Name, RoutePrefix, Description, Status));
         info.WithName("ExecutiveInsights_Info");
         info.WithSummary("Executive Insights module information");
+
+        group.MapGet("/decision-feed", async (DecisionFeedService svc, IClock clock, CancellationToken ct) =>
+            {
+                var feed = await svc.BuildAsync(clock.UtcNow, ct);
+                return Results.Ok(feed);
+            })
+            .WithName("ExecutiveInsights_DecisionFeed")
+            .WithSummary("Ranked cross-module decisions needing attention, with headline aggregates")
+            .Produces<DecisionFeedResponse>();
     }
 }

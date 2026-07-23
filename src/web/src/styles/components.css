@@ -385,3 +385,180 @@ table.data-table { border-collapse: collapse; width: 100%; font-size: 13px; }
    (An `@supports not (font-family: …)` test can never match — it checks declaration
    syntax, not font availability.) */
 html:not(.icons-ready) .material-symbols-outlined { font-size: 0; }
+
+/* ---------------- Executive Decision Cockpit (UC8) ---------------- */
+
+/* Synthetic-demo marker, matching the v3 "Demo Data" output label. */
+.badge--demo {
+  color: oklch(0.5 0.16 300);
+  background: color-mix(in oklab, oklch(0.55 0.16 300) 13%, transparent);
+  border-color: color-mix(in oklab, oklch(0.55 0.16 300) 35%, transparent);
+}
+
+.decision-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+
+.decision-card {
+  box-shadow: none;
+  background: var(--surface-2);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.decision-card__head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.decision-card__priority {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+}
+.decision-card__priority-value {
+  font-family: var(--font-mono);
+  font-size: 19px;
+  font-weight: 600;
+  color: var(--text);
+}
+.decision-card__priority-label {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-faint);
+}
+
+.decision-card__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.decision-card__why {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.decision-card__meta {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+.decision-card__meta > div {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 11px;
+  min-width: 0;
+}
+.decision-card__meta dt {
+  font-size: 10.5px;
+  color: var(--text-muted);
+}
+.decision-card__meta dd {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.decision-card__money { font-family: var(--font-mono); }
+.decision-card__pct { font-weight: 400; color: var(--text-muted); }
+
+.decision-card__action {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin: 0;
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--primary-weak);
+  border: 1px solid var(--primary);
+  color: var(--primary-ink);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.decision-card__drivers {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px 16px;
+}
+.driver {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 70px 34px;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.driver__bar {
+  height: 5px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  overflow: hidden;
+}
+.driver__fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--ai-1), var(--ai-2));
+}
+.driver__pct {
+  font-family: var(--font-mono);
+  text-align: right;
+}
+
+.decision-card__foot {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-top: 9px;
+  border-top: 1px solid var(--border);
+}
+.decision-card__evidence {
+  flex: 1;
+  min-width: 0;
+  font-size: 11px;
+  color: var(--text-faint);
+}
+.decision-card__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.decision-gaps {
+  display: flex;
+  gap: 10px;
+  margin-top: var(--gap);
+  padding: 11px 13px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--risk-high);
+  background: color-mix(in oklab, var(--risk-high) 10%, transparent);
+  color: var(--text);
+  font-size: 12px;
+}
+.decision-gaps ul { margin: 4px 0 0; padding-left: 18px; }
+
+@media (max-width: 900px) {
+  .decision-card__meta { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .decision-card__drivers { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 560px) {
+  .decision-card__meta { grid-template-columns: 1fr; }
+  .decision-card__priority { margin-left: 0; }
+}

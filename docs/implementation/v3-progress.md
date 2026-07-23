@@ -10,7 +10,7 @@
 |-------|-------|----------|--------|
 | S0 | Dependency & warning hygiene | P1 | Ready |
 | **S1** | **Application shell & grouped navigation** | P1 | **Complete** |
-| **S2** | **UC8 Executive Decision Cockpit** | P1 | **Implementing** |
+| **S2** | **UC8 Executive Decision Cockpit** | P1 | **Complete** |
 | S3 | Explainability drawer & AI label system | P1 | Ready |
 | S4 | Identity, roles & authorization | P0 | Analysing |
 | S5 | Recommendation records & write path | P0 | Ready |
@@ -28,10 +28,12 @@
 |-----------|---------|-----|-------|
 | Baseline | 387 | 17 | **404** |
 | After S1 | 387 | 45 | **432** |
-| After S2 (analytics complete) | **439** | 45 | **484** |
+| After S2 (analytics complete) | 439 | 45 | 484 |
+| **After S2 (complete)** | **470** | **67** | **537** |
 
-Backend breakdown after S2: `BeeEye.UnitTests` 18 · `BeeEye.Analytics.Tests` **384** (was 332) ·
-`BeeEye.ArchitectureTests` 4 · `BeeEye.IntegrationTests` 33. All green, 0 failures, 0 skipped.
+Backend breakdown after S2: `BeeEye.UnitTests` **36** (was 18) · `BeeEye.Analytics.Tests` **384**
+(was 332) · `BeeEye.ArchitectureTests` 4 · `BeeEye.IntegrationTests` **46** (was 33).
+Web: 67 (was 17). All green, 0 failures, 0 skipped.
 
 ---
 
@@ -56,31 +58,103 @@ Backend breakdown after S2: `BeeEye.UnitTests` 18 · `BeeEye.Analytics.Tests` **
 - **Risks.** R-19 (mobile) reduced to Mitigating; R-11 (accessibility) reduced to Mitigating.
 - **Next action.** None — slice closed.
 
-## S2 — UC8 Executive Decision Cockpit · **Implementing**
+## S2 — UC8 Executive Decision Cockpit · **Complete**
 
-- **Requirements.** V3-UC08-001…007.
-- **Code.** ✅ `BeeEye.Analytics/Decisions/DecisionPriority.cs` — the multiplicative priority model,
-  impact normalisation, severity→due-days, confidence bands and ranked factors, ported faithfully from
-  `engine2.js` L511–559 (including `MidpointRounding.AwayFromZero` to match JavaScript's `Math.round`).
-  ✅ `BeeEye.Analytics/Decisions/DecisionFeed.cs` — the `Decision` record with derived priority/due/
-  confidence/factors, plus `Rank` (totally ordered, reproducible) and `Summarise` (critical,
-  low-confidence, due-this-week, opportunity/risk value, demo-data count).
-  ⬜ `ExecutiveInsightsReadService` building the six rule candidates. ⬜ endpoint. ⬜ cockpit page.
-- **Tests.** ✅ 34 tests for the priority model + 18 for ranking/aggregation — analytics suite
-  332 → **384**. Covers multiplicative-vs-additive behaviour, clamping, NaN handling, JS rounding
-  parity, tie-breaking determinism, input immutability, negative-impact magnitude and empty feeds.
-  ⬜ rule tests, endpoint integration tests, page component tests.
-- **Documentation.** ✅ Traceability rows recorded.
-- **Verification so far.** 384/384 analytics ✅ · **439/439 full backend regression** ✅ · no new build
-  warnings ✅.
-- **Design note.** `DecisionFeed` deliberately holds **no** module-specific rules. The six v3 rules read
-  from several bounded contexts, so they are assembled by the ExecutiveInsights read service and passed
-  in as candidates — preserving module isolation (CLAUDE.md rule 3) and keeping ranking purely testable.
-- **Known gaps.** The six rule builders, the endpoint and the UI remain.
-- **Risks.** R-06 — the cockpit aggregates six modules including the 669 ms after-sales endpoint;
-  budget assertions required.
-- **Next action.** Implement `DecisionFeed` composing UC1/3/4/5/6/7 results, then the read service and
-  endpoint, then the page with loading/empty/error/populated states.
+- **Requirements.** V3-UC08-001…007 and V3-UC08-009 implemented; **V3-UC08-008 blocked** (see below).
+
+### Architecture — the `IDecisionSignalProvider` seam
+
+The cockpit spans seven use cases, but the boundary rules forbid a module referencing another module.
+Rather than duplicate five read services inside ExecutiveInsights, a **published contract** was added:
+`BeeEye.Analytics/Decisions/IDecisionSignalProvider.cs`. Each context implements it and registers
+itself; ExecutiveInsights injects `IEnumerable<IDecisionSignalProvider>` and only ranks, summarises
+and narrates.
+
+- Every rule stays with the context that owns its data.
+- ExecutiveInsights references **no module** — only `BeeEye.Analytics`. The 4 architecture tests still
+  pass, proving isolation held.
+- Providers run **sequentially by design**: they share the request-scoped `DbContext`, which is not
+  thread-safe, so concurrent execution would race on the connection.
+
+### Code
+
+- ✅ `DecisionPriority.cs` — multiplicative priority model, impact normalisation, severity→due-days,
+  confidence bands/weights, ranked factors. Ported from `engine2.js` L511–559 with
+  `MidpointRounding.AwayFromZero` to match JavaScript's `Math.round`.
+- ✅ `DecisionFeed.cs` — `Decision` record with derived members, `Rank` (totally ordered) and
+  `Summarise`.
+- ✅ `IDecisionSignalProvider.cs` — the cross-context contract.
+- ✅ Five providers: `OrderDecisionSignalProvider` (D-ORD-1), `ConfigurationDecisionSignalProvider`
+  (D-PRC-1), `InventoryDecisionSignalProvider` (D-INV-1), `SparePartsDecisionSignalProvider`
+  (D-PRT-1), `AfterSalesDecisionSignalProvider` (D-SVC-1).
+- ✅ `DecisionFeedService` — resilient aggregation; a failing context becomes a reported **gap**, not a
+  500 and not a silent omission. Exception detail is logged, never returned to the browser.
+- ✅ `GET /api/v1/executive-insights/decision-feed`; module status `scaffolded` → `operational`.
+- ✅ `lib/api/executive.ts` typed client + `useDecisionFeed` hook.
+- ✅ `pages/executive-cockpit.tsx` rewritten; four `—` placeholders replaced with live figures.
+
+### Monetary impact is derived from real data
+
+| Rule | Impact basis |
+|------|--------------|
+| D-ORD-1 | Net requirement × units-weighted average selling price from `SalesFacts` |
+| D-PRC-1 | Stock still held × that configuration's own average selling price |
+| D-INV-1 | Annual holding cost from each unit's own `HoldingCostPerDay` — no rate assumed |
+| D-PRT-1 | Recommended quantity × catalogue `Part.UnitCost` |
+| D-SVC-1 | Labour hours × an **assumed** rate — see below |
+
+**Stated assumption (D-SVC-1).** Service history records labour hours but carries no monetary rate.
+Workshop exposure is valued at an assumed SAR 350/hour, exposed as a constructor parameter so it can
+be configured, and **written into the decision's evidence text** so a reader always sees the basis.
+The decision is also flagged `isDemo`.
+
+### Live output (seeded dataset, verified)
+
+```
+5 decisions · 2 critical · 2 due this week · 0 gaps
+D-ORD-1 p=31 Medium Opportunity  SAR 72,095,231  Increase order allocation — Haval H9 MX
+D-SVC-1 p=16 Medium Risk  demo   SAR 15,645,308  Prepare workshop capacity — Haval H9 cohort
+D-PRT-1 p=13 High   Risk  demo   SAR  1,254,300  Increase stock for Engine Control Module
+D-PRC-1 p= 7 High   Risk         SAR    652,831  Reduce procurement — ES 350 MX · Pearl White
+D-INV-1 p= 5 Medium Risk         SAR     18,615  Redistribute aging inventory — ES 350 ZX
+```
+
+The SAR 72M figure was cross-checked against `/api/v1/recommendations/order-optimisation`: 364 units
+short over the **3-month** horizon × ~198k SAR. The copy was amended to state the horizon explicitly,
+so the figure cannot be misread as monthly.
+
+### Tests — 537 total (was 404 at baseline)
+
+- ✅ 52 analytics unit tests (priority model + ranking/aggregation).
+- ✅ 18 unit tests for `DecisionFeedService` with in-memory provider fakes: aggregation, ranking,
+  per-provider failure isolation, **gap reporting**, **no exception detail leaking into the response**,
+  cancellation propagation (not misreported as a data gap), DTO projection, money rounding, narrative.
+- ✅ 13 integration tests against the real composition root: reachability, ranking order, payload
+  completeness, **every decision links to a screen the web app actually routes**, id uniqueness,
+  summary/decision agreement, synthetic-data labelling, determinism across requests, response budget.
+- ✅ 22 component tests: loading, populated, empty, error, retry, network failure, **partial-failure**,
+  demo labelling, drill-down navigation, severity in words not colour alone.
+
+### Verification
+
+typecheck ✅ · lint ✅ · web build ✅ · 67/67 web ✅ · **470/470 backend** ✅ · architecture 4/4 ✅ ·
+no new build warnings. Bundle: CSS 12.61 → 15.57 kB raw (+0.48 kB gzip); JS unchanged at ~324.6 kB.
+
+### Known gaps
+
+- **V3-UC08-008 / D-SUP-1 (supplier delay exposure) is not implemented.** v3 computes it entirely from
+  synthetic supplier fixtures in `engine2.js`. The database has **no supplier, purchase-order or
+  delivery-performance entity**. Implementing it would mean fabricating supplier performance and
+  presenting it to executives as measured — so the rule is omitted and tracked as V3-CONFLICT-9.
+- Nav badges (V3-NAV-004) can now be wired from `summary.critical` — moved to S4.
+- No visual-regression coverage yet (S12).
+
+### Risks
+
+R-06 addressed: a 5 s response budget is asserted in integration tests. The feed measured well inside
+it, but the two slow underlying endpoints remain a S8 concern.
+
+**Next action.** None — slice closed.
 
 ## S4 — Identity, roles & authorization · **Analysing**
 

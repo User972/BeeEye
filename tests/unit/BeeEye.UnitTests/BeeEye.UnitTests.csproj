@@ -13,6 +13,9 @@
 
   <ItemGroup>
     <ProjectReference Include="../../../src/shared/BeeEye.Shared/BeeEye.Shared.csproj" />
+    <!-- The cockpit's aggregation service holds no data access, so it is unit-testable with
+         in-memory IDecisionSignalProvider fakes. -->
+    <ProjectReference Include="../../../src/modules/ExecutiveInsights/BeeEye.Modules.ExecutiveInsights.csproj" />
   </ItemGroup>
 
 </Project>

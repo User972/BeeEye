@@ -108,6 +108,19 @@ public static class DecisionPriority
     };
 
     /// <summary>
+    /// The inverse of <see cref="ConfidenceBand"/>: turns an analytics confidence label back into a
+    /// 0–1 weighting for the priority model. Matches <c>conf01()</c> in
+    /// <c>docs/wireframes-v3/engine2.js</c> (L522). Unrecognised labels fall to the low weighting,
+    /// so an unexpected value suppresses a decision rather than promoting it.
+    /// </summary>
+    public static double ConfidenceWeight(string? band) => band switch
+    {
+        "High" => 0.9,
+        "Medium" => 0.65,
+        _ => 0.4,
+    };
+
+    /// <summary>
     /// The four ranked drivers behind a score, as whole percentages — the payload the
     /// "Why this recommendation?" drawer renders under "Top drivers".
     /// </summary>

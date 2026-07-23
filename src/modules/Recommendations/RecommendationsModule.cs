@@ -1,3 +1,4 @@
+using BeeEye.Analytics.Decisions;
 using BeeEye.Modules.Recommendations.Application;
 using BeeEye.Shared.Modularity;
 using Microsoft.AspNetCore.Routing;
@@ -17,6 +18,9 @@ public sealed class RecommendationsModule : IModule
     public void RegisterServices(IServiceCollection services, IConfiguration configuration)
     {
         services.AddScoped<OrderReadService>();
+
+        // Contributes this context's material exceptions to the Executive Decision Cockpit (UC8).
+        services.AddScoped<IDecisionSignalProvider, OrderDecisionSignalProvider>();
     }
 
     public void MapEndpoints(IEndpointRouteBuilder endpoints)

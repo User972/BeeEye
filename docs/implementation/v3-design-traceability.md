@@ -11,12 +11,12 @@
 
 | Status | Count |
 |--------|-------|
-| Implemented | 7 |
-| In progress | 1 |
-| Planned | 39 |
+| Implemented | 14 |
+| Planned | 34 |
 | Deferred | 4 |
 | Rejected | 2 |
-| **Total** | **53** |
+| Blocked | 1 |
+| **Total** | **55** |
 
 ---
 
@@ -50,11 +50,13 @@
 |----|-----------|-------------|----------|-----------------|----------|----|----|--------|-------|
 | V3-UC08-001 | `priorityScore()` engine2 L511 | Multiplicative priority model: `round(clamp(impactF × urgency × confidence × controllability,0,1) × 100)`, `impactF = clamp(|impact|/5M, 0.15, 1)` | — | New API requirement | P1 | S | S2 | **Implemented** (`Analytics/Decisions/DecisionPriority.cs`) | Covered (34 tests) |
 | V3-UC08-002 | `mkDecision()` engine2 L559 | Severity→due-days (5/12/20), confidence bands (>0.75/>0.5), four ranked factors | — | New API requirement | P1 | XS | S2 | **Implemented** | Covered (within the 34) |
-| V3-UC08-003 | `decisionFeed()` engine2 L515 | Six cross-module decision rules (D-ORD-1, D-PRC-1, D-INV-1, D-SUP-1, D-PRT-1, D-SVC-1) composed from UC1/3/4/5/6/7 | `ExecutiveInsights` (scaffold) | New workflow | P1 | L | S2 | **In progress** | Partial |
-| V3-UC08-004 | `rvCockpit()` L3070 | Cockpit endpoint `/api/v1/executive-insights/decision-feed` returning ranked decisions + aggregates | 44 GET endpoints, none for this | New API requirement | P1 | M | S2 | Planned | None |
-| V3-UC08-005 | `rvCockpit()` financial block | Aggregates: `oppValue`, `riskValue`, `critical`, `lowConf`, `dueThisWeek`, and the 7-field financial block | — | New data requirement | P1 | M | S2 | Planned | None |
-| V3-UC08-006 | cockpit UI | Cockpit screen replacing the four `—` placeholder stat cards, with loading/empty/error states | `pages/executive-cockpit.tsx` | Component change | P1 | M | S2 | Planned | None |
-| V3-UC08-007 | cockpit narrative | Generated narrative sentence grouping decisions by area | — | Content change | P2 | S | S2 | Planned | None |
+| V3-UC08-003 | `decisionFeed()` engine2 L515 | Five of six cross-module decision rules (D-ORD-1, D-PRC-1, D-INV-1, D-PRT-1, D-SVC-1) published by their owning contexts via `IDecisionSignalProvider`. **D-SUP-1 excluded** — see V3-UC08-008 | `ExecutiveInsights` (was scaffold) | New workflow | P1 | L | S2 | **Implemented** | Covered (13 integration) |
+| V3-UC08-004 | `rvCockpit()` L3070 | Cockpit endpoint `GET /api/v1/executive-insights/decision-feed` returning ranked decisions, aggregates and any provider gaps | 44 GET endpoints, none for this | New API requirement | P1 | M | S2 | **Implemented** | Covered (13 integration) |
+| V3-UC08-005 | `rvCockpit()` financial block | Aggregates: opportunity/risk value, `critical`, `lowConfidence`, `dueThisWeek`, `demoDataCount` | — | New data requirement | P1 | M | S2 | **Implemented** | Covered (18 unit + integration) |
+| V3-UC08-006 | cockpit UI | Cockpit screen replacing the four `—` placeholder stat cards, with loading/empty/error/partial-failure states | `pages/executive-cockpit.tsx` | Component change | P1 | M | S2 | **Implemented** | Covered (22 component) |
+| V3-UC08-007 | cockpit narrative | Generated narrative sentence grouping decisions by area | — | Content change | P2 | S | S2 | **Implemented** | Covered (5 unit) |
+| V3-UC08-008 | `decisionFeed()` D-SUP-1 | Supplier delay exposure (on-time %, average delay, PO history) | **No supplier or purchase-order entity exists** | New data requirement | P2 | L | S5+ | **Blocked** — see V3-CONFLICT-9 | N/A |
+| V3-UC08-009 | *(new seam)* | `IDecisionSignalProvider` published contract letting each context contribute decisions without any module referencing another | — | New API requirement | P1 | M | S2 | **Implemented** | Covered (architecture tests 4/4) |
 
 ## D. Governance (`V3-GOV-*`) — all new in v3
 
@@ -145,6 +147,7 @@
 | **V3-CONFLICT-6** | Decision Log | v3 internal inconsistency: `addAction()` defaults `status: "Proposed"`, absent from its own 9-status list | Use ADR-0006's `Generated` as the initial state; do not reproduce the bug | Records invisible to their own filters |
 | **V3-CONFLICT-7** | all | v3 is **desktop-only** — no nav breakpoints, no mobile pattern | Define responsive behaviour independently (done in S1) | Unusable on tablet/mobile |
 | **V3-CONFLICT-8** | labels | `README.md` documents **7** AI labels; `LABELS` defines **8** (omits `Data Quality`) | Implement all 8 from code, the source of truth | Missing a status treatment |
+| **V3-CONFLICT-9** | Decision Cockpit | v3's **D-SUP-1** (supplier delay exposure) is computed entirely from `engine2.js`'s synthetic `SUPPLIERS` / `supplierPerf` / `procurement()` fixtures. The database has **no supplier, purchase-order or delivery-performance entity** — `InventoryItem.LeadTimeDays` is the only related field, and it carries no supplier identity or on-time history | **Do not implement the rule.** Fabricating supplier performance to fill a cockpit tile would put invented figures in front of executives as if they were measured. The remaining five rules ship; D-SUP-1 is tracked as V3-UC08-008 and unblocks once real Fusion Procurement data is integrated | **Medium if ignored** — a plausible-looking but fabricated supplier decision is worse than an absent one |
 
 ---
 
@@ -154,7 +157,7 @@
 |-------|-------|-----------------|--------|
 | S0 | Dependency & warning hygiene | V3-QA-005/006 | Planned |
 | **S1** | **Shell & grouped navigation** | V3-NAV-001/002/003 | **Complete** |
-| **S2** | **UC8 Decision Cockpit** | V3-UC08-001…007 | **In progress** |
+| **S2** | **UC8 Decision Cockpit** | V3-UC08-001…007, 009 | **Complete** (V3-UC08-008 blocked on data) |
 | S3 | Explainability drawer + label system | V3-DS-002/006/007, V3-UC0x-002 | Planned |
 | S4 | Identity, roles & authorization | V3-AUTH-001/002/003, V3-NAV-004 | Planned |
 | S5 | Recommendation records & write path | V3-GOV-002/003/005/006/011/012, V3-API-001…005 | Planned |

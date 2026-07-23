@@ -1,3 +1,4 @@
+using BeeEye.Analytics.Decisions;
 using BeeEye.Modules.SalesActuals.Application;
 using BeeEye.Shared.Modularity;
 using Microsoft.AspNetCore.Routing;
@@ -17,6 +18,9 @@ public sealed class SalesActualsModule : IModule
     public void RegisterServices(IServiceCollection services, IConfiguration configuration)
     {
         services.AddScoped<ConfigurationReadService>();
+
+        // Contributes this context's material exceptions to the Executive Decision Cockpit (UC8).
+        services.AddScoped<IDecisionSignalProvider, ConfigurationDecisionSignalProvider>();
     }
 
     public void MapEndpoints(IEndpointRouteBuilder endpoints)
