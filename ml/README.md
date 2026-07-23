@@ -14,7 +14,7 @@ Jobs; Azure ML where the customer requires a managed registry).
 | `beeeye_ml.order_optimisation` | UC1 | Constraint-aware order net-requirement |
 | `beeeye_ml.procurement` | UC4 | Safety stock for target service levels |
 | `beeeye_ml.after_sales` | UC6 | Service-intensity index and data coverage |
-| `beeeye_ml.spare_parts` | UC7 | Croston intermittent-demand baseline |
+| `beeeye_ml.spare_parts` | UC7 | Croston / SBA / TSB intermittent-demand baselines |
 
 The seed modules are pure standard library and mirror the deterministic logic in
 the wireframe `engine.js`, so they establish the **baselines every ML model must

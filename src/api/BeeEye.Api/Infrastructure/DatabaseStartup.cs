@@ -1,5 +1,6 @@
 using BeeEye.Persistence;
 using BeeEye.Persistence.SampleData;
+using BeeEye.Persistence.SyntheticData;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
@@ -13,6 +14,7 @@ public static class DatabaseStartup
         var connectionString = configuration.GetConnectionString("Postgres") ?? BuildLocalConnectionString(configuration);
         services.AddDbContext<BeeEyeDbContext>(options => options.UseNpgsql(connectionString));
         services.AddScoped<SampleDataImporter>();
+        services.AddScoped<SyntheticAfterSalesImporter>();
 
         // Readiness reflects actual database connectivity — /health/ready lies otherwise, because
         // InitialiseDatabaseAsync swallows an unreachable database so the process can still start.
@@ -62,6 +64,18 @@ public static class DatabaseStartup
             logger.LogInformation(
                 "Sample data ready — sales: {SalesStatus} ({SalesCount}), inventory: {InventoryStatus} ({InventoryCount}).",
                 result.Sales.Status, result.Sales.Inserted, result.Inventory.Status, result.Inventory.Inserted);
+
+            // Derive the synthetic after-sales & spare-parts dataset (UC6/UC7) from the real sales.
+            // Clearly labelled synthetic-demo; idempotent by checksum so a re-run is skipped.
+            var synthetic = scope.ServiceProvider.GetRequiredService<SyntheticAfterSalesImporter>();
+            var settings = SyntheticGenerationSettings.Default with
+            {
+                Density = app.Configuration.GetValue("Synthetic:Density", 1.0),
+            };
+            var syntheticResult = await synthetic.ImportAsync(settings);
+            logger.LogInformation(
+                "Synthetic after-sales/parts ({Status}) — vehicles: {Vehicles}, service events: {Events}, parts: {Parts}, part usages: {Usages}.",
+                syntheticResult.Status, syntheticResult.Vehicles, syntheticResult.ServiceEvents, syntheticResult.Parts, syntheticResult.PartUsages);
         }
         catch (Exception ex) when (IsDatabaseUnavailable(ex))
         {

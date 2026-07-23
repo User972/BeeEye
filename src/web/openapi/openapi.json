@@ -1218,7 +1218,6 @@
         "tags": [
           "After-Sales"
         ],
-        "summary": "After-Sales module information",
         "operationId": "AfterSales_Info",
         "responses": {
           "200": {
@@ -1234,12 +1233,126 @@
         }
       }
     },
+    "/api/v1/after-sales/service-intensity/summary": {
+      "get": {
+        "tags": [
+          "After-Sales"
+        ],
+        "summary": "Fleet-level service-intensity KPIs with coverage and synthetic-data provenance",
+        "operationId": "AfterSales_Summary",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/after-sales/service-intensity/by-model": {
+      "get": {
+        "tags": [
+          "After-Sales"
+        ],
+        "summary": "Per-model service-intensity index (paged, sortable)",
+        "operationId": "AfterSales_ByModel",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "highOnly",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "model",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/after-sales/service-intensity/model/{model}": {
+      "get": {
+        "tags": [
+          "After-Sales"
+        ],
+        "summary": "Mileage-band, time-since-sale and service-type breakdowns for one model",
+        "operationId": "AfterSales_ModelDetail",
+        "parameters": [
+          {
+            "name": "model",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/after-sales/filter-options": {
+      "get": {
+        "tags": [
+          "After-Sales"
+        ],
+        "operationId": "AfterSales_FilterOptions",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/v1/spare-parts": {
       "get": {
         "tags": [
           "Spare Parts"
         ],
-        "summary": "Spare Parts module information",
         "operationId": "SpareParts_Info",
         "responses": {
           "200": {
@@ -1251,6 +1364,212 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/v1/spare-parts/demand/summary": {
+      "get": {
+        "tags": [
+          "Spare Parts"
+        ],
+        "summary": "Portfolio KPIs: parts, predicted demand, low-data and at-risk counts, demand-class mix",
+        "operationId": "SpareParts_Summary",
+        "parameters": [
+          {
+            "name": "serviceLevel",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+              "type": [
+                "number",
+                "string"
+              ],
+              "format": "double"
+            }
+          },
+          {
+            "name": "reviewPeriodMonths",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+              "type": [
+                "number",
+                "string"
+              ],
+              "format": "double"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/spare-parts/demand/parts": {
+      "get": {
+        "tags": [
+          "Spare Parts"
+        ],
+        "summary": "Per-part demand, recommended stocking range, risk and low-data flag (paged, sortable, filterable)",
+        "operationId": "SpareParts_Parts",
+        "parameters": [
+          {
+            "name": "serviceLevel",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+              "type": [
+                "number",
+                "string"
+              ],
+              "format": "double"
+            }
+          },
+          {
+            "name": "reviewPeriodMonths",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+              "type": [
+                "number",
+                "string"
+              ],
+              "format": "double"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "model",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "lowDataOnly",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "atRiskOnly",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/spare-parts/demand/part/{partNumber}": {
+      "get": {
+        "tags": [
+          "Spare Parts"
+        ],
+        "summary": "Usage history, method comparison (Croston/SBA/TSB), forecast range, supersession & compatibility",
+        "operationId": "SpareParts_PartDetail",
+        "parameters": [
+          {
+            "name": "partNumber",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "serviceLevel",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+              "type": [
+                "number",
+                "string"
+              ],
+              "format": "double"
+            }
+          },
+          {
+            "name": "reviewPeriodMonths",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+              "type": [
+                "number",
+                "string"
+              ],
+              "format": "double"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/spare-parts/filter-options": {
+      "get": {
+        "tags": [
+          "Spare Parts"
+        ],
+        "operationId": "SpareParts_FilterOptions",
+        "responses": {
+          "200": {
+            "description": "OK"
           }
         }
       }

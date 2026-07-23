@@ -129,10 +129,47 @@ tell (and must not care) which mode delivered a row.
 | **CSV** | Delimited files (SFTP / landing zone) | Manual or legacy extracts, one-off backfills | Strict schema + type parsing; header contract asserted; encoding pinned (UTF-8). |
 | **Parquet** | Columnar files (ADLS / BICC output) | Large curated extracts, efficient re-processing | Preferred lake format for validated/curated zones; schema embedded, enabling `schema-drift` detection. |
 | **Landing zone** | ADLS Gen2 drop container (any of the above outputs) | The common inbox all file-based modes write into | A watcher triggers ingestion (Service Bus / Container Apps Job); the landing drop is copied to immutable raw, then processed. |
+| **Synthetic-demo** | Deterministically generated in-process from an already-ingested source object | Demonstrating a use case whose real feeds are not yet onboarded (UC6/UC7) | `source_system = "synthetic-demo"`; clearly labelled, never presented as real. See §4.1. |
 
 Adapters are **pluggable behind one `ISourceAdapter` port**: each mode is a driver implementing the
 Section 3 envelope. Adding a mode (or a new Oracle object) is a new driver + contract mapping, not a
 change to DataQuality, Forecasting or any downstream context.
+
+### 4.1 Synthetic-demo data (UC6 / UC7)
+
+The POC sample ships **sales history and inventory only** — it has no service events, warranty/recall
+records, odometer readings, parts catalogue, part usage or part stock. UC6 (Sales vs After-Sales
+Correlation) and UC7 (Spare Parts Demand Prediction) therefore cannot be computed from it directly. To
+make these use cases exercisable end-to-end, BeeEye ships a **deterministic synthetic generator**
+(`BeeEye.Persistence.SyntheticData.SyntheticAfterSalesImporter`) that derives a plausible, reproducible
+after-sales & parts dataset **from the real sales facts**, so the correlations UC6/UC7 surface track the
+real sales mix rather than noise.
+
+Rules this data honours (identical discipline to the `SampleDataImporter`):
+
+- **Always labelled synthetic.** Every generated row carries `source_system = "synthetic-demo"` on its
+  ingestion batch, and every UC6/UC7 API response and screen discloses `provenance: "synthetic-demo"`.
+  It is **never** presented as real after-sales data or as Oracle Fusion.
+- **Deterministic, no unseeded randomness.** All variation comes from a SplitMix64 PRNG seeded from a
+  hash of a stable key (VIN, month, event index). No `Random()`, no wall clock in generation. Same
+  inputs ⇒ identical output ⇒ ingestion is idempotent (a re-run with the same checksum is skipped;
+  a generation-logic change purges the stale dataset and regenerates exactly one).
+- **PII minimisation.** VINs are synthetic surrogates (prefixed `SYN`); no customer names, contacts or
+  personal identifiers exist anywhere in the generated data.
+- **Zeros are real signal.** Parts demand series are built as a dense monthly grid with explicit zeros,
+  so UC7's intermittent-demand methods (Croston/SBA/TSB) see genuine inter-demand intervals.
+
+**Real source datasets that replace it.** When ADMC onboards the real feeds, the synthetic adapter is
+removed and these Oracle Fusion objects flow through the ACL exactly like sales/inventory today — the
+required fields are specified in the use-case docs:
+[UC6 §3 Required source datasets](../product/use-cases/uc6-sales-aftersales-correlation.md#3-required-source-datasets)
+(`service_orders`, `service_order_lines`, `vehicle_master`, `warranty_recall`, `odometer_readings`,
+`workshop_capacity`) and
+[UC7 §2 Required inputs](../product/use-cases/uc7-spare-parts-demand-prediction.md#2-scope--data-honesty-poc-vs-target-state)
+(part master, model-to-part compatibility, supersession/alternate relationships, service/work-order
+lines, parts issues, on-hand + inbound stock, lead time, emergency-procurement history). Because every
+UC6/UC7 metric is computed by the same deterministic analytics regardless of source, swapping synthetic
+for real is an ingestion change, not an analytics change.
 
 ---
 
@@ -305,6 +342,6 @@ bumping `acl_version`) is the first, test-driven step of absorbing that change.
 | [../wireframes/docs/DATA_DICTIONARY.md](../wireframes/docs/DATA_DICTIONARY.md) | Field-level source definitions the validation list is built from. |
 | [../wireframes/docs/DERIVED_METRICS.md](../wireframes/docs/DERIVED_METRICS.md) | Reconciliation formulae (`revenue`, `lead_time_days`, holding cost) used by the consistency rules. |
 | [../wireframes/docs/ASSUMPTIONS_LIMITATIONS.md](../wireframes/docs/ASSUMPTIONS_LIMITATIONS.md) | Source of the `service_date`-unconfirmed and Mecca-no-inventory handling. |
-| `./data-architecture.md` | Deeper ADLS Gen2 zone realisation and PostgreSQL physical schema. |
-| `./ml-platform.md` | Consumer of the `model-input` zone and the critical-gate that blocks model runs. |
-| `./security-and-identity.md` | Key Vault / managed-identity auth and audit controls the adapters rely on. |
+| `./canonical-data-model.md` | Deeper ADLS Gen2 zone realisation and PostgreSQL physical schema. |
+| `./mlops-and-models.md` | Consumer of the `model-input` zone and the critical-gate that blocks model runs. |
+| `./security-threat-model.md` | Key Vault / managed-identity auth and audit controls the adapters rely on. |

@@ -46,6 +46,16 @@ ADMC sells a small model line-up (Patrol, Corolla, Haval H9, Camry, ES 350) acro
 
 ## 3. Required source datasets
 
+> **Synthetic-demo implementation (current build).** So UC6 is exercisable end-to-end before these feeds
+> land, BeeEye ships a **deterministic synthetic generator** that derives a plausible after-sales dataset
+> from the real sales history (`SyntheticAfterSalesImporter`; `source_system = "synthetic-demo"`, surfaced
+> as `provenance: "synthetic-demo"` on every response and screen — clearly labelled, never presented as
+> real or as Oracle Fusion). It emits `VehicleSale` (synthetic VINs, no PII) and `ServiceEvent`
+> (Routine/Repair/Warranty/Recall, mileage bands, months-since-sale, labour hours) with a per-model
+> service-intensity multiplier so the index separates models. See
+> [data-integration-and-quality §4.1](../../architecture/data-integration-and-quality.md#41-synthetic-demo-data-uc6--uc7).
+> The datasets below are the **real** feeds that replace it, mapped one-for-one onto the same entities.
+
 Because UC6 is not covered by the POC sample, the following feeds must be onboarded from Oracle Fusion / the dealer management system (DMS) via the versioned anti-corruption layer (read-only system of record) into the ADLS Gen2 `raw → validated → curated` zones. Field lists are the **minimum viable** contract; ADMC's actual schema is confirmed during integration.
 
 ### 3.1 Service / repair orders (header) — `service_orders`

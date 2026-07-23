@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { fmtInt, fmtNum, fmtPct, fmtSar, fmtSignPct, riskWordClass, rotationClass } from './format';
+import {
+  demandClassBadge,
+  fmtInt,
+  fmtNum,
+  fmtPct,
+  fmtSar,
+  fmtSignPct,
+  intensityClass,
+  reliabilityClass,
+  riskWordClass,
+  rotationClass,
+} from './format';
 
 describe('format', () => {
   it('abbreviates SAR amounts like the engine', () => {
@@ -28,5 +39,25 @@ describe('format', () => {
     expect(rotationClass('unknown')).toBe('badge');
     expect(riskWordClass('High')).toBe('risk-high');
     expect(riskWordClass('Low')).toBe('risk-low');
+  });
+
+  it('maps UC7 demand classes to badge classes', () => {
+    expect(demandClassBadge('Smooth')).toBe('risk-low');
+    expect(demandClassBadge('Lumpy')).toBe('risk-high');
+    expect(demandClassBadge('InsufficientData')).toBe('badge');
+    expect(demandClassBadge('unknown')).toBe('badge');
+  });
+
+  it('maps UC6 reliability tiers so higher reliability reads as lower risk', () => {
+    expect(reliabilityClass('High')).toBe('risk-low');
+    expect(reliabilityClass('Medium')).toBe('risk-med');
+    expect(reliabilityClass('Low')).toBe('risk-high');
+  });
+
+  it('bands the service-intensity index (fleet mean = 1.0)', () => {
+    expect(intensityClass(1.3, true)).toBe('risk-high');
+    expect(intensityClass(1.05, false)).toBe('risk-med');
+    expect(intensityClass(0.7, false)).toBe('risk-low');
+    expect(intensityClass(null, false)).toBe('badge');
   });
 });

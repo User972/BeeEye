@@ -367,11 +367,11 @@ capability reasons — without touching a single line of the analytics or the ca
 ## Traceability
 
 - Architecture index & guardrails → [overview.md](./overview.md)
-- Provider-neutral GenAI grounding & narration flow → [genai-architecture.md](./genai-architecture.md)
-- Bounded contexts (ExecutiveInsights, Recommendations, Forecasting, DataQuality) → [bounded-contexts.md](./bounded-contexts.md)
-- Security, identity & data classification → [security-and-identity.md](./security-and-identity.md)
+- Provider-neutral GenAI grounding & narration flow → [ai-provider-abstraction.md](./ai-provider-abstraction.md)
+- Bounded contexts (ExecutiveInsights, Recommendations, Forecasting, DataQuality) → [module-boundaries.md](./module-boundaries.md)
+- Security, identity & data classification → [security-threat-model.md](./security-threat-model.md)
 - Canonical data model (metric bundle fields, SAR values) → [canonical-data-model.md](./canonical-data-model.md)
-- ML platform (source of validated forecasts/risk the model narrates) → [ml-platform.md](./ml-platform.md)
+- ML platform (source of validated forecasts/risk the model narrates) → [mlops-and-models.md](./mlops-and-models.md)
 
 POC provenance:
 

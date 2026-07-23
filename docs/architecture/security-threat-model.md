@@ -250,7 +250,7 @@ read-only, tenant-resident analytics platform.
 | T3 | **Vertical privilege escalation** | E | Analyst calls an approve/admin endpoint | Approval and admin permissions separated from authoring; role→permission tests; `platform.administer` isolated | `authz/` |
 | T4 | **IDOR** | E/I | Direct GUID/`stock_id`/`chassis_no` access bypassing scope | Every by-id read re-checks permission **and** scope; opaque surrogate `uuid` PKs; no trust in source natural keys for authorization | `authz/idor/` |
 | T5 | **SQL injection** | T/I | Malicious input in filters, search, export params | EF Core parameterised queries only; no string-built SQL; input validation (Zod at edge, model binding + validators server-side); static analysis gate | `injection/` |
-| T6 | **Prompt injection** | T/I/E | Poisoned data or user text steers the GenAI narration to exfiltrate or fabricate | GenAI **never** computes numbers (hard boundary, see [genai-architecture.md](./genai-architecture.md)); prompts carry only *validated* metrics; structured-output validation rejects any altered/invented figure; no tools/secrets exposed to the model; untrusted text is data, not instructions | `genai/` |
+| T6 | **Prompt injection** | T/I/E | Poisoned data or user text steers the GenAI narration to exfiltrate or fabricate | GenAI **never** computes numbers (hard boundary, see [ai-provider-abstraction.md](./ai-provider-abstraction.md)); prompts carry only *validated* metrics; structured-output validation rejects any altered/invented figure; no tools/secrets exposed to the model; untrusted text is data, not instructions | `genai/` |
 | T7 | **XSS** | T/I | Stored strings (rationale, notes, source text) rendered in SPA | React auto-escaping; no `dangerouslySetInnerHTML`; strict CSP (no inline/eval, allow-list origins); output encoding; sanitise any rich text | `web/xss/` |
 | T8 | **CSRF** | S/T | Forged state-changing request from a logged-in browser | Bearer-token (not cookie) auth for the API removes ambient credentials; `SameSite` on any auxiliary cookie; state changes require the token in the `Authorization` header | `web/csrf/` |
 | T9 | **SSRF** | I/E | Integration/GenAI config coerces the server to call internal endpoints | Outbound calls restricted to an **allow-list** of Oracle Fusion + approved GenAI hosts; no user-supplied URLs fetched; egress controls; metadata endpoint blocked | `ssrf/` |
@@ -357,12 +357,12 @@ rather than unit tests. The suite runs on every pull request; a failing security
 | Related document | Relationship |
 |------------------|--------------|
 | [overview.md](./overview.md) | Deployment model, trust context, and the security summary this document expands. |
-| [security-and-identity.md](./security-and-identity.md) | Identity provider configuration, personas, and RBAC detail that this threat model builds on. |
-| [genai-architecture.md](./genai-architecture.md) | The hard "narrate, never compute" boundary and structured-output validation behind T6/T17/T20. |
-| [integration-oracle-fusion.md](./integration-oracle-fusion.md) | Read-only anti-corruption layer and governed extracts behind T18. |
+| [security-threat-model.md](./security-threat-model.md) | Identity provider configuration, personas, and RBAC detail that this threat model builds on. |
+| [ai-provider-abstraction.md](./ai-provider-abstraction.md) | The hard "narrate, never compute" boundary and structured-output validation behind T6/T17/T20. |
+| [data-integration-and-quality.md](./data-integration-and-quality.md) | Read-only anti-corruption layer and governed extracts behind T18. |
 | [canonical-data-model.md](./canonical-data-model.md) | `AuditEvent`, immutability, lineage and data-scope fields (`location_scope[]`) enforced here. |
-| [data-architecture.md](./data-architecture.md) | ADLS zone layout and quarantine backing T11/T18. |
-| [non-functional-requirements.md](./non-functional-requirements.md) | Availability, rate-limit and cost budgets behind T19/T20. |
-| [bounded-contexts.md](./bounded-contexts.md) | Which context owns each permission and enforcement point. |
+| [data-integration-and-quality.md](./data-integration-and-quality.md) | ADLS zone layout and quarantine backing T11/T18. |
+| [overview.md#7-non-functional-goals](./overview.md#7-non-functional-goals) | Availability, rate-limit and cost budgets behind T19/T20. |
+| [module-boundaries.md](./module-boundaries.md) | Which context owns each permission and enforcement point. |
 | [../wireframes/docs/INTEGRATION_AZURE_ORACLE.md](../wireframes/docs/INTEGRATION_AZURE_ORACLE.md) | POC-era security/RBAC intent (Entra ID, Key Vault, human approval) productionised here. |
 | [../wireframes/docs/ASSUMPTIONS_LIMITATIONS.md](../wireframes/docs/ASSUMPTIONS_LIMITATIONS.md) | POC note that full security design is completed at implementation — this is that design. |

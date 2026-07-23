@@ -7,20 +7,23 @@ the `/code-review` conventions pass reads this file and flags changes that viola
 
 **BeeEye** — an AI decision-intelligence platform for **ADMC** (automotive distribution). A .NET
 modular monolith + React SPA + Python ML, deployable to Azure. The current implementation is
-**read-only analytics** with five use cases live end-to-end: **UC1 (Order Optimisation —
+**read-only analytics** with seven use cases live end-to-end: **UC1 (Order Optimisation —
 Recommendations)**, **UC2 (Sales Forecasting)**, **UC3 (Configuration Demand — SalesActuals)**,
-**UC4 (Procurement)** and **UC5 (Inventory Aging & Overstock Risk)**; the other bounded contexts
-are scaffolded. See [README.md](README.md) and
+**UC4 (Procurement)**, **UC5 (Inventory Aging & Overstock Risk)**, and **UC6/UC7 (Sales↔After-Sales
+Correlation and Spare Parts Demand)** — the latter two on a clearly-labelled **synthetic-demo** dataset
+derived from the real sales. The remaining bounded contexts are scaffolded. See [README.md](README.md) and
 [docs/architecture/overview.md](docs/architecture/overview.md).
 
 ## Repository map
 
 - `src/api/BeeEye.Api` — ASP.NET Core **minimal-API host** (composition root, OpenAPI, health). No business logic.
 - `src/modules/<Context>` — 19 bounded-context module libraries; each implements `IModule`.
-  Live: Forecasting (UC2), Inventory (UC5), Recommendations (UC1), SalesActuals (UC3), Procurement (UC4).
+  Live: Forecasting (UC2), Inventory (UC5), Recommendations (UC1), SalesActuals (UC3), Procurement (UC4),
+  AfterSales (UC6), SpareParts (UC7).
 - `src/shared/BeeEye.Analytics` — pure numeric engine. The UC2/UC5 formulas (forecasting, demand,
   inventory risk) are a **faithful C# port of `docs/wireframes/engine.js`**; the UC1/UC3/UC4
-  optimisers (`OrderOptimiser`, `ProcurementOptimiser`, `ConfigurationDemand`) have no engine.js
+  optimisers (`OrderOptimiser`, `ProcurementOptimiser`, `ConfigurationDemand`) and the UC6/UC7 engines
+  (`AfterSales/ServiceIntensity`, `SpareParts/Intermittent`, `SparePartsForecaster`) have no engine.js
   counterpart — their formulas are specified in `docs/product/use-cases/`.
 - `src/shared/BeeEye.Shared` — dependency-free kernel (`Money`, `Result`, `Paging`, `MonthKey`, …).
 - `src/shared/BeeEye.Shared.Web` — the `IModule` contract.

@@ -58,3 +58,38 @@ export function rotationClass(rotation: string): string {
 export function riskWordClass(word: string): string {
   return word === 'High' ? 'risk-high' : word === 'Medium' ? 'risk-med' : 'risk-low';
 }
+
+const demandClassMap: Record<string, string> = {
+  Smooth: 'risk-low',
+  Erratic: 'risk-med',
+  Intermittent: 'risk-med',
+  Lumpy: 'risk-high',
+  Obsolescent: 'risk-high',
+  InsufficientData: 'badge',
+};
+
+/** Badge class for a UC7 demand class (Smooth/Erratic/Intermittent/Lumpy/Obsolescent/InsufficientData). */
+export function demandClassBadge(cls: string): string {
+  return demandClassMap[cls] ?? 'badge';
+}
+
+const reliabilityMap: Record<string, string> = {
+  High: 'risk-low',
+  Medium: 'risk-med',
+  Low: 'risk-high',
+};
+
+/** Badge class for a UC6 data-reliability tier (higher reliability reads as lower risk). */
+export function reliabilityClass(tier: string): string {
+  return reliabilityMap[tier] ?? 'badge';
+}
+
+/**
+ * Badge class for a UC6 service-intensity index (fleet mean = 1.0). Higher intensity is a heavier
+ * workshop burden, so it reads warmer; a null index (no fleet) is neutral.
+ */
+export function intensityClass(index: number | null | undefined, high: boolean): string {
+  if (index === null || index === undefined) return 'badge';
+  if (high) return 'risk-high';
+  return index >= 1 ? 'risk-med' : 'risk-low';
+}

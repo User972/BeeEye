@@ -19,7 +19,8 @@ public sealed class IngestionTests(IntegrationTestFactory factory)
 
         Assert.Equal(291, await db.InventoryItems.CountAsync());
         Assert.Equal(3120, await db.SalesFacts.CountAsync());
-        Assert.Equal(2, await db.IngestionBatches.CountAsync());
+        // sales + inventory + the synthetic after-sales/parts batch.
+        Assert.Equal(3, await db.IngestionBatches.CountAsync());
     }
 
     [Fact]
@@ -39,6 +40,6 @@ public sealed class IngestionTests(IntegrationTestFactory factory)
         Assert.Equal("skipped", result.Inventory.Status);
         Assert.Equal(invBefore, await db.InventoryItems.CountAsync());
         Assert.Equal(salesBefore, await db.SalesFacts.CountAsync());
-        Assert.Equal(2, await db.IngestionBatches.CountAsync()); // no duplicate batch
+        Assert.Equal(3, await db.IngestionBatches.CountAsync()); // no duplicate batch (sales, inventory, synthetic)
     }
 }
