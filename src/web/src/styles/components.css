@@ -8,8 +8,28 @@
   min-height: 100vh;
 }
 @media (max-width: 900px) {
+  /* Single column: the rail is lifted out of flow and slides in over the
+     content (see .nav-rail below), so main content stays at the top. */
   .app-shell { grid-template-columns: 1fr; }
 }
+
+/* Keyboard-only escape hatch past the navigation rail (WCAG 2.4.1). */
+.skip-link {
+  position: absolute;
+  left: 8px;
+  top: -60px;
+  z-index: 90;
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  border: 1px solid var(--primary);
+  color: var(--primary-ink);
+  font-size: 13px;
+  font-weight: 600;
+  transition: top 0.15s ease;
+}
+.skip-link:focus-visible { top: 8px; }
+.app-content:focus { outline: none; }
 
 .app-main {
   display: flex;
@@ -55,6 +75,10 @@
 .nav-brand__sub { color: var(--nav-muted); font-size: 11px; }
 
 .nav-section__label {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
   color: var(--nav-muted);
   font-size: 10.5px;
   font-weight: 600;
@@ -62,7 +86,18 @@
   letter-spacing: 0.08em;
   padding: 14px 10px 6px;
 }
+/* Subtle delivery-phase label beside the group heading (v3 navGroupsDef). */
+.nav-section__phase {
+  margin-left: auto;
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  color: var(--nav-muted);
+  opacity: 0.72;
+}
 .nav-item {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 11px;
@@ -73,17 +108,72 @@
   cursor: pointer;
   border: 1px solid transparent;
 }
+.nav-item__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .nav-item:hover { background: color-mix(in oklab, var(--nav-active-bg) 55%, transparent); }
+.nav-item:focus-visible {
+  outline: 2px solid var(--primary-2);
+  outline-offset: 2px;
+}
 .nav-item--active {
   background: var(--nav-active-bg);
   border-color: var(--nav-border);
   font-weight: 600;
+}
+/* v3 active indicator: a short accent mark on the leading edge. */
+.nav-item--active::before {
+  content: '';
+  position: absolute;
+  left: -12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 18px;
+  border-radius: 0 3px 3px 0;
+  background: var(--primary-2);
 }
 .nav-item__uc {
   margin-left: auto;
   font-size: 10px;
   color: var(--nav-muted);
   font-family: var(--font-mono);
+}
+
+/* Mobile navigation: the rail slides in over the content instead of stacking
+   above it (which previously pushed all content below the fold at <=900px). */
+.nav-toggle { display: none; }
+.nav-scrim { display: none; }
+
+@media (max-width: 900px) {
+  .nav-toggle { display: grid; }
+  .nav-rail {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 264px;
+    max-width: 84vw;
+    z-index: 40;
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+  }
+  .nav-rail--open { transform: translateX(0); }
+  .nav-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    background: rgba(15, 23, 42, 0.42);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-rail { transition: none; }
+  .skip-link { transition: none; }
 }
 
 /* ---------------- App header ---------------- */
