@@ -23,6 +23,54 @@ public sealed record OrderScenario(
             inbound ?? 0,
             confirmedOrders ?? 0,
             allocationLimit);
+
+    /// <summary>
+    /// Guards the optimiser's numeric domain: query-bound doubles admit negatives and NaN
+    /// ("NaN" parses as a valid double), which would propagate through the safety-stock
+    /// maths and crash JSON serialisation with a 500 instead of a client error.
+    /// </summary>
+    public IReadOnlyList<string> Validate()
+    {
+        var errors = new List<string>();
+        if (Horizon is < 1 or > 36)
+        {
+            errors.Add("horizon must be between 1 and 36 months.");
+        }
+
+        // Upper bound matters as much as sign: a huge finite input (1e308) overflows the
+        // safety-stock multiplication to Infinity, which is just as unserialisable as NaN.
+        if (!double.IsFinite(TargetCoverMonths) || TargetCoverMonths is < 0 or > 120)
+        {
+            errors.Add("targetCoverMonths must be between 0 and 120 months.");
+        }
+
+        if (MinOrderQuantity < 0)
+        {
+            errors.Add("minOrderQuantity must be zero or positive.");
+        }
+
+        if (OrderMultiple < 1)
+        {
+            errors.Add("orderMultiple must be at least 1.");
+        }
+
+        if (Inbound < 0)
+        {
+            errors.Add("inbound must be zero or positive.");
+        }
+
+        if (ConfirmedOrders < 0)
+        {
+            errors.Add("confirmedOrders must be zero or positive.");
+        }
+
+        if (AllocationLimit is < 0)
+        {
+            errors.Add("allocationLimit must be zero or positive.");
+        }
+
+        return errors;
+    }
 }
 
 /// <summary>One order recommendation for a model·variant (the ordering grain).</summary>

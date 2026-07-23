@@ -31,7 +31,9 @@ public sealed class ProcurementReadService(BeeEyeDbContext db)
 
         foreach (var group in rows.GroupBy(r => (r.Model, r.Variant)))
         {
-            var series = BuildSeries(group.ToList(), months);
+            var groupRows = group.ToList();
+            var window = ActiveMonths(groupRows, months);
+            var series = BuildSeries(groupRows, window);
             var mean = Statistics.Mean(series);
             var std = Statistics.Std(series);
             var key = $"{group.Key.Model}|{group.Key.Variant}";
@@ -72,6 +74,25 @@ public sealed class ProcurementReadService(BeeEyeDbContext db)
         return (
             rows.Select(r => r.Model).Distinct().OrderBy(x => x).ToList(),
             rows.Select(r => r.Variant).Distinct().OrderBy(x => x).ToList());
+    }
+
+    /// <summary>
+    /// A configuration's demand window starts at its first-ever sale: earlier months on the
+    /// global axis are not real zero-demand observations (the configuration did not exist yet)
+    /// and would deflate the demand mean and corrupt the reorder policy. A minimum of three
+    /// months is kept so variability stays measurable for very new configurations.
+    /// </summary>
+    private static IReadOnlyList<string> ActiveMonths(IReadOnlyList<SalesRow> rows, IReadOnlyList<string> months)
+    {
+        var first = rows.Min(r => r.MonthKey)!;
+        var start = 0;
+        while (start < months.Count && string.CompareOrdinal(months[start], first) < 0)
+        {
+            start++;
+        }
+
+        start = Math.Min(start, Math.Max(0, months.Count - 3));
+        return start == 0 ? months : months.Skip(start).ToList();
     }
 
     private static double[] BuildSeries(IReadOnlyList<SalesRow> rows, IReadOnlyList<string> months)

@@ -47,4 +47,13 @@ public sealed class InventoryReadService(BeeEyeDbContext db)
 
     public async Task<bool> HasDataAsync(CancellationToken ct)
         => await db.InventoryItems.AsNoTracking().AnyAsync(ct);
+
+    /// <summary>
+    /// Latest observed data date — the default analysis date when the caller supplies none.
+    /// The API contract forbids a silent wall-clock "now" (docs/architecture/api-design.md);
+    /// anchoring on the data keeps a frozen dataset reproducible while advancing with
+    /// ingestion, so newly ingested stock can never have a negative age.
+    /// </summary>
+    public async Task<DateOnly?> LatestDataDateAsync(CancellationToken ct)
+        => await db.InventoryItems.AsNoTracking().MaxAsync(i => (DateOnly?)i.DateOfPurchase, ct);
 }

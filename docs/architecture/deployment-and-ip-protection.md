@@ -22,7 +22,7 @@ tenant** (image supply chain, runtime hardening, and an offline licence abstract
 | Customer-tenant deployment | Every Azure resource lives in ADMC's subscription; the vendor holds no customer data and no long-lived customer credentials. |
 | Infrastructure as Code only | The estate is defined in **Bicep**; there is no click-ops path to production. Every change is a reviewed, `what-if`'d, versioned deployment. |
 | Reproducible & idempotent | Re-running the templates converges to the declared state. Environments differ only by parameter files, never by hand edits. |
-| Passwordless by default | Data-plane access (PostgreSQL, ADLS, Service Bus, ACR, Key Vault) uses **managed identity + Entra RBAC**; connection secrets exist only where a service cannot yet do passwordless auth, and then only in Key Vault. |
+| Passwordless by default | Data-plane access (PostgreSQL, ADLS, Service Bus, ACR, Key Vault) uses **managed identity + Entra RBAC**; connection secrets exist only where a service cannot yet do passwordless auth, and then only in Key Vault. *Current scaffold deviation: the API↔PostgreSQL path uses a pipeline-supplied password held as a Container Apps secret — tracked as [tech-debt TD-2](tech-debt.md).* |
 | No secrets in source | Source and images contain **zero** secrets. Container Apps resolve secrets from Key Vault at runtime via managed identity. |
 | Least-privilege identities | Each workload (API host, ML jobs) gets its own user-assigned managed identity with the minimum role assignments it needs. |
 | Immutable, digest-pinned releases | Runtime references container images by **SHA-256 digest**, never by mutable tag, so what runs is exactly what CI built, scanned and signed. |

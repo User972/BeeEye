@@ -34,8 +34,9 @@ public class SalesFact
 
     // ---- Lineage / idempotency ----
 
-    /// <summary>Deterministic content hash of the business columns — unique, so
-    /// reprocessing the same extract never duplicates facts.</summary>
+    /// <summary>Deterministic content hash of the business columns plus the row's position
+    /// in its extract — unique, so reprocessing the same extract never duplicates facts
+    /// while identical rows within one extract stay distinguishable.</summary>
     public string RowHash { get; set; } = string.Empty;
 
     public Guid IngestionBatchId { get; set; }

@@ -89,6 +89,21 @@ jobs:
             sleep 1
           done
           test -s src/web/openapi/openapi.json
+      # The exported document overwrites the COMMITTED contract snapshot; any
+      # difference means the API surface changed without the snapshot being
+      # deliberately regenerated and committed — that is contract drift, fail.
+      - name: Fail on contract drift against the committed snapshot
+        run: |
+          # git diff exits 0 for an untracked file — assert the snapshot is tracked
+          # first, or the gate would be silently inert.
+          if ! git ls-files --error-unmatch src/web/openapi/openapi.json >/dev/null 2>&1; then
+            echo "::error::src/web/openapi/openapi.json is not tracked — commit the contract snapshot or the drift gate protects nothing."
+            exit 1
+          fi
+          if ! git diff --exit-code -- src/web/openapi/openapi.json; then
+            echo "::error::OpenAPI contract drift — the API's endpoints or DTOs changed but src/web/openapi/openapi.json was not regenerated. Re-export the document (see src/web/openapi/README.md) and commit it with the API change."
+            exit 1
+          fi
       # Assert the published contract is well-formed and exposes the wired
       # bounded-context endpoints, then prove it is consumable by the typed client.
       - name: Validate contract and regenerate types

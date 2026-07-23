@@ -21,6 +21,10 @@ param location string = resourceGroup().location
 @description('PostgreSQL administrator login (password is generated and stored in Key Vault by a secure pipeline step — never hard-coded here).')
 param postgresAdminLogin string = 'beeeye_admin'
 
+@secure()
+@description('PostgreSQL administrator password. Supplied by the pipeline (which also stores it in Key Vault) — never committed to a .bicepparam file.')
+param postgresAdminPassword string
+
 @description('Container image reference (immutable digest) for the API host.')
 param apiImage string = 'mcr.microsoft.com/dotnet/samples:aspnetapp'
 
@@ -88,6 +92,7 @@ module postgres 'modules/postgres.bicep' = {
     location: location
     tags: tags
     administratorLogin: postgresAdminLogin
+    administratorLoginPassword: postgresAdminPassword
     // Production sizing is set per-environment in the .bicepparam files.
     skuName: environmentName == 'prod' ? 'Standard_D2ds_v5' : 'Standard_B1ms'
     skuTier: environmentName == 'prod' ? 'GeneralPurpose' : 'Burstable'
@@ -117,6 +122,9 @@ module apiApp 'modules/containerapp-api.bicep' = {
     registryId: registry.outputs.registryId
     appInsightsConnectionString: monitoring.outputs.appInsightsConnectionString
     keyVaultName: keyVault.outputs.name
+    postgresFqdn: postgres.outputs.fqdn
+    postgresAdminLogin: postgresAdminLogin
+    postgresAdminPassword: postgresAdminPassword
   }
 }
 

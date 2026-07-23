@@ -15,7 +15,7 @@ public static class DatabaseStartup
         services.AddScoped<SampleDataImporter>();
 
         // Readiness reflects actual database connectivity — /health/ready lies otherwise, because
-        // InitialiseDatabaseAsync swallows a missing database so the process can still start.
+        // InitialiseDatabaseAsync swallows an unreachable database so the process can still start.
         services.AddHealthChecks().AddCheck<DatabaseHealthCheck>("database");
         return services;
     }
@@ -36,9 +36,12 @@ public static class DatabaseStartup
     }
 
     /// <summary>
-    /// Applies migrations and seeds the sample data (idempotent). Best-effort: a
-    /// missing database logs a warning rather than blocking startup, so the API can
-    /// still serve health checks while PostgreSQL comes up.
+    /// Applies migrations and seeds the sample data (idempotent). Best-effort for
+    /// <b>connectivity only</b>: an unreachable database logs a warning rather than
+    /// blocking startup, so the API can still serve health checks while PostgreSQL
+    /// comes up. Everything else — a broken migration, corrupt embedded sample data,
+    /// a constraint violation — is a programming/data defect and fails startup loudly
+    /// instead of being mislabelled as "Postgres is down".
     /// </summary>
     public static async Task InitialiseDatabaseAsync(this WebApplication app)
     {
@@ -60,11 +63,34 @@ public static class DatabaseStartup
                 "Sample data ready — sales: {SalesStatus} ({SalesCount}), inventory: {InventoryStatus} ({InventoryCount}).",
                 result.Sales.Status, result.Sales.Inserted, result.Inventory.Status, result.Inventory.Inserted);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (IsDatabaseUnavailable(ex))
         {
             logger.LogWarning(ex,
-                "Database initialisation skipped — start PostgreSQL (docker compose up) to enable UC2/UC5 data.");
+                "Database initialisation skipped — start PostgreSQL (docker compose up) to enable the UC screens.");
         }
+    }
+
+    /// <summary>
+    /// True only for connectivity-class failures (server unreachable, socket refused,
+    /// timeout). A <see cref="Npgsql.PostgresException"/> is a server-side error —
+    /// bad SQL, a constraint violation — and is deliberately NOT treated as unavailability.
+    /// </summary>
+    private static bool IsDatabaseUnavailable(Exception ex)
+    {
+        for (var e = ex; e is not null; e = e.InnerException!)
+        {
+            if (e is Npgsql.PostgresException)
+            {
+                return false;
+            }
+
+            if (e is Npgsql.NpgsqlException or System.Net.Sockets.SocketException or TimeoutException)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
 
