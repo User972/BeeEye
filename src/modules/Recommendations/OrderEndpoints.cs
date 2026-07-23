@@ -1,3 +1,5 @@
+using BeeEye.Shared.Web.Security;
+using BeeEye.Shared.Security;
 using BeeEye.Modules.Recommendations.Application;
 using BeeEye.Modules.Recommendations.Contracts;
 using BeeEye.Shared.Api;
@@ -12,7 +14,8 @@ internal static class OrderEndpoints
 {
     public static void Map(IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup($"{ApiRoutes.V1}/recommendations").WithTags("Order Optimisation");
+        var group = app.MapGroup($"{ApiRoutes.V1}/recommendations").WithTags("Order Optimisation")
+            .RequireReadPermission(Permissions.RecommendationReview);
 
         group.MapGet("/", () => new ModuleInfo(
                 "Recommendations", "recommendations", "Order-optimisation recommendations balancing demand and constraints (UC1).", "operational"))

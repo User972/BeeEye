@@ -1,3 +1,5 @@
+using BeeEye.Shared.Web.Security;
+using BeeEye.Shared.Security;
 using BeeEye.Analytics.Inventory;
 using BeeEye.Modules.Inventory.Application;
 using BeeEye.Modules.Inventory.Contracts;
@@ -14,7 +16,8 @@ internal static class InventoryEndpoints
 {
     public static void Map(IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup($"{ApiRoutes.V1}/inventory").WithTags("Inventory");
+        var group = app.MapGroup($"{ApiRoutes.V1}/inventory").WithTags("Inventory")
+            .RequireReadPermission(Permissions.InventoryRiskView);
 
         group.MapGet("/", () => new ModuleInfo(
                 "Inventory", "inventory", "Inventory items, snapshots, aging and overstock-risk scoring (UC5).", "operational"))

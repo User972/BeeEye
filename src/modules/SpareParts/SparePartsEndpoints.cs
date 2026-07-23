@@ -1,3 +1,5 @@
+using BeeEye.Shared.Web.Security;
+using BeeEye.Shared.Security;
 using BeeEye.Modules.SpareParts.Application;
 using BeeEye.Modules.SpareParts.Contracts;
 using BeeEye.Shared.Api;
@@ -15,7 +17,8 @@ internal static class SparePartsEndpoints
 
     public static void Map(IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup($"{ApiRoutes.V1}/spare-parts").WithTags("Spare Parts");
+        var group = app.MapGroup($"{ApiRoutes.V1}/spare-parts").WithTags("Spare Parts")
+            .RequireReadPermission(Permissions.SparePartsView);
 
         group.MapGet("/", () => new ModuleInfo(
                 "Spare Parts", "spare-parts", "Intermittent spare-parts demand prediction and stocking ranges (UC7).", "operational"))

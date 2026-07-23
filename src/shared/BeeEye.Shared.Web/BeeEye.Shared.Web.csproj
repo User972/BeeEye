@@ -11,6 +11,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="../BeeEye.Shared/BeeEye.Shared.csproj" />
   </ItemGroup>
 

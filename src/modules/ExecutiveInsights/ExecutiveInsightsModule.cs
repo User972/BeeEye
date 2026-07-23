@@ -2,7 +2,9 @@ using BeeEye.Modules.ExecutiveInsights.Application;
 using BeeEye.Modules.ExecutiveInsights.Contracts;
 using BeeEye.Shared.Api;
 using BeeEye.Shared.Modularity;
+using BeeEye.Shared.Security;
 using BeeEye.Shared.Time;
+using BeeEye.Shared.Web.Security;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -27,7 +29,7 @@ public sealed class ExecutiveInsightsModule : IModule
     public void MapEndpoints(IEndpointRouteBuilder endpoints)
     {
         var group = endpoints.MapGroup($"{ApiRoutes.V1}/{RoutePrefix}");
-        group.WithTags(Name);
+        group.WithTags(Name).RequireReadPermission(Permissions.ExecutiveCockpitView);
 
         var info = group.MapGet("/", () => new ModuleInfo(Name, RoutePrefix, Description, Status));
         info.WithName("ExecutiveInsights_Info");

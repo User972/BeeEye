@@ -1,3 +1,5 @@
+using BeeEye.Shared.Web.Security;
+using BeeEye.Shared.Security;
 using BeeEye.Modules.Procurement.Application;
 using BeeEye.Modules.Procurement.Contracts;
 using BeeEye.Shared.Api;
@@ -12,7 +14,8 @@ internal static class ProcurementEndpoints
 {
     public static void Map(IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup($"{ApiRoutes.V1}/procurement").WithTags("Procurement");
+        var group = app.MapGroup($"{ApiRoutes.V1}/procurement").WithTags("Procurement")
+            .RequireReadPermission(Permissions.ProcurementView);
 
         group.MapGet("/", () => new ModuleInfo(
                 "Procurement", "procurement", "Procurement quantity optimisation balancing demand, lead time and cost (UC4).", "operational"))

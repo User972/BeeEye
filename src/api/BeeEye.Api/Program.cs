@@ -2,6 +2,7 @@ using BeeEye.Api.Composition;
 using BeeEye.Api.Infrastructure;
 using BeeEye.Shared.Api;
 using BeeEye.Shared.Time;
+using BeeEye.Shared.Web.Security;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,6 +10,10 @@ var builder = WebApplication.CreateBuilder(args);
 // --- Cross-cutting services ------------------------------------------------
 builder.Services.AddSingleton<IClock, SystemClock>();
 builder.Services.AddBeeEyeDatabase(builder.Configuration);
+
+// Authentication + permission-based authorization (ADR 0008). Throws and aborts boot on an unsafe
+// configuration — notably selecting the development auth provider outside Development.
+builder.Services.AddBeeEyeSecurity(builder.Configuration, builder.Environment);
 
 // RFC 7807 Problem Details for all error responses, enriched with a correlation id.
 builder.Services.AddProblemDetails(options =>
@@ -59,6 +64,10 @@ app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.UseCors(webCors);
+
+// Order matters: authenticate, then authorize, before any endpoint runs.
+app.UseAuthentication();
+app.UseAuthorization();
 
 if (app.Environment.IsDevelopment())
 {
