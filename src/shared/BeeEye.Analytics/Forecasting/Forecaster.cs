@@ -55,11 +55,27 @@ public static class Forecaster
         var y = series;
         var n = y.Count;
         var h = Math.Clamp(options.Horizon, 1, 36);
-        var hold = Math.Min(options.Holdout, n - 12 > 0 ? n - 12 : 6);
-        hold = Math.Max(1, Math.Min(hold, n - 1));
 
-        var trainY = ForecastMethods.Slice(y, 0, n - hold);
-        var holdY = ForecastMethods.Slice(y, n - hold, n);
+        // engine.js: `var hold = Math.min(opts.holdout || 6, n - 12 > 0 ? n - 12 : 6)` —
+        // a zero (or negative) holdout falls back to 6, it is never clamped to n-1.
+        var requested = options.Holdout <= 0 ? 6 : options.Holdout;
+        var hold = Math.Min(requested, n - 12 > 0 ? n - 12 : 6);
+
+        // engine.js slices with a possibly-negative split index, which JS resolves from the
+        // end of the array (slice(0, -k) keeps n-k items). Mirror that resolution, then keep
+        // at least one training point: engine.js runs an empty training set into all-NaN
+        // metrics, which the C# methods (indexing into the array) cannot reproduce safely.
+        var split = n - hold;
+        if (split < 0)
+        {
+            split = Math.Max(n + split, 0);
+        }
+
+        split = Math.Max(split, Math.Min(1, n));
+        hold = n - split; // the holdout actually back-tested
+
+        var trainY = ForecastMethods.Slice(y, 0, split);
+        var holdY = ForecastMethods.Slice(y, split, n);
 
         var results = new Dictionary<string, (MethodResult Method, AccuracyMetrics Metrics)>();
         foreach (var key in Keys)

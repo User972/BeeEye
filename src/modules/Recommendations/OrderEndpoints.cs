@@ -16,7 +16,8 @@ internal static class OrderEndpoints
 
         group.MapGet("/", () => new ModuleInfo(
                 "Recommendations", "recommendations", "Order-optimisation recommendations balancing demand and constraints (UC1).", "operational"))
-            .WithName("Recommendations_Info");
+            .WithName("Recommendations_Info")
+            .WithSummary("Recommendations module information");
 
         group.MapGet("/order-optimisation", async (
                 OrderReadService svc, CancellationToken ct,
@@ -24,6 +25,13 @@ internal static class OrderEndpoints
                 int? inbound, int? confirmedOrders, int? allocationLimit, string[]? model) =>
             {
                 var scenario = OrderScenario.From(horizon, targetCoverMonths, minOrderQuantity, orderMultiple, inbound, confirmedOrders, allocationLimit);
+                var errors = scenario.Validate();
+                if (errors.Count > 0)
+                {
+                    return Results.Problem(statusCode: StatusCodes.Status400BadRequest,
+                        title: "Invalid scenario", detail: string.Join(" ", errors));
+                }
+
                 var all = await svc.RecommendAsync(scenario, ct);
                 var items = model is { Length: > 0 }
                     ? all.Where(r => model.Contains(r.Model, StringComparer.OrdinalIgnoreCase)).ToList()
@@ -32,16 +40,15 @@ internal static class OrderEndpoints
                 return Results.Ok(new OrderResponse(scenario, items, meta));
             })
             .WithName("Recommendations_OrderOptimisation")
-            .WithSummary("Recommended order quantities by configuration for a scenario");
+            .WithSummary("Recommended order quantities by configuration for a scenario")
+            .Produces<OrderResponse>()
+            .ProducesProblem(StatusCodes.Status400BadRequest);
 
         group.MapGet("/order-optimisation/filter-options", async (OrderReadService svc, CancellationToken ct) =>
             {
-                var all = await svc.RecommendAsync(OrderScenario.From(null, null, null, null, null, null, null), ct);
-                return Results.Ok(new
-                {
-                    models = all.Select(r => r.Model).Distinct().OrderBy(x => x).ToList(),
-                    variants = all.Select(r => r.Variant).Distinct().OrderBy(x => x).ToList(),
-                });
+                // Distinct dimension values only — must not run the (expensive) per-config forecast.
+                var (models, variants) = await svc.FilterOptionsAsync(ct);
+                return Results.Ok(new { models, variants });
             })
             .WithName("Recommendations_FilterOptions");
     }

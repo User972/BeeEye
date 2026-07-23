@@ -16,7 +16,8 @@ internal static class ProcurementEndpoints
 
         group.MapGet("/", () => new ModuleInfo(
                 "Procurement", "procurement", "Procurement quantity optimisation balancing demand, lead time and cost (UC4).", "operational"))
-            .WithName("Procurement_Info");
+            .WithName("Procurement_Info")
+            .WithSummary("Procurement module information");
 
         group.MapGet("/recommendations", async (
                 ProcurementReadService svc, CancellationToken ct,
@@ -24,6 +25,13 @@ internal static class ProcurementEndpoints
                 int? minOrderQuantity, int? orderMultiple, int? inbound, string[]? model) =>
             {
                 var scenario = ProcurementScenario.From(serviceLevel, leadTimeMonths, reviewPeriodMonths, minOrderQuantity, orderMultiple, inbound);
+                var errors = scenario.Validate();
+                if (errors.Count > 0)
+                {
+                    return Results.Problem(statusCode: StatusCodes.Status400BadRequest,
+                        title: "Invalid scenario", detail: string.Join(" ", errors));
+                }
+
                 var all = await svc.RecommendAsync(scenario, ct);
                 var items = model is { Length: > 0 }
                     ? all.Where(r => model.Contains(r.Model, StringComparer.OrdinalIgnoreCase)).ToList()
@@ -32,16 +40,15 @@ internal static class ProcurementEndpoints
                 return Results.Ok(new ProcurementResponse(scenario, items, meta));
             })
             .WithName("Procurement_Recommendations")
-            .WithSummary("Procurement quantity ranges and safety stock for a scenario");
+            .WithSummary("Procurement quantity ranges and safety stock for a scenario")
+            .Produces<ProcurementResponse>()
+            .ProducesProblem(StatusCodes.Status400BadRequest);
 
         group.MapGet("/filter-options", async (ProcurementReadService svc, CancellationToken ct) =>
             {
-                var all = await svc.RecommendAsync(ProcurementScenario.From(null, null, null, null, null, null), ct);
-                return Results.Ok(new
-                {
-                    models = all.Select(r => r.Model).Distinct().OrderBy(x => x).ToList(),
-                    variants = all.Select(r => r.Variant).Distinct().OrderBy(x => x).ToList(),
-                });
+                // Distinct dimension values only — must not run the (expensive) procurement optimiser.
+                var (models, variants) = await svc.FilterOptionsAsync(ct);
+                return Results.Ok(new { models, variants });
             })
             .WithName("Procurement_FilterOptions");
     }

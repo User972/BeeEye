@@ -30,8 +30,10 @@ public sealed class OrderReadService(BeeEyeDbContext db)
 
         foreach (var group in rows.GroupBy(r => (r.Model, r.Variant)))
         {
-            var series = BuildSeries(group.ToList(), months);
-            var forecast = Forecaster.Run(series, months, options);
+            var groupRows = group.ToList();
+            var window = ActiveMonths(groupRows, months);
+            var series = BuildSeries(groupRows, window);
+            var forecast = Forecaster.Run(series, window, options);
             var monthlyVelocity = Statistics.Mean(series.Length >= 3 ? series[^3..] : series);
             var current = stock.TryGetValue($"{group.Key.Model}|{group.Key.Variant}", out var s) ? s : 0;
 
@@ -58,7 +60,35 @@ public sealed class OrderReadService(BeeEyeDbContext db)
 
     public async Task<bool> HasDataAsync(CancellationToken ct) => await db.SalesFacts.AsNoTracking().AnyAsync(ct);
 
+    /// <summary>Distinct model/variant dimension values, without running the per-config forecast.</summary>
+    public async Task<(IReadOnlyList<string> Models, IReadOnlyList<string> Variants)> FilterOptionsAsync(CancellationToken ct)
+    {
+        var (rows, _) = await LoadAsync(ct);
+        return (
+            rows.Select(r => r.Model).Distinct().OrderBy(x => x).ToList(),
+            rows.Select(r => r.Variant).Distinct().OrderBy(x => x).ToList());
+    }
+
     private static string Confidence(double? wmape) => wmape is null ? "Low" : wmape < 15 ? "High" : wmape < 30 ? "Medium" : "Low";
+
+    /// <summary>
+    /// A configuration's demand window starts at its first-ever sale: earlier months on the
+    /// global axis are not real zero-demand observations (the configuration did not exist yet)
+    /// and would train the forecaster toward zero. A minimum of three months is kept so the
+    /// forecaster always has enough points to back-test.
+    /// </summary>
+    private static IReadOnlyList<string> ActiveMonths(IReadOnlyList<Row> rows, IReadOnlyList<string> months)
+    {
+        var first = rows.Min(r => r.MonthKey)!;
+        var start = 0;
+        while (start < months.Count && string.CompareOrdinal(months[start], first) < 0)
+        {
+            start++;
+        }
+
+        start = Math.Min(start, Math.Max(0, months.Count - 3));
+        return start == 0 ? months : months.Skip(start).ToList();
+    }
 
     private static double[] BuildSeries(IReadOnlyList<Row> rows, IReadOnlyList<string> months)
     {
@@ -83,7 +113,8 @@ public sealed class OrderReadService(BeeEyeDbContext db)
             return (rows, []);
         }
 
-        return (rows, MonthKey.Range(rows.Min(r => r.MonthKey), rows.Max(r => r.MonthKey)));
+        // rows is non-empty here (guarded above), so Min/Max are never null.
+        return (rows, MonthKey.Range(rows.Min(r => r.MonthKey)!, rows.Max(r => r.MonthKey)!));
     }
 
     private async Task<IReadOnlyDictionary<string, int>> StockByConfigAsync(CancellationToken ct)

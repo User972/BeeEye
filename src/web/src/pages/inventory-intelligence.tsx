@@ -125,7 +125,7 @@ export default function InventoryIntelligence() {
               <EmptyState title="No units on this page" />
             ) : (
               <>
-                <InventoryTable rows={items.data.items} onSelect={setSelected} onSortChange={setSort} />
+                <InventoryTable rows={items.data.items} onSelect={setSelected} onSortChange={reset(setSort)} />
                 <div className="pager">
                   <span>
                     Page {items.data.page} of {Math.max(1, Math.ceil(items.data.totalCount / items.data.pageSize))} · {items.data.totalCount} units

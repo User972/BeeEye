@@ -21,6 +21,49 @@ public sealed record ProcurementScenario(
             minOrderQuantity ?? 0,
             orderMultiple ?? 1,
             inbound ?? 0);
+
+    /// <summary>
+    /// Guards the optimiser's numeric domain: query-bound doubles admit negatives and NaN
+    /// ("NaN" parses as a valid double), which would drive Math.Sqrt of a negative variance
+    /// to NaN and crash JSON serialisation with a 500 instead of a client error.
+    /// </summary>
+    public IReadOnlyList<string> Validate()
+    {
+        var errors = new List<string>();
+        if (!double.IsFinite(ServiceLevel) || ServiceLevel is <= 0 or >= 1)
+        {
+            errors.Add("serviceLevel must be between 0 and 1 (exclusive).");
+        }
+
+        // Upper bounds matter as much as sign: a huge finite input (1e308) overflows the
+        // optimiser's multiplications to Infinity, which is just as unserialisable as NaN.
+        if (LeadTimeMonthsOverride is { } lead && (!double.IsFinite(lead) || lead is <= 0 or > 120))
+        {
+            errors.Add("leadTimeMonths must be a positive number of months (at most 120).");
+        }
+
+        if (!double.IsFinite(ReviewPeriodMonths) || ReviewPeriodMonths is < 0 or > 120)
+        {
+            errors.Add("reviewPeriodMonths must be between 0 and 120 months.");
+        }
+
+        if (MinOrderQuantity < 0)
+        {
+            errors.Add("minOrderQuantity must be zero or positive.");
+        }
+
+        if (OrderMultiple < 1)
+        {
+            errors.Add("orderMultiple must be at least 1.");
+        }
+
+        if (Inbound < 0)
+        {
+            errors.Add("inbound must be zero or positive.");
+        }
+
+        return errors;
+    }
 }
 
 public sealed record ProcurementRow(

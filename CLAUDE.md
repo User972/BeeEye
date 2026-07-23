@@ -7,17 +7,24 @@ the `/code-review` conventions pass reads this file and flags changes that viola
 
 **BeeEye** — an AI decision-intelligence platform for **ADMC** (automotive distribution). A .NET
 modular monolith + React SPA + Python ML, deployable to Azure. The current implementation is
-**read-only analytics**: **UC1–UC7 are live end-to-end** — UC1 Order Optimisation, UC2 Sales
-Forecasting, UC3 Configuration Demand, UC4 Procurement, UC5 Inventory Aging, and UC6/UC7 (Sales↔After-
-Sales Correlation and Spare Parts Demand) on a clearly-labelled **synthetic-demo** dataset derived from
-the real sales. The remaining bounded contexts are scaffolded. See [README.md](README.md) and
+**read-only analytics** with seven use cases live end-to-end: **UC1 (Order Optimisation —
+Recommendations)**, **UC2 (Sales Forecasting)**, **UC3 (Configuration Demand — SalesActuals)**,
+**UC4 (Procurement)**, **UC5 (Inventory Aging & Overstock Risk)**, and **UC6/UC7 (Sales↔After-Sales
+Correlation and Spare Parts Demand)** — the latter two on a clearly-labelled **synthetic-demo** dataset
+derived from the real sales. The remaining bounded contexts are scaffolded. See [README.md](README.md) and
 [docs/architecture/overview.md](docs/architecture/overview.md).
 
 ## Repository map
 
 - `src/api/BeeEye.Api` — ASP.NET Core **minimal-API host** (composition root, OpenAPI, health). No business logic.
-- `src/modules/<Context>` — 19 bounded-context module libraries; each implements `IModule`. Live: Forecasting, Inventory, SalesActuals, Recommendations, Procurement, AfterSales, SpareParts.
-- `src/shared/BeeEye.Analytics` — pure numeric engine (forecasting, demand, inventory risk). **Faithful C# port of `docs/wireframes/engine.js`.**
+- `src/modules/<Context>` — 19 bounded-context module libraries; each implements `IModule`.
+  Live: Forecasting (UC2), Inventory (UC5), Recommendations (UC1), SalesActuals (UC3), Procurement (UC4),
+  AfterSales (UC6), SpareParts (UC7).
+- `src/shared/BeeEye.Analytics` — pure numeric engine. The UC2/UC5 formulas (forecasting, demand,
+  inventory risk) are a **faithful C# port of `docs/wireframes/engine.js`**; the UC1/UC3/UC4
+  optimisers (`OrderOptimiser`, `ProcurementOptimiser`, `ConfigurationDemand`) and the UC6/UC7 engines
+  (`AfterSales/ServiceIntensity`, `SpareParts/Intermittent`, `SparePartsForecaster`) have no engine.js
+  counterpart — their formulas are specified in `docs/product/use-cases/`.
 - `src/shared/BeeEye.Shared` — dependency-free kernel (`Money`, `Result`, `Paging`, `MonthKey`, …).
 - `src/shared/BeeEye.Shared.Web` — the `IModule` contract.
 - `src/shared/BeeEye.Persistence` — EF Core `BeeEyeDbContext`, entities, migrations, sample-data importer.
@@ -60,8 +67,10 @@ cd ml && pip install -e ".[dev]" && pytest
    run it after changing module structure.
 4. **New endpoints** belong to a module implementing `IModule` (`Name`, `RoutePrefix`, `Description`,
    `Status`, `RegisterServices`, `MapEndpoints`), mounted under `/api/v1/{RoutePrefix}`.
-5. **Analytics parity.** `BeeEye.Analytics` mirrors `docs/wireframes/engine.js`. When changing a
-   formula, preserve parity and keep the unit tests in `tests/unit/BeeEye.Analytics.Tests` green.
+5. **Analytics parity.** The UC2/UC5 formulas in `BeeEye.Analytics` mirror
+   `docs/wireframes/engine.js` — when changing one, preserve parity. The UC1/UC3/UC4 optimisers
+   follow `docs/product/use-cases/` instead. Either way, keep the unit tests in
+   `tests/unit/BeeEye.Analytics.Tests` green.
 6. **Money is `decimal`, never floating point** (`BeeEye.Shared.Primitives.Money`); persist with explicit precision.
 7. **Culture-invariant.** `InvariantGlobalization` is on; format/parse with `CultureInfo.InvariantCulture`
    (month keys, numbers, money).
@@ -77,6 +86,6 @@ cd ml && pip install -e ".[dev]" && pytest
 ## Gotchas
 
 - Integration tests spin up a real Postgres via Testcontainers → **Docker must be running**.
-- API startup migrates + seeds and **swallows DB failures** (logs a warning) so it can boot without
+- API startup migrates + seeds and **swallows DB connectivity failures only** (logs a warning) so it can boot without
   Postgres; `/health/ready` reports actual DB connectivity.
 - Sample data is embedded and **idempotent by file checksum** (see `SampleDataImporter`).

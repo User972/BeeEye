@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   createColumnHelper,
   flexRender,
@@ -46,21 +46,23 @@ interface InventoryTableProps {
 export function InventoryTable({ rows, onSelect, onSortChange }: InventoryTableProps) {
   const [sorting, setSorting] = useState<SortingState>([{ id: 'risk', desc: true }]);
 
-  useEffect(() => {
-    const active = sorting[0]?.id;
-    if (active) onSortChange(active);
-  }, [sorting, onSortChange]);
-
   const table = useReactTable({
     data: rows,
     columns,
     state: { sorting },
     // The API sorts each column descending only (riskiest / oldest / most-valuable first). Force
     // descending so the ascending state — which never round-trips to the server — can't be shown.
+    // onSortChange fires HERE, on user interaction only — never from a mount/render effect,
+    // which would re-emit the default sort on remount and reset the parent's page state.
     onSortingChange: (updater) => {
       const next = typeof updater === 'function' ? updater(sorting) : updater;
       const first = next[0];
-      setSorting(first ? [{ id: first.id, desc: true }] : sorting);
+      const resolved = first ? [{ id: first.id, desc: true }] : sorting;
+      setSorting(resolved);
+      const active = resolved[0]?.id;
+      if (active && active !== sorting[0]?.id) {
+        onSortChange(active);
+      }
     },
     manualSorting: true,
     getCoreRowModel: getCoreRowModel(),

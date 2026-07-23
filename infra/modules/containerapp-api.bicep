@@ -7,6 +7,13 @@ param registryLoginServer string
 param registryId string
 param appInsightsConnectionString string
 param keyVaultName string
+param postgresFqdn string
+param postgresAdminLogin string
+
+@secure()
+param postgresAdminPassword string
+
+param postgresDatabase string = 'beeeye'
 
 @description('Minimum replica count. 0 allows scale-to-zero in non-prod.')
 param minReplicas int = 1
@@ -33,6 +40,15 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
           identity: 'system' // managed-identity pull; no admin creds
         }
       ]
+      secrets: [
+        {
+          name: 'postgres-connection-string'
+          // Interpolating the @secure() password here is intentional: Container Apps
+          // `secrets` entries are the platform's secure store for exactly this value.
+          #disable-next-line use-secure-value-for-secure-inputs
+          value: 'Host=${postgresFqdn};Port=5432;Database=${postgresDatabase};Username=${postgresAdminLogin};Password=${postgresAdminPassword};Ssl Mode=Require'
+        }
+      ]
     }
     template: {
       containers: [
@@ -45,6 +61,9 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
             { name: 'ASPNETCORE_URLS', value: 'http://+:8080' }
             { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', value: appInsightsConnectionString }
             { name: 'AZURE_KEY_VAULT_NAME', value: keyVaultName }
+            // The API reads ConnectionStrings:Postgres (DatabaseStartup.AddBeeEyeDatabase);
+            // without it the app falls back to localhost and /health/ready never passes.
+            { name: 'ConnectionStrings__Postgres', secretRef: 'postgres-connection-string' }
           ]
           probes: [
             { type: 'Liveness', httpGet: { path: '/health/live', port: 8080 } }

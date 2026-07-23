@@ -2,29 +2,42 @@ using BeeEye.Analytics;
 using BeeEye.Analytics.Forecasting;
 using BeeEye.Modules.Forecasting.Contracts;
 using BeeEye.Persistence;
+using BeeEye.Shared.Results;
 using Microsoft.EntityFrameworkCore;
 
 namespace BeeEye.Modules.Forecasting.Application;
 
 /// <summary>
 /// UC2 read side. Builds monthly demand series from the (filtered) sales facts over
-/// the full observed month range, then back-tests the baseline models, selects the
-/// lowest-WMAPE model and projects the future — a direct use of BeeEye.Analytics.
+/// the observed month range clipped to the requested date window, then back-tests the
+/// baseline models, selects the lowest-WMAPE model and projects the future — a direct
+/// use of BeeEye.Analytics.
 /// </summary>
 public sealed class ForecastingReadService(BeeEyeDbContext db)
 {
+    private static readonly Error InsufficientHistory =
+        new("insufficient_history", "At least three months of sales history are required to forecast.");
+
+    private static readonly Error NoMatch =
+        new("no_match", "No sales rows match the requested filters.");
+
     private sealed record Row(
         string Brand, string Model, string Variant, string Type, string Location,
         string Colour, string Interior, string MonthKey, double Units, bool Ramadan);
 
     public async Task<bool> HasDataAsync(CancellationToken ct) => await db.SalesFacts.AsNoTracking().AnyAsync(ct);
 
-    public async Task<ForecastResponse?> ForecastAsync(SalesFilter filter, ForecastOptions options, CancellationToken ct)
+    public async Task<Result<ForecastResponse>> ForecastAsync(SalesFilter filter, ForecastOptions options, CancellationToken ct)
     {
-        var (rows, months) = await LoadAsync(ct);
+        var (rows, allMonths) = await LoadAsync(ct);
+
+        // The month axis must honour the date window: otherwise months the filter excluded
+        // re-enter the series as fabricated zero-demand observations that poison the
+        // back-test and the refit, and "future" months start after the wrong month.
+        var months = ClipToDateWindow(allMonths, filter.DateFrom, filter.DateTo);
         if (months.Count < 3)
         {
-            return null;
+            return Result<ForecastResponse>.Failure(InsufficientHistory);
         }
 
         var filtered = rows.Where(r => Matches(r, filter)).ToList();
@@ -32,21 +45,23 @@ public sealed class ForecastingReadService(BeeEyeDbContext db)
         {
             // No rows match the filter: the month axis and history guard were computed over all
             // sales, so without this the series would be all-zero and we'd return a bogus forecast.
-            return null;
+            return Result<ForecastResponse>.Failure(NoMatch);
         }
 
         var series = BuildSeries(filtered, months);
         var result = Forecaster.Run(series, months, options, RamadanLift(filtered));
-        return new ForecastResponse(result, new ForecastMeta(months.Count, Statistics.Sum(series), DateTimeOffset.UtcNow));
+        return Result<ForecastResponse>.Success(
+            new ForecastResponse(result, new ForecastMeta(months.Count, Statistics.Sum(series), DateTimeOffset.UtcNow)));
     }
 
-    public async Task<AccuracyByResponse?> AccuracyByAsync(
+    public async Task<Result<AccuracyByResponse>> AccuracyByAsync(
         string dimension, SalesFilter filter, int holdout, CancellationToken ct)
     {
-        var (rows, months) = await LoadAsync(ct);
+        var (rows, allMonths) = await LoadAsync(ct);
+        var months = ClipToDateWindow(allMonths, filter.DateFrom, filter.DateTo);
         if (months.Count < 3)
         {
-            return null;
+            return Result<AccuracyByResponse>.Failure(InsufficientHistory);
         }
 
         var selector = DimensionSelector(dimension);
@@ -73,7 +88,8 @@ public sealed class ForecastingReadService(BeeEyeDbContext db)
             .OrderByDescending(d => d.Units)
             .ToList();
 
-        return new AccuracyByResponse(dimension, result, new ForecastMeta(months.Count, filtered.Sum(r => r.Units), DateTimeOffset.UtcNow));
+        return Result<AccuracyByResponse>.Success(
+            new AccuracyByResponse(dimension, result, new ForecastMeta(months.Count, filtered.Sum(r => r.Units), DateTimeOffset.UtcNow)));
     }
 
     public async Task<ForecastFilterOptions?> FilterOptionsAsync(CancellationToken ct)
@@ -149,6 +165,12 @@ public sealed class ForecastingReadService(BeeEyeDbContext db)
 
     private static bool In(IReadOnlyList<string> allowed, string value)
         => allowed.Count == 0 || allowed.Contains(value, StringComparer.OrdinalIgnoreCase);
+
+    private static IReadOnlyList<string> ClipToDateWindow(IReadOnlyList<string> months, string? from, string? to)
+        => months
+            .Where(m => (from is null || string.CompareOrdinal(m, from) >= 0)
+                        && (to is null || string.CompareOrdinal(m, to) <= 0))
+            .ToList();
 
     private static Func<Row, string> DimensionSelector(string dimension) => dimension.ToLowerInvariant() switch
     {

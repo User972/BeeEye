@@ -54,14 +54,21 @@ public static class ProcurementOptimiser
         var leadVariance = demandMeanPerMonth * demandMeanPerMonth * settings.LeadTimeStdMonths * settings.LeadTimeStdMonths;
         var sigma = Math.Sqrt(demandVariance + leadVariance);
 
-        var safetyStock = Z(settings.ServiceLevel) * sigma;
+        var zService = Z(settings.ServiceLevel);
+        var safetyStock = zService * sigma;
         var reorderPoint = (demandMeanPerMonth * settings.LeadTimeMonths) + safetyStock;
         var orderUpTo = (demandMeanPerMonth * leadPlusReview) + safetyStock;
         var available = currentInventory + inbound;
 
+        // The recommended range is a 90–99% service band, widened to include the requested
+        // service level when it sits outside that band — so the point estimate (which uses
+        // zService) is always bracketed by [low, high].
+        var zLow = Math.Min(Z(0.90), zService);
+        var zHigh = Math.Max(Z(0.99), zService);
+
         var point = ApplyLotSizing(Math.Max(0, orderUpTo - available), settings);
-        var low = ApplyLotSizing(Math.Max(0, (demandMeanPerMonth * leadPlusReview) + (Z(0.90) * sigma) - available), settings);
-        var high = ApplyLotSizing(Math.Max(0, (demandMeanPerMonth * leadPlusReview) + (Z(0.99) * sigma) - available), settings);
+        var low = ApplyLotSizing(Math.Max(0, (demandMeanPerMonth * leadPlusReview) + (zLow * sigma) - available), settings);
+        var high = ApplyLotSizing(Math.Max(0, (demandMeanPerMonth * leadPlusReview) + (zHigh * sigma) - available), settings);
 
         var stockoutRisk = available < demandMeanPerMonth * settings.LeadTimeMonths ? "High"
             : available < reorderPoint ? "Medium"

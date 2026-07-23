@@ -2,6 +2,7 @@ using BeeEye.Analytics.Forecasting;
 using BeeEye.Modules.Forecasting.Application;
 using BeeEye.Modules.Forecasting.Contracts;
 using BeeEye.Shared.Api;
+using BeeEye.Shared.Results;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -34,14 +35,13 @@ internal static class ForecastingEndpoints
                     Algo: algo,
                     Ci: ci ?? 80);
                 var filter = SalesFilter.From(brand, model, variant, type, location, colour, interior, dateFrom, dateTo);
-                var response = await svc.ForecastAsync(filter, options, ct);
-                return response is null
-                    ? Results.Problem(statusCode: StatusCodes.Status404NotFound, title: "Insufficient sales history",
-                        detail: "At least three months of sales history are required to forecast.")
-                    : Results.Ok(response);
+                var result = await svc.ForecastAsync(filter, options, ct);
+                return result.IsSuccess ? Results.Ok(result.Value) : ToProblem(result.Error);
             })
             .WithName("Forecasting_Forecast")
-            .WithSummary("Back-test comparison, chosen model and future forecast with confidence intervals");
+            .WithSummary("Back-test comparison, chosen model and future forecast with confidence intervals")
+            .Produces<ForecastResponse>()
+            .ProducesProblem(StatusCodes.Status404NotFound);
 
         group.MapGet("/accuracy-by/{dimension}", async (
                 string dimension, ForecastingReadService svc, CancellationToken ct, int? holdout,
@@ -55,13 +55,14 @@ internal static class ForecastingEndpoints
                 }
 
                 var filter = SalesFilter.From(brand, model, variant, type, location, colour, interior, dateFrom, dateTo);
-                var response = await svc.AccuracyByAsync(dimension, filter, holdout ?? 6, ct);
-                return response is null
-                    ? Results.Problem(statusCode: StatusCodes.Status404NotFound, title: "Insufficient sales history")
-                    : Results.Ok(response);
+                var result = await svc.AccuracyByAsync(dimension, filter, holdout ?? 6, ct);
+                return result.IsSuccess ? Results.Ok(result.Value) : ToProblem(result.Error);
             })
             .WithName("Forecasting_AccuracyBy")
-            .WithSummary("Where forecasts consistently over- or under-perform, by product / region");
+            .WithSummary("Where forecasts consistently over- or under-perform, by product / region")
+            .Produces<AccuracyByResponse>()
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status404NotFound);
 
         group.MapGet("/filter-options", async (ForecastingReadService svc, CancellationToken ct) =>
             {
@@ -73,4 +74,14 @@ internal static class ForecastingEndpoints
     }
 
     private static readonly ForecastFilterOptions EmptyOptions = new([], [], [], [], [], [], [], string.Empty, string.Empty);
+
+    /// <summary>Maps read-service failures to accurate Problem Details — a no-match filter
+    /// must not be reported as insufficient history.</summary>
+    private static IResult ToProblem(Error error) => error.Code switch
+    {
+        "no_match" => Results.Problem(statusCode: StatusCodes.Status404NotFound,
+            title: "No matching sales data", detail: error.Message),
+        _ => Results.Problem(statusCode: StatusCodes.Status404NotFound,
+            title: "Insufficient sales history", detail: error.Message),
+    };
 }

@@ -63,7 +63,7 @@ the [Architecture Overview](../architecture/overview.md) container view).
 | Networking | Private access (VNet-integrated, no public endpoint); TLS 1.2+ enforced |
 | Backups / DR | Automated backups, **PITR** (35-day window); geo-redundant backup in prod |
 | Read scale | One or more **read replicas** carry analytical/dashboard read traffic |
-| Auth | **Microsoft Entra ID** authentication to the DB via **managed identity** — no passwords in code or images; secrets/connection metadata in Key Vault |
+| Auth | **Microsoft Entra ID** authentication to the DB via **managed identity** — no passwords in code or images; secrets/connection metadata in Key Vault. *Current scaffold deviates: password auth via a pipeline-supplied secret — see [tech-debt TD-2](../architecture/tech-debt.md)* |
 | Encryption | At rest (platform-managed, CMK optional via Key Vault) and in transit |
 | Pooling | Built-in PgBouncer connection pooling to absorb Container Apps scale-out |
 

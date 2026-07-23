@@ -9,8 +9,11 @@ namespace BeeEye.Persistence.SampleData;
 
 /// <summary>
 /// Loads the embedded sample datasets into PostgreSQL for dev seeding and integration
-/// tests. Idempotent: batch identity is (object, file-checksum), so re-running never
-/// duplicates facts. Real Oracle Fusion ingestion is the Integration module's concern.
+/// tests. Idempotent: batch identity is (object, file-checksum), so re-running an
+/// unchanged file is skipped, and a changed file *replaces* the prior batch for that
+/// object (supersede) instead of accumulating alongside it — read services query the
+/// fact tables with no batch filter, so stale batches would double every aggregate.
+/// Real Oracle Fusion ingestion is the Integration module's concern.
 /// </summary>
 public sealed class SampleDataImporter(BeeEyeDbContext db)
 {
@@ -21,11 +24,17 @@ public sealed class SampleDataImporter(BeeEyeDbContext db)
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
     };
 
-    /// <summary>Imports both sample objects. Assumes the schema already exists.</summary>
+    /// <summary>
+    /// Imports both sample objects in a single transaction, so a failure in the second
+    /// object never leaves the database half-updated (e.g. new sales with stale inventory).
+    /// Assumes the schema already exists.
+    /// </summary>
     public async Task<ImportResult> ImportAsync(CancellationToken ct = default)
     {
+        await using var tx = await db.Database.BeginTransactionAsync(ct);
         var sales = await ImportSalesAsync(ct);
         var inventory = await ImportInventoryAsync(ct);
+        await tx.CommitAsync(ct);
         return new ImportResult(sales, inventory);
     }
 
@@ -67,13 +76,26 @@ public sealed class SampleDataImporter(BeeEyeDbContext db)
                 DiscountPct = r.DiscountPct,
                 IsRamadan = Truthy(r.IsRamadan),
                 DateOfManufacture = ParseDate(r.DateOfManufacture),
-                RowHash = Sha256($"{batchId}|{i}|{r.SaleDate}|{r.Location}|{r.Model}|{r.Variant}|{r.Colour}|{r.Interior}|{r.UnitsSold}|{r.UnitPrice}|{r.Revenue}|{r.DiscountPct}|{r.IsRamadan}"),
+                // Deterministic content hash (SalesFact.RowHash contract): identical row
+                // content always hashes the same across imports, so the unique index can
+                // reject cross-import duplicates. The row index disambiguates genuinely
+                // identical rows within one extract without breaking determinism.
+                RowHash = Sha256($"{i}|{r.SaleDate}|{r.Location}|{r.Model}|{r.Variant}|{r.Colour}|{r.Interior}|{r.UnitsSold}|{r.UnitPrice}|{r.Revenue}|{r.DiscountPct}|{r.IsRamadan}"),
                 IngestionBatchId = batchId,
                 IngestedAtUtc = now,
             });
         }
 
+        await using var ownTx = db.Database.CurrentTransaction is null
+            ? await db.Database.BeginTransactionAsync(ct)
+            : null;
+        await SupersedePriorBatchesAsync("sales", ct);
         await PersistBatchAsync(batchId, "sales", checksum, "sales.json", facts, ct);
+        if (ownTx is not null)
+        {
+            await ownTx.CommitAsync(ct);
+        }
+
         return new ImportObjectResult("sales", "imported", facts.Count, records.Count, checksum);
     }
 
@@ -113,7 +135,16 @@ public sealed class SampleDataImporter(BeeEyeDbContext db)
             IngestedAtUtc = now,
         }).ToList();
 
+        await using var ownTx = db.Database.CurrentTransaction is null
+            ? await db.Database.BeginTransactionAsync(ct)
+            : null;
+        await SupersedePriorBatchesAsync("inventory", ct);
         await PersistBatchAsync(batchId, "inventory", checksum, "inventory.json", items, ct);
+        if (ownTx is not null)
+        {
+            await ownTx.CommitAsync(ct);
+        }
+
         return new ImportObjectResult("inventory", "imported", items.Count, records.Count, checksum);
     }
 
@@ -121,6 +152,36 @@ public sealed class SampleDataImporter(BeeEyeDbContext db)
         => await db.IngestionBatches
             .AsNoTracking()
             .FirstOrDefaultAsync(x => x.SourceObject == obj && x.Checksum == checksum && x.Status == "completed", ct);
+
+    /// <summary>
+    /// A changed sample file replaces the prior data for its object: earlier completed
+    /// batches are marked superseded and their rows deleted, so aggregates never
+    /// double-count two generations of the same dataset.
+    /// </summary>
+    private async Task SupersedePriorBatchesAsync(string obj, CancellationToken ct)
+    {
+        var priorIds = await db.IngestionBatches
+            .Where(b => b.SourceSystem == SourceSystem && b.SourceObject == obj && b.Status == "completed")
+            .Select(b => b.Id)
+            .ToListAsync(ct);
+        if (priorIds.Count == 0)
+        {
+            return;
+        }
+
+        if (obj == "sales")
+        {
+            await db.SalesFacts.Where(f => priorIds.Contains(f.IngestionBatchId)).ExecuteDeleteAsync(ct);
+        }
+        else
+        {
+            await db.InventoryItems.Where(i => priorIds.Contains(i.IngestionBatchId)).ExecuteDeleteAsync(ct);
+        }
+
+        await db.IngestionBatches
+            .Where(b => priorIds.Contains(b.Id))
+            .ExecuteUpdateAsync(s => s.SetProperty(b => b.Status, "superseded"), ct);
+    }
 
     private async Task PersistBatchAsync<T>(
         Guid batchId, string obj, string checksum, string fileName, List<T> entities, CancellationToken ct)

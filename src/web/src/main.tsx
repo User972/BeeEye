@@ -16,6 +16,21 @@ const queryClient = new QueryClient({
   },
 });
 
+// Reveal icons only once the icon font is actually usable — otherwise every icon renders
+// as its raw ligature name. See the .icons-ready rule in components.css.
+if ('fonts' in document) {
+  document.fonts
+    .load('24px "Material Symbols Outlined"')
+    .then((loaded) => {
+      if (loaded.length > 0) {
+        document.documentElement.classList.add('icons-ready');
+      }
+    })
+    .catch(() => {
+      /* offline: icons stay hidden, text labels carry the meaning */
+    });
+}
+
 const rootElement = document.getElementById('root');
 if (!rootElement) {
   throw new Error('Root element #root not found.');

@@ -289,7 +289,9 @@ table.data-table { border-collapse: collapse; width: 100%; font-size: 13px; }
   -webkit-font-feature-settings: 'liga';
   -webkit-font-smoothing: antialiased;
 }
-/* Fallback when the icon font is not installed: show nothing rather than raw text. */
-@supports not (font-family: 'Material Symbols Outlined') {
-  .material-symbols-outlined { font-size: 0; }
-}
+/* Icons render as raw ligature names ("inventory_2") until the font is available, so they
+   stay hidden until main.tsx confirms the load and stamps .icons-ready on <html>. If the
+   font never loads (offline), icons stay hidden and the text labels carry the meaning.
+   (An `@supports not (font-family: …)` test can never match — it checks declaration
+   syntax, not font availability.) */
+html:not(.icons-ready) .material-symbols-outlined { font-size: 0; }
