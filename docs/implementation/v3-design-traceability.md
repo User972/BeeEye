@@ -11,8 +11,8 @@
 
 | Status | Count |
 |--------|-------|
-| Implemented | 37 |
-| Planned | 11 |
+| Implemented | 41 |
+| Planned | 7 |
 | Deferred | 4 |
 | Rejected | 2 |
 | Blocked | 1 |
@@ -126,10 +126,10 @@
 
 | ID | Requirement | Existing | Priority | Cx | Slice | Status |
 |----|-------------|----------|----------|----|----|--------|
-| V3-QA-001 | End-to-end tests for critical journeys | **None exist** | P1 | L | S12 | Planned |
-| V3-QA-002 | Visual regression at 7 viewports | **None exist** | P2 | L | S12 | Planned |
-| V3-QA-003 | Automated accessibility scans on all routes | **None exist** | P1 | M | S12 | Planned |
-| V3-QA-004 | Coverage tooling + threshold | **None configured** | P2 | S | S12 | Planned |
+| V3-QA-001 | End-to-end tests for critical journeys | **None exist** | P1 | L | S12 | **Implemented** (Playwright; functional + a11y gate in CI, first run bootstraps) |
+| V3-QA-002 | Visual regression at 7 viewports | **None exist** | P2 | L | S12 | **Implemented** (7 viewports × 2 themes; platform-pinned baselines bootstrap in CI) |
+| V3-QA-003 | Automated accessibility scans on all routes | **None exist** | P1 | M | S12 | **Implemented** (vitest-axe components + @axe-core/playwright routes, both themes) |
+| V3-QA-004 | Coverage tooling + threshold | **None configured** | P2 | S | S12 | **Implemented** (v8; gated floor, ratchets up only) |
 | V3-QA-005 | Remediate `NU1903` high-severity advisories (`Microsoft.OpenApi` 2.0.0, `System.Security.Cryptography.Xml` 9.0.0) | 18 warnings | P1 | S | S0 | **Implemented** (transitive pins: `Microsoft.OpenApi` 2.11.0, `System.Security.Cryptography.Xml` 10.0.10) |
 | V3-QA-006 | Clear the 5 pre-existing `CS8604` nullable warnings | 5 warnings | P2 | XS | S0 | **Implemented** (build is 0-warning) |
 
@@ -167,4 +167,4 @@
 | S9 | Persona, accent, density | V3-NAV-005, V3-DS-004/005 | Planned |
 | S10 | Ask Decision Intelligence (AI) | V3-PLAT-001/002 | Planned |
 | S11 | Ingestion, Reports, Methodology, Integration | V3-PLAT-003…006 | Planned |
-| S12 | E2E, visual, a11y, coverage hardening | V3-QA-001…004 | Planned |
+| S12 | E2E, visual, a11y, coverage hardening | V3-QA-001…004 | **Implemented** |

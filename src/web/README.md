@@ -67,12 +67,61 @@ Executive / Analyst / IT personas) are provisioned per
 
 ## Testing notes
 
-- **Unit / component / integration** — Vitest + React Testing Library (jsdom). The suite mocks the
-  global `fetch` and returns real `Response` objects; it does **not** mock `apiGet`/`apiPost` or use
-  MSW. MSAL is mocked at the module boundary — no unit/component test hits a live IdP.
+- **Unit / component** — Vitest + React Testing Library (jsdom). The suite mocks the global `fetch` and
+  returns real `Response` objects; it does **not** mock `apiGet`/`apiPost` or use MSW. MSAL is mocked at
+  the module boundary — no unit/component test hits a live IdP.
 - Auth-specific suites: `src/lib/api/client.test.ts` (transport seam, 401 recovery, idempotency-key
   preservation), `src/lib/auth/config.test.ts`, `src/lib/auth/msalBridge.test.ts`, and
   `src/components/layout/signin-flow.test.tsx` (header + route gate, local-mode parity).
+
+### Coverage (V3-QA-004)
+
+```bash
+npm run test:coverage   # vitest run --coverage; enforces the threshold floor, reports text/html/lcov
+```
+Thresholds live in `vite.config.ts` (`test.coverage.thresholds`). They sit just below the current
+measured coverage so the gate can only ratchet **up** — raise them as coverage grows, never lower them.
+The HTML report is written to `coverage/` (git-ignored); CI uploads `lcov.info`.
+
+### Accessibility (V3-QA-003)
+
+- Component-level (`src/components/a11y.test.tsx`, in the vitest suite): `vitest-axe` over the
+  design-system primitives and the populated drawer, **both themes**, asserting zero serious/critical.
+  `color-contrast` is disabled here — jsdom has no layout — and is checked at the route level instead.
+- Route-level (`e2e/a11y.spec.ts`): `@axe-core/playwright` over every route and the drawer open states,
+  in a real browser where contrast is real.
+
+### End-to-end & visual regression (Playwright — V3-QA-001 / V3-QA-002)
+
+```bash
+npm run e2e                       # all Playwright specs (7 viewport projects)
+npm run e2e -- --grep-invert @visual   # functional + a11y only
+npm run e2e -- --grep @visual          # visual only
+npm run e2e:update                # (re)generate the @visual baselines
+npx playwright show-report        # open the last HTML report
+```
+
+- The suite is deterministic: the API runs in **LocalDev** (all roles, no tenant), the SPA is built in
+  **`local`** mode, and `vite preview` proxies `/api` to the API so they share an origin. Playwright's
+  `webServer` boots both; locally, start Docker (for the seeded Postgres) first.
+- **Visual baselines** (`e2e/__screenshots__/`) are **platform-pinned** — generate them on the CI runner
+  (Linux), never on macOS/Windows, or every diff churns:
+  ```bash
+  # in the CI runner / Playwright Linux container:
+  npm run e2e:update && git add e2e/__screenshots__ && git commit
+  ```
+  Until the baselines are committed, the `@visual` CI step is red — this is the expected one-time
+  bootstrap, not a defect. An unreviewed pixel change fails CI thereafter (like the OpenAPI drift gate).
+- **Flake policy**: no `waitForTimeout`; web-first assertions only; CI retries capped at one
+  (`on-first-retry` trace). A test that passes only on retry is quarantined and tracked, not left green.
+
+### CI matrix
+
+| Job | Runs |
+|-----|------|
+| `web` | lint · typecheck · build · **coverage-gated** vitest · uploads `lcov` |
+| `e2e` | seeded Postgres → build API+SPA → install Chromium → functional + a11y gate → visual gate → uploads report/traces/diffs on failure |
+| `backend` / `integration` / `openapi` / `ml` / `infra` | unchanged |
 
 ## OpenAPI contract
 

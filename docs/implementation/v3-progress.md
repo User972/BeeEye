@@ -21,7 +21,7 @@
 | S9 | Persona, accent, density | P3 | Not started |
 | S10 | Ask Decision Intelligence | P2 | Not started |
 | S11 | Ingestion, Reports, Methodology, Integration | P3 | Not started |
-| S12 | E2E, visual, a11y, coverage hardening | P1 | Not started |
+| **S12** | **E2E, visual, a11y, coverage hardening** | P1 | **Complete** |
 
 ## Test totals
 
@@ -35,6 +35,11 @@
 | **After S6** | **814** | **116** | **930** |
 | **After S3** | **885** | **200** | **1085** |
 | **After S4b** | **885** | **234** | **1119** |
+| **After S12** | **885** | **244** | **1129** |
+
+S12 also introduces a **Playwright** suite (E2E journeys · route-level a11y · visual regression) that runs
+in its own CI job and is counted separately from the vitest totals above; the vitest column gained the
+10 component-level `vitest-axe` tests (234 → 244).
 
 Backend breakdown after S5: `BeeEye.UnitTests` **129** (was 18) · `BeeEye.Analytics.Tests` **384**
 (was 332) · `BeeEye.ArchitectureTests` 4 · `BeeEye.IntegrationTests` **98** (was 33).
@@ -841,3 +846,108 @@ typecheck ✅ · lint ✅ · web build (local mode) ✅ · build guard fails a m
 **234/234 web** ✅ · **885/885 backend** unaffected (no backend change) · architecture unaffected.
 
 **Next action.** None — slice closed. Real-token E2E and MSAL code-splitting are tracked follow-ups.
+
+## S12 — E2E, visual, a11y & coverage hardening · **Complete**
+
+- **Requirements.** `V3-QA-001` (E2E), `V3-QA-002` (visual regression, 7 viewports), `V3-QA-003`
+  (automated a11y scans), `V3-QA-004` (coverage tooling + threshold). All four test categories were
+  absent before this slice; every prior slice logged "no visual-regression coverage yet (S12)". This
+  closes that.
+- **Outcome.** Four new quality gates, wired into CI. Viewports: `360 / 390 / 768 / 1024 / 1280 / 1440
+  / 1920`.
+
+### Coverage (V3-QA-004)
+
+`@vitest/coverage-v8` with `text` + `html` + `lcov` reporters. Thresholds are set just below the
+measured floor (stmts 87.4 · branch 81.9 · funcs 75.5 · lines 87.4 → gate at 86 / 80 / 74 / 86) so the
+suite clears them without flaking and coverage can only ratchet up. Generated, bootstrap, config and
+test files are excluded. `npm run test:coverage` runs it; the CI `web` job enforces it and uploads
+`lcov.info`.
+
+### Accessibility (V3-QA-003) — two layers
+
+- **Component-level** (vitest + `vitest-axe`, jsdom): the design-system primitives and the populated
+  explainability drawer, in **both themes**, asserting **zero serious/critical** violations. jsdom has
+  no real layout, so `color-contrast` is disabled here — it is only meaningful, and is checked, at the
+  route level in a real browser.
+- **Route-level** (Playwright + `@axe-core/playwright`): every route in `navigation.ts`, both themes,
+  plus the explainability and decision-detail drawer open states, asserting zero serious/critical.
+  Contrast is real here. No blanket disables; any accepted violation would be allow-listed individually.
+
+### End-to-end (V3-QA-001) — Playwright
+
+`playwright.config.ts` with the seven viewports as projects, a two-server `webServer` (the API in
+LocalDev — waiting on `/health/ready` so the seed is present — and the built SPA served by `vite
+preview`, made same-origin with the API by a new `preview.proxy`), retries only in CI, `trace:
+on-first-retry`, and web-first assertions throughout (**no `waitForTimeout`**). Journeys: shell/smoke,
+cockpit-loads, the governed decision workflow (claim → accept → **self-sign-off refused server-side**,
+the append-only log grows, **no delete control exists**), explainability on three screens with feedback
+round-trip, CSV export (injection-safe), read-only posture / empty state, and local-mode sign-in
+parity.
+
+### Visual regression (V3-QA-002)
+
+`toHaveScreenshot` per screen × 7 viewports × 2 themes. Stabilised: animations/transitions disabled
+(config + injected CSS + reduced-motion context), the icon font settled (`icons-ready`) before the
+shot, volatile regions masked, `maxDiffPixelRatio: 0.02`. Baselines are committed under
+`e2e/__screenshots__` and platform-pinned via the `{platform}` path segment. An unreviewed pixel change
+fails CI, mirroring the OpenAPI drift gate.
+
+### E2E authentication strategy (decision)
+
+Deterministic journeys run against the API in **LocalDev** (all roles, no tenant) with the SPA in
+**`local`** mode — fully reproducible, no IdP. The sign-in journey's real-token redirect/callback path
+is **not** driven against live Entra in CI (flaky, needs conditional-access exceptions). Its UI wiring
+is covered at the component level (`signin-flow.test.tsx`: sign-in shown when anonymous, the gate
+redirects preserving `returnTo`, account chip after sign-in, sign-out); the E2E asserts local-mode
+parity. A real-token E2E against a **test JWKS** host is a tracked follow-up — the backend has no seam
+to trust a test signing key today, and standing one up was out of scope for this slice (stated per
+B.6).
+
+### CI wiring
+
+The `web` job now runs `test:coverage` (enforcing the floor) and uploads `lcov`. A new `e2e` job brings
+up the seeded Postgres via `docker compose`, builds the API and SPA, installs the Chromium browser, and
+runs the functional + a11y gate (`--grep-invert @visual`) then the visual gate (`--grep @visual`),
+uploading the Playwright report, traces and visual diffs on failure. The existing
+`backend`/`integration`/`openapi`/`ml`/`infra` jobs are untouched.
+
+### Determinism & flake policy
+
+No `waitForTimeout`; web-first assertions only. Screenshots: animations off, fonts settled, volatile
+regions masked, baselines platform-pinned. CI retries capped at 1 (`on-first-retry` trace); a test that
+only passes on retry is to be quarantined and tracked, not left green. Seed data is fixed; specs vary by
+index, never by random input.
+
+### Verification (what was checked here vs. what runs first in CI)
+
+Verified in this environment: `lint` ✅ · app `typecheck` ✅ · **e2e `tsc -p e2e/tsconfig.json`** ✅
+(caught and fixed two real spec bugs) · **244/244 vitest** ✅ including the 10 component-a11y tests ·
+**coverage gate** ✅ (87.0 / 81.9 / 75.5 / 87.0 over the 86 / 80 / 74 / 86 floor) · web `build` ✅.
+
+Runs first in CI (no browsers, Docker or .NET host in this dev environment): the Playwright functional,
+route-a11y and visual suites, and the **one-time visual-baseline bootstrap** — baselines are
+platform-pinned and must be generated on the CI runner (`npm run e2e:update`) and committed; they
+cannot be produced on a Windows/macOS dev box. The specs are statically validated (typecheck + lint)
+and follow Playwright best practice, but their first execution is the CI `e2e` job.
+
+### Known gaps / follow-ups
+
+- **Visual baseline bootstrap** — the `@visual` step is red until baselines are generated on the CI
+  runner and committed (documented in `src/web/README.md`). This is the expected bootstrap for
+  platform-pinned baselines, not a defect.
+- **Real-token sign-in E2E** — needs a test-JWKS API host profile; tracked (see the E2E auth strategy).
+- **Persona-driven permission-denied E2E** — a single LocalDev principal holds every role, so a 403
+  path is covered at the component level; a narrow-persona run (`Auth__LocalDevUser__Roles__0=Analyst`)
+  is a follow-up.
+- **Viewport sharding** — the 7-viewport matrix could be sharded to cut CI wall-clock; not done yet.
+
+### Acceptance
+
+The **1085**-test regression baseline stays green (885 backend untouched; web grew 200 → 244); the 384
+`engine.js` parity tests are untouched (S12 changes no formula). Coverage threshold configured and met,
+ratcheting only upward. E2E, route-a11y and visual specs cover every critical journey / route / screen ×
+7 viewports × 2 themes, authored and statically validated, and run in the new CI `e2e` job.
+
+**Next action.** None for authoring — slice closed. Operational bootstrap: generate and commit the
+visual baselines on the CI runner, then the `@visual` gate goes green.
