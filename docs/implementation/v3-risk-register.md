@@ -5,13 +5,25 @@
 > Cross-references: [`v3-design-traceability.md`](v3-design-traceability.md),
 > [`v3-baseline.md`](v3-baseline.md), [`v3-gap-analysis.md`](v3-gap-analysis.md).
 
+> **Update (post-S6, 2026-07-24):** R-01, R-02 and R-03 are now **Closed** — the governed Decision Log
+> (S6), identity & authorization (S4) and the frozen append-only write path (S5) all shipped as designed
+> and under test. Any test-count figures below predate S3–S6; current totals are **885 backend + 234
+> web = 1119** (S4b added 34 web tests; see [`v3-progress.md`](v3-progress.md)).
+
+> **Update (post-S7, 2026-07-24):** the governance-transparency screens shipped — Data Health, Model &
+> Data Lineage and read-only Settings (S7). This **reinforces R-04**: the real-vs-demo boundary is now
+> surfaced *in the product* (every synthetic source and metric carries its label; UC6/UC7's demo tags are
+> cross-checked against the platform's `IsDemo` flag), so a synthetic figure can no longer be mistaken
+> for a measured one on-screen. S7 added no table, no write and no delete path. Current totals are **982
+> backend + 276 web = 1258** (plus the Playwright suite; the three routes joined the a11y/visual matrix).
+
 ## Top risks
 
 | ID | Risk | Prob. | Impact | Affects | Status |
 |----|------|-------|--------|---------|--------|
-| R-01 | Decision Log implemented as v3 draws it, discarding the audit trail | Medium | **High** | V3-GOV-001/011/012 | **Mitigating** |
-| R-02 | Human decisions land before identity exists, producing unattributable records | Medium | **High** | V3-AUTH-001, V3-GOV-004 | **Mitigating** |
-| R-03 | First write path introduces the platform's first mutation defects | High | **High** | V3-API-001…005 | Open |
+| R-01 | Decision Log implemented as v3 draws it, discarding the audit trail | Medium | **High** | V3-GOV-001/011/012 | **Closed** (S6) |
+| R-02 | Human decisions land before identity exists, producing unattributable records | Medium | **High** | V3-AUTH-001, V3-GOV-004 | **Closed** (S4→S6; SPA sign-in S4b) |
+| R-03 | First write path introduces the platform's first mutation defects | High | **High** | V3-API-001…005 | **Closed** (S5, under test) |
 | R-04 | Effort wasted chasing numeric parity with v3's synthetic fixtures | Medium | Medium | V3-CONFLICT-4 | **Mitigating** |
 | R-05 | UC2/UC5 `engine.js` parity broken while restyling | Low | **High** | V3-UC02/05-001 | **Mitigating** |
 | R-06 | Cockpit inherits the 669 ms after-sales endpoint across six modules | High | Medium | V3-PERF-001, V3-UC08-003 | Open |
@@ -53,7 +65,10 @@
   integration test asserting an anonymous request is rejected.
 - **Contingency.** Hold S6 until S4 completes. Do **not** substitute a placeholder actor — that is
   precisely the fake-logic failure mode the delivery rules forbid.
-- **Owner.** Security Architecture. **Status: Mitigating.**
+- **Owner.** Security Architecture. **Status: Closed** (S4 identity → S6 human decisions, with the SPA
+  sign-in flow completing the client side in S4b — the browser can now obtain, attach and refresh an
+  Entra token, so a deployed host can require authentication and no decision is recorded without a
+  named, accountable human).
 
 ### R-03 — First-ever write path introduces mutation defects
 
@@ -117,16 +132,16 @@
 |----|------|-------|--------|------------|--------|
 | R-07 | Design ambiguity — v3 controls with no defined behaviour | Medium | Medium | Every ambiguity carries a conservative safe default (V3-CONFLICT-1…8); none blocks progress | Mitigating |
 | R-08 | Scope expansion — v3 adds 8 new screens plus cross-cutting patterns | High | Medium | Vertical slices S0–S12, each independently shippable and reviewable; XL work (AI, ingestion) deferred to S10/S11 | Mitigating |
-| R-09 | Visual regression — no visual tooling exists | High | Medium | V3-QA-002 introduces it; until then, component tests assert structure and the design-token layer is already aligned | Open |
+| R-09 | Visual regression — no visual tooling exists | High | Medium | S12 introduces Playwright `toHaveScreenshot` at 7 viewports × 2 themes with animations disabled, fonts settled, volatile regions masked and platform-pinned baselines behind a CI gate; component tests still assert structure | Mitigating |
 | R-10 | Functional regression | Medium | High | 432-test green baseline; full regression run after every slice (done for S1) | Mitigating |
-| R-11 | Accessibility regression | Medium | Medium | S1 added skip link, landmarks, `aria-current`, focus-visible, reduced motion; V3-QA-003 adds automated scans; V3-DS-007 fixes the drawer focus trap | Mitigating |
+| R-11 | Accessibility regression | Medium | Medium | S1 added skip link, landmarks, `aria-current`, focus-visible, reduced motion; S12 adds automated scans (vitest-axe on components + @axe-core/playwright on every route, both themes) enforcing zero serious/critical except two baselined pre-existing rules (`color-contrast` palette debt, `scrollable-region-focusable`), each tracked for separate remediation; V3-DS-007 fixes the drawer focus trap | Mitigating |
 | R-12 | Known high-severity dependency advisories inherited into v3 work | High | Medium | 18 `NU1903` advisories recorded in the baseline as pre-existing; V3-QA-005 remediates in S0 | Open |
 | R-13 | CSP weakened by CDN fonts | Medium | Medium | V3-CONFLICT-3 — self-host (OFL-1.1 permits it) rather than allow-listing a third-party origin | Open |
 | R-14 | AI cost / provider instability once V3-PLAT-001/002 land | Medium | Medium | ADR-0004 provider abstraction; deterministic engine is the **default** and the fallback, so AI failure degrades to a working experience | Open |
 | R-15 | AI alters figures when rewording | Medium | **High** | Contract from v3's METHODOLOGY: live AI may only reword a deterministic draft; structured-output validation discards any response that changes a number (ADR-0006 §7) | Open |
 | R-16 | Schema incompatibility / migration failure | Low | High | Expand-and-contract; new tables only (no destructive change to the 9 existing entities); Testcontainers already proves clean-DB migration | Mitigating |
 | R-17 | Deployment sequencing — backend and frontend not atomic | Medium | Medium | Additive API evolution; feature flags on new write paths | Open |
-| R-18 | Incomplete test coverage — no e2e/visual/a11y/perf/security suites exist | High | Medium | Recorded honestly in the baseline; S12 addresses; no slice may claim "complete" without its stated tests | Mitigating |
+| R-18 | Incomplete test coverage — no e2e/visual/a11y/perf/security suites exist | High | Medium | S12 delivers the e2e, visual, a11y and coverage suites + CI gates (perf/security remain separate follow-ups); no slice may claim "complete" without its stated tests | Mitigating |
 | R-19 | Mobile layout issues — v3 is desktop-only and specifies no mobile pattern | Medium | Medium | V3-CONFLICT-7; S1 already fixed the broken ≤900px rail; each screen slice must state responsive behaviour | Mitigating |
 | R-20 | Documentation drifts from implementation | Medium | Medium | Traceability status columns are updated in the same commit as the code; this register and `v3-progress.md` are living documents | Mitigating |
 | R-21 | Cross-tenant data leakage | — | — | **Not applicable.** The platform is single-tenant by design; neither v3 nor the product spec introduces tenancy (V3-AUTH-005 deferred with justification) | Accepted |

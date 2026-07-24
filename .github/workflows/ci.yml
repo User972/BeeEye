@@ -55,7 +55,80 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run build
-      - run: npm run test
+      # Runs the full vitest suite and enforces the coverage floor (V3-QA-004); the floor can only
+      # ratchet up, never down.
+      - run: npm run test:coverage
+      - name: Upload web coverage (lcov)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-coverage
+          path: src/web/coverage/lcov.info
+          if-no-files-found: warn
+
+  e2e:
+    name: Web E2E · a11y · visual (Playwright)
+    runs-on: ubuntu-latest # provides a Docker daemon for the seeded Postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: src/web/package-lock.json
+      # The sample data is embedded and idempotent by checksum, so a seeded Postgres makes every
+      # journey deterministic (V3-QA-001 / B.7). Azurite comes up with it via the repo compose file.
+      - name: Start seeded Postgres + Azurite
+        run: docker compose up -d
+      # Pre-build the API so the Playwright webServer's `dotnet run` starts within its timeout.
+      - name: Restore & build the API
+        run: |
+          dotnet restore BeeEye.slnx
+          dotnet build src/api/BeeEye.Api/BeeEye.Api.csproj -c Release --no-restore
+      - name: Install web deps
+        working-directory: src/web
+        run: npm ci
+      - name: Install Playwright browser
+        working-directory: src/web
+        run: npx playwright install --with-deps chromium
+      # Functional + accessibility gate. Playwright's webServer boots the API (LocalDev, waits on
+      # /health/ready so the seed is present) and the built SPA in local mode. Excludes @visual, which
+      # needs committed platform-pinned baselines (see the web README for the one-time bootstrap).
+      - name: E2E + accessibility
+        working-directory: src/web
+        env:
+          ASPNETCORE_ENVIRONMENT: Development
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: '5432'
+          POSTGRES_DB: beeeye
+          POSTGRES_USER: beeeye
+          POSTGRES_PASSWORD: beeeye_local_dev_only
+        run: npm run e2e -- --grep-invert @visual
+      # Visual-regression gate. Fails on any unreviewed pixel change (or missing baseline) — mirroring
+      # the OpenAPI drift-gate philosophy. Baselines are generated in this same runner via
+      # `npm run e2e:update` and committed; until then this step is the tracked bootstrap.
+      - name: Visual regression
+        working-directory: src/web
+        env:
+          ASPNETCORE_ENVIRONMENT: Development
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: '5432'
+          POSTGRES_DB: beeeye
+          POSTGRES_USER: beeeye
+          POSTGRES_PASSWORD: beeeye_local_dev_only
+        run: npm run e2e -- --grep @visual
+      - name: Upload Playwright report, traces and visual diffs
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            src/web/playwright-report
+            src/web/test-results
+          if-no-files-found: ignore
 
   openapi:
     name: OpenAPI contract

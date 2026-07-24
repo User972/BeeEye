@@ -17,6 +17,7 @@ export const permissions = {
   recommendationApprove: 'recommendation.approve',
   recommendationGenerate: 'recommendation.generate',
   decisionOutcomeRecord: 'decision-outcome.record',
+  explanationFeedbackSubmit: 'explanation-feedback.submit',
 } as const;
 
 export const identityKeys = {

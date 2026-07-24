@@ -11,8 +11,8 @@
 
 | Status | Count |
 |--------|-------|
-| Implemented | 37 |
-| Planned | 11 |
+| Implemented | 41 |
+| Planned | 7 |
 | Deferred | 4 |
 | Rejected | 2 |
 | Blocked | 1 |
@@ -69,9 +69,9 @@
 | V3-GOV-005 | ADR-0006 §3 guards | Guarded transitions: expiry suspended under review; supersession blocked with approval in flight; rejection needs a reason | `RecommendationLifecycle` | New validation behaviour | P0 | M | S5 | **Implemented** | Covered (29 unit) |
 | V3-GOV-006 | v3 status dropdown | **Reconcile** v3's 9-status vocabulary with ADR-0006's state machine (see V3-CONFLICT-1) | `lib/api/decisions.ts` `statusLabels`/`statusColours` | Unclear design intent | P0 | M | S6 | **Implemented** — v3 labels map onto ADR-0006 states; `Assigned` and `Snoozed` **dropped** (no counterpart; ownership is `OwnerRole` + the claiming actor, and the lifecycle has no snooze) | Covered (component) |
 | V3-GOV-007 | drawer footers | "Accept & log" / "Assign owner" / "Watchlist" routing a recommendation into the Decision Log | `components/domain/DecisionFooter.tsx` on UC5/UC6/UC7 drawers | New workflow | P1 | M | S6 | **Implemented** — "Accept & log" claims the persisted record; where none exists the footer says so rather than acting. "Assign owner"/"Watchlist" **not built**: they map to the dropped `Assigned`/`Snoozed` states | Partial (footer states covered via the shared hooks; no dedicated component test) |
-| V3-GOV-008 | `dataHealth()` engine2 L560 | Data Health screen: 7 sources × (system, status, rows, coverage, note), DQ issues, score bands (>85/>70) | `DataQuality` (scaffold) | New workflow | P2 | M | S7 | Planned | None |
-| V3-GOV-009 | `lineage()` engine2 L583 | Lineage screen: 6-stage pipeline + 8 metrics tagged confirmed/demo | `ModelsAndExperiments` (scaffold) | New workflow | P2 | M | S7 | Planned | None |
-| V3-GOV-010 | settings defaults | Settings screen surfacing risk weights (30/25/20/15/10), bands (34/59/79), aging bands, horizon, CI | `pages/platform-settings.tsx` | Component change | P2 | M | S7 | Planned | None |
+| V3-GOV-008 | `dataHealth()` engine2 L560 | Data Health screen: 7 sources × (system, status, rows, coverage, note), DQ issues, score bands (≥85/≥70) | `DataQuality` (operational) → `DataQualityCalculator`, `DataHealthReadService`, `pages/data-management.tsx` | New workflow | P2 | M | S7 | **Implemented** — DQ score/issues ported from `engine.js`; real counts from the store; demo/blocked sources honestly labelled; the two real counts measured, synthetic never presented as measured | Covered (22 analytics + 7 unit + 13 integration + 9 component + E2E/a11y) |
+| V3-GOV-009 | `lineage()` engine2 L583 | Lineage screen: 6-stage pipeline + 8 metrics tagged confirmed/demo | `ModelsAndExperiments` (operational) → `LineageCatalog`, `pages/lineage.tsx` | New workflow | P2 | M | S7 | **Implemented** — pipeline + metrics ported verbatim; confirmed/demo derived from each metric's basis (single-sourced); UC6/UC7 demo cross-checked against the platform's `IsDemo` flag; "no write-back" kept literally true | Covered (9 unit + 8 integration + 7 component + E2E/a11y) |
+| V3-GOV-010 | settings defaults | Settings screen surfacing risk weights (30/25/20/15/10), bands (34/59/79), aging bands, horizon, cover max | `PlatformAdministration` (operational) → `SettingsReadService`, `pages/platform-settings.tsx` | Component change | P2 | M | S7 | **Implemented** — read-only; every value projected from `RiskSettings.Default`/`RiskWeights`/`Bands` by reflection/reference (no re-typed literals); **no cover-target** (never ported to `RiskSettings`); editable Settings deliberately deferred | Covered (7 unit + 10 integration + 9 component + E2E/a11y) |
 | V3-GOV-011 | `localStorage` L1979 | **Reject** browser-local decision persistence in favour of ADR-0006 server records | — | Security / data integrity | P0 | — | S5 | **Rejected** (ADR-0006 supersedes) | N/A |
 | V3-GOV-012 | `deleteAction()` L1986 | **Reject** hard delete of decision records; use a terminal state instead | — | Data integrity | P0 | — | S5 | **Rejected** (ADR-0006 append-only) | N/A |
 
@@ -79,7 +79,7 @@
 
 | ID | Driver | Requirement | Existing | Change category | Priority | Cx | Slice | Status | Tests |
 |----|--------|-------------|----------|-----------------|----------|----|----|--------|-------|
-| V3-AUTH-001 | ADR-0006 `decided_by` | Authenticated user identity, so a decision can name the human accountable | Entra ID OIDC/PKCE + guarded dev provider | New permission requirement | P0 | L | S4 | **Implemented** (backend; SPA sign-in outstanding) | Covered (18 integration) |
+| V3-AUTH-001 | ADR-0006 `decided_by` | Authenticated user identity, so a decision can name the human accountable | Entra ID OIDC/PKCE + guarded dev provider | New permission requirement | P0 | L | S4 · S4b | **Implemented** (backend + SPA sign-in; flag removal condition met for deployed envs) | Covered (18 integration · 34 web) |
 | V3-AUTH-002 | ADR-0006 liability | Server-enforced authorization on every state-changing endpoint | Permission policies, unconditional for state-changing | Security impact | P0 | M | S4 | **Implemented** | Covered (18 integration) |
 | V3-AUTH-003 | threat model §3.2 | Role model: Executive / Analyst / IT-Admin mapped to 25 permissions | — | New permission requirement | P1 | M | S4 | **Implemented** | Covered (64 unit) |
 | V3-AUTH-004 | ADR-0006 §6 | Segregation of duties: no role holds both sides of an author/approve pair, **and no person approves their own decision** | `RolePermissions.AuthorApprovePairs`, `SubjectIds.Same`, `DecisionService.SignOffAsync` | New validation behaviour | P1 | S | S4 + S6 | **Implemented** (all three layers: permission, actor, and a documented exemption for outcome recording) | Covered (unit + integration) |
@@ -105,7 +105,7 @@
 | V3-PLAT-004 | `rvReports()` | Reports & Exports screen | None | New workflow | P3 | M | S11 | Planned | None |
 | V3-PLAT-005 | `rvMethod()` | Methodology screen | None | New screen | P3 | S | S11 | Planned | None |
 | V3-PLAT-006 | `rvIntegration()` | Integration Blueprint screen | None | New screen | P3 | S | S11 | Planned | None |
-| V3-PLAT-007 | `exportCSV()` | CSV export with RFC-4180 escaping across screens | `lib/csv.ts` (used by the Decision Log; other screens adopt it in S7) | New interaction | P2 | S | S6 + S7 | **Implemented** (helper + Decision Log); other screens Planned | Covered (18 unit incl. formula injection) |
+| V3-PLAT-007 | `exportCSV()` | CSV export with RFC-4180 escaping across screens | `lib/csv.ts` (Decision Log; Data Health sources + Lineage metrics adopt it in S7) | New interaction | P2 | S | S6 + S7 | **Implemented** — helper + Decision Log (S6) and Data Health + Lineage (S7); each S7 export tested for formula-injection neutralisation | Covered (18 unit + 2 S7 component incl. formula injection) |
 | V3-PLAT-008 | `rvActions()` | Management Actions — **superseded** by the Decision Log (absent from v3's `startScreen` enum) | None | Deprecation | P3 | — | — | **Deferred** — retain nothing; never built, and v3 supersedes it | N/A |
 
 ## H. Existing intelligence screens (`V3-UC01..07-*`)
@@ -126,10 +126,10 @@
 
 | ID | Requirement | Existing | Priority | Cx | Slice | Status |
 |----|-------------|----------|----------|----|----|--------|
-| V3-QA-001 | End-to-end tests for critical journeys | **None exist** | P1 | L | S12 | Planned |
-| V3-QA-002 | Visual regression at 7 viewports | **None exist** | P2 | L | S12 | Planned |
-| V3-QA-003 | Automated accessibility scans on all routes | **None exist** | P1 | M | S12 | Planned |
-| V3-QA-004 | Coverage tooling + threshold | **None configured** | P2 | S | S12 | Planned |
+| V3-QA-001 | End-to-end tests for critical journeys | **None exist** | P1 | L | S12 | **Implemented** (Playwright; functional + a11y gate in CI, first run bootstraps) |
+| V3-QA-002 | Visual regression at 7 viewports | **None exist** | P2 | L | S12 | **Implemented** (7 viewports × 2 themes; platform-pinned baselines bootstrap in CI) |
+| V3-QA-003 | Automated accessibility scans on all routes | **None exist** | P1 | M | S12 | **Implemented** (vitest-axe components + @axe-core/playwright routes, both themes) |
+| V3-QA-004 | Coverage tooling + threshold | **None configured** | P2 | S | S12 | **Implemented** (v8; gated floor, ratchets up only) |
 | V3-QA-005 | Remediate `NU1903` high-severity advisories (`Microsoft.OpenApi` 2.0.0, `System.Security.Cryptography.Xml` 9.0.0) | 18 warnings | P1 | S | S0 | **Implemented** (transitive pins: `Microsoft.OpenApi` 2.11.0, `System.Security.Cryptography.Xml` 10.0.10) |
 | V3-QA-006 | Clear the 5 pre-existing `CS8604` nullable warnings | 5 warnings | P2 | XS | S0 | **Implemented** (build is 0-warning) |
 
@@ -162,9 +162,9 @@
 | **S4** | **Identity, roles & authorization** | V3-AUTH-001/002/003/004 | **Complete** (backend; SPA sign-in outstanding) |
 | **S5** | **Recommendation records & write path** | V3-GOV-002/003/005/011/012, V3-API-001/002/003 | **Complete** |
 | **S6** | **Decision Log & human decisions** | V3-GOV-001/004/006/007, V3-API-002/005, V3-AUTH-004, V3-DS-007, V3-PLAT-007 | **Complete** |
-| S7 | Data Health, Lineage, Settings | V3-GOV-008/009/010, V3-PLAT-007 | Planned |
+| **S7** | **Data Health, Lineage, Settings** | V3-GOV-008/009/010, V3-PLAT-007 | **Complete** |
 | S8 | Intelligence-screen alignment + perf | V3-UC01..07-001, V3-PERF-001, V3-DS-003 | Planned |
 | S9 | Persona, accent, density | V3-NAV-005, V3-DS-004/005 | Planned |
 | S10 | Ask Decision Intelligence (AI) | V3-PLAT-001/002 | Planned |
 | S11 | Ingestion, Reports, Methodology, Integration | V3-PLAT-003…006 | Planned |
-| S12 | E2E, visual, a11y, coverage hardening | V3-QA-001…004 | Planned |
+| S12 | E2E, visual, a11y, coverage hardening | V3-QA-001…004 | **Implemented** |

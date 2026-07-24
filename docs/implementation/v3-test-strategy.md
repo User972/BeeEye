@@ -21,6 +21,10 @@
 | Security | — | **absent** | absent |
 | Coverage tooling | — | **absent** | absent |
 
+> **Current totals (post-S6, 2026-07-24):** **885 backend** (297 kernel/domain unit · 384 analytics ·
+> 6 architecture · 198 integration) + **200 web** = **1085**, plus ~15 ML. The "After S1+S2" column
+> above is a historical checkpoint; live per-slice counts are in [`v3-progress.md`](v3-progress.md).
+
 The four absent categories are introduced in **S12**; the gap is recorded honestly rather than
 papered over. No coverage percentage is quoted anywhere, because no coverage tool is configured —
 quoting one would be fabrication.
@@ -46,7 +50,7 @@ rejection and the 0–20 % discount bound (S6) · data-health score bands (S7) �
 formatting · AI structured-output validation and rejection of number-altering responses (S10).
 
 **Parity rule.** UC2/UC5 formulas are a faithful port of `engine.js`, which is **byte-identical
-between v1 and v3** — so v3 introduces no formula change there, and the 366 analytics tests are the
+between v1 and v3** — so v3 introduces no formula change there, and the 384 analytics tests are the
 regression gate. UC1/3/4/6/7 follow `docs/product/use-cases/`; UC6/UC7 synthetic fixtures are
 **deliberately not** numerically compared to v3 (see V3-CONFLICT-4).
 

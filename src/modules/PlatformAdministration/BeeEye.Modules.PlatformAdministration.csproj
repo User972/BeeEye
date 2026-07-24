@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../../shared/BeeEye.Shared.Web/BeeEye.Shared.Web.csproj" />
+    <ProjectReference Include="../../shared/BeeEye.Analytics/BeeEye.Analytics.csproj" />
   </ItemGroup>
 
 </Project>

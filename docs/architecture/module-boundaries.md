@@ -364,9 +364,13 @@ Low-level, widely depended upon, stable. They depend on little and are reference
 - **Responsibility:** the human-in-the-loop ledger — capture which recommendations were accepted, deferred
   or rejected, by whom, with **mandatory approval before any downstream action**, and track realised
   outcomes for later model validation.
-- **Owned aggregates:** `Decision`, `Approval`, `OutcomeObservation`.
+- **Owned aggregates:** `ManagementDecision`, `ApprovalStep`, `ActionOutcome` (implemented per
+  [ADR 0006](../adr/0006-recommendation-decision-workflow.md)), with `RecommendationStatusEvent` as the
+  append-only status log. (`Decision` / `Approval` / `OutcomeObservation` were the original design names.)
 - **Public contract surface:** `IDecisionLedger`, `IOutcomeQuery`; `DecisionDto`; events `DecisionRecorded`,
-  `OutcomeObserved`.
+  `OutcomeObserved` — *design surface*. **Implemented today:** `RecommendationTransitionService` (the sole
+  writer of lifecycle state) and `DecisionService`, exposed over `/api/v1/decisions`; cross-context reads
+  reach the cockpit via the `IDecisionSignalProvider` contract in `BeeEye.Analytics`.
 - **Allowed dependencies:** `Shared`, `Identity.Contracts`, `Organisation.Contracts`,
   `Recommendations.Contracts`.
 - **Forbidden couplings:** never mutates the recommendation it references (links by id); the only place an

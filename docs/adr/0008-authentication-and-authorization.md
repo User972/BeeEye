@@ -6,7 +6,7 @@
 
 | Field | Value |
 |-------|-------|
-| Status | **Accepted** |
+| Status | **Accepted &amp; Implemented** (S4 backend enforced; S4b SPA sign-in shipped) |
 | Date | 2026-07-23 |
 | Deciders | Platform Architecture, Security Architecture, ADMC IT |
 | Scope | Platform-wide; binds the API host, all 19 bounded contexts and the SPA |
@@ -108,8 +108,10 @@ because such a mode inevitably reaches production.
 
 ### 2.4 Read endpoints during rollout
 
-The 44 existing read endpoints predate authentication and have live consumers, including a SPA with no
-sign-in flow yet. Requiring a token on all of them the day this lands would break them.
+The 44 existing read endpoints predate authentication and have live consumers. When this flag was
+introduced the SPA had no sign-in flow, so requiring a token on every read the day auth landed would
+have broken it. The SPA sign-in flow now ships (S4b / `V3-AUTH-001`), so deployed environments can
+require authenticated reads; Development stays relaxed so a local run needs no Entra tenant.
 
 The compatibility mechanism is a single setting, `Auth:RequireAuthenticatedReads`:
 
@@ -119,9 +121,12 @@ The compatibility mechanism is a single setting, `Auth:RequireAuthenticatedReads
 | Staging / Production | **`true`** | Read endpoints require an authenticated principal with the relevant `*.view` permission. |
 
 **This flag never applies to state-changing operations.** Every write requires an authenticated
-principal and an explicit permission, unconditionally, in every environment. The flag exists solely to
-stage the migration of *reads*, and it is removed once the SPA sign-in flow ships (tracked as
-`V3-AUTH-001` in the traceability matrix).
+principal and an explicit permission, unconditionally, in every environment. The flag existed solely to
+stage the migration of *reads* until the SPA could sign users in. That condition is now met
+(`V3-AUTH-001`, S4b): deployed hosts default to the secure `true` and no longer depend on the
+relaxation. The flag is retained deliberately — it keeps the Development relaxation that lets a local
+run work without an Entra tenant, and it stays as a safety net (with the `RelaxedReadPostureAnnouncer`
+warning on any deployed host that lowers it). Retiring it entirely is a separate backend follow-up.
 
 ### 2.5 Service-to-service
 
@@ -168,6 +173,9 @@ after the fact is impossible. Identity must precede the first mutation, not foll
 - Misconfiguration fails loudly at boot instead of silently running open.
 - The SPA can use the same permission set to *hide* controls, with the server remaining the only
   authority that *grants* access.
+- The SPA sign-in flow (MSAL PKCE, silent token acquisition and refresh, one bounded 401 retry that
+  preserves the idempotency key, and sign-out) is delivered in S4b (`V3-AUTH-001`), so deployed hosts
+  can require authenticated reads instead of serving them anonymously.
 
 ### Negative / costs
 
@@ -175,10 +183,13 @@ after the fact is impossible. Identity must precede the first mutation, not foll
 - Two authentication paths to keep tested (Entra, LocalDev). Mitigated by authorization being
   identical under both, and by a test asserting the local provider cannot be selected outside
   Development.
-- `Auth:RequireAuthenticatedReads` is a temporary flag, and temporary flags rot. It carries a named
-  removal condition (SPA sign-in ships) and is tracked in the traceability matrix.
-- The SPA sign-in flow (MSAL, token acquisition, refresh, 401 handling) is **not** delivered by this
-  ADR and remains outstanding.
+- `Auth:RequireAuthenticatedReads` is a staging flag, and staging flags rot. Its named removal
+  condition — the SPA sign-in flow shipping — is now met (S4b), so the deployed relaxation is no longer
+  needed; the flag is kept only for the Development relaxation and as a safety net. Retiring it entirely
+  is tracked as a separate backend follow-up.
+- Entra sign-in adds the MSAL browser library to the SPA bundle and a hard dependency on Entra for
+  interactive login. (The token acquisition, refresh and 401-recovery path itself is delivered in S4b,
+  not outstanding.)
 
 ### Neutral
 

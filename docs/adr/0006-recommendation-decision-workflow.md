@@ -4,7 +4,7 @@
 
 | Field | Value |
 |-------|-------|
-| Status | Accepted |
+| Status | Accepted &amp; Implemented (S5/S6) |
 | Date | 2026-07-22 |
 | Deciders | Platform Architecture, Data Governance, ADMC Sales & Procurement leadership |
 | Owning contexts | `Recommendations`, `DecisionsAndOutcomes`, `Notifications`, `Audit` |

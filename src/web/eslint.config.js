@@ -11,8 +11,15 @@ import tseslint from 'typescript-eslint';
  */
 export default tseslint.config(
   {
-    // Build output, deps and generated API types are not linted.
-    ignores: ['dist', 'node_modules', 'src/lib/api/schema.d.ts'],
+    // Build output, deps, generated API types and test artefacts are not linted.
+    ignores: [
+      'dist',
+      'node_modules',
+      'src/lib/api/schema.d.ts',
+      'coverage',
+      'test-results',
+      'playwright-report',
+    ],
   },
   js.configs.recommended,
   {
@@ -49,5 +56,18 @@ export default tseslint.config(
     files: ['**/*.{js,cjs,mjs}'],
     extends: [tseslint.configs.disableTypeChecked],
     languageOptions: { globals: { ...globals.node } },
+  },
+  {
+    // The E2E suite and the Playwright config live outside the app's tsconfig project (Playwright
+    // compiles and type-checks them itself via e2e/tsconfig.json). Lint them without type-aware rules
+    // and with node globals, so `eslint .` does not error on files the project service does not own.
+    files: ['e2e/**/*.ts', 'playwright.config.ts'],
+    extends: [tseslint.configs.disableTypeChecked],
+    languageOptions: {
+      globals: { ...globals.node },
+      parserOptions: { projectService: false, project: false },
+    },
+    // `({}, testInfo) => …` is Playwright's idiomatic signature for reaching testInfo without fixtures.
+    rules: { 'no-empty-pattern': 'off' },
   },
 );

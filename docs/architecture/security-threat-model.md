@@ -305,9 +305,12 @@ pipeline trying to scrub everything after the fact.
 Auditability is a first-class security control, not an afterthought — it underwrites the human-approval
 workflow and non-repudiation.
 
-- **Append-only `AuditEvent`.** Every consequential action (permission-guarded read of sensitive data,
-  setting change, decision, approval, DQ override, model publish, integration change) writes an audit row
-  with `actor`, `action`, `subject_ref`, `at_utc`, `before_hash`, `after_hash`.
+- **Append-only audit trail.** *Today* the append-only trail is the recommendation **status-event log**
+  (every lifecycle transition, attributed to an actor and subject) plus the **idempotency records**. A
+  cross-cutting **`AuditEvent`** — every consequential action (permission-guarded read of sensitive data,
+  setting change, decision, approval, DQ override, model publish, integration change) writing an audit
+  row with `actor`, `action`, `subject_ref`, `at_utc`, `before_hash`, `after_hash` — is the **target**,
+  tracked as TD-4 (V3-API-004, deferred).
 - **No mutation grants.** The audit table has **no UPDATE/DELETE** permissions for any application role;
   attempts fail at the database, not just in code (mitigates T15).
 - **Transactional.** Audit writes commit in the **same transaction** as the change they record, so a
@@ -323,8 +326,11 @@ workflow and non-repudiation.
 
 ## 7. Security Testing — `tests/security`
 
-Security controls are executable, not aspirational. The `tests/security/` suite is a first-class gate in
-CI and mirrors the threat register; a control without a test is treated as unverified.
+Security controls should be executable, not aspirational. The `tests/security/` suite is **planned
+(S12)**: it will be a first-class CI gate mirroring the threat register, so that a control without a test
+is treated as unverified. Authentication and authorization controls are, however, already exercised —
+today by the auth **integration tests** (401/403 paths, start-up assertions) rather than a dedicated
+`tests/security` project. The structure below is the intended layout.
 
 ```
 tests/security/
@@ -348,7 +354,8 @@ tests/security/
 ```
 
 Supply-chain checks (T16) run as CI stages (dependency + image scanning, SBOM, lockfile verification)
-rather than unit tests. The suite runs on every pull request; a failing security test blocks merge.
+rather than unit tests. Once in place, the suite will run on every pull request; a failing security test
+will block merge.
 
 ---
 

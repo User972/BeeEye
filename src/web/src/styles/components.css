@@ -207,6 +207,40 @@
 }
 .icon-btn:hover { color: var(--text); border-color: var(--border-strong); }
 
+/* ---------------- Account controls (S4b) ---------------- */
+.app-account { display: inline-flex; align-items: center; gap: 8px; }
+.app-account__status { font-size: 12.5px; color: var(--text-muted); }
+.app-account__chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px; border-radius: 999px;
+  border: 1px solid var(--border); background: var(--surface-2);
+  font-size: 12.5px; color: var(--text-muted);
+}
+.app-account__chip .material-symbols-outlined { font-size: 18px; }
+.app-account__name { font-weight: 600; color: var(--text); }
+.app-account__btn {
+  padding: 5px 11px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--surface);
+  color: var(--text-muted); font-size: 12.5px; font-weight: 600; cursor: pointer;
+}
+.app-account__btn:hover { color: var(--text); border-color: var(--border-strong); }
+.app-account__signin {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 14px; border-radius: 8px;
+  border: 1px solid var(--primary); background: var(--primary);
+  color: var(--primary-ink); font-size: 12.5px; font-weight: 600; cursor: pointer;
+}
+.app-account__signin .material-symbols-outlined { font-size: 18px; }
+
+.signin { max-width: 420px; margin: 40px auto; }
+.signin__btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 18px; border-radius: 9px;
+  border: 1px solid var(--primary); background: var(--primary);
+  color: var(--primary-ink); font-size: 13.5px; font-weight: 600; cursor: pointer;
+}
+.signin__btn .material-symbols-outlined { font-size: 19px; }
+
 /* ---------------- Cards ---------------- */
 .card {
   background: var(--surface);

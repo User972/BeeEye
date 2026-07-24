@@ -5,6 +5,13 @@
 > Evidence base: [`v3-baseline.md`](v3-baseline.md), [`v3-design-inventory.md`](v3-design-inventory.md),
 > [`v3-design-traceability.md`](v3-design-traceability.md).
 
+> **⚠ Point-in-time (pre-S4–S6).** This gap analysis was written before the identity, write-path and
+> Decision Log slices landed. Its highest-risk gaps — no write path, no identity, ADR-0006 accepted but
+> unimplemented, UC8 "new", "7 live / 12 scaffolds" — are now **closed**: all eight use cases are live,
+> the governed write path and Decision Log ship, Entra ID auth is enforced, and the module split is
+> **11 operational / 8 scaffolded**. For current status see
+> [`v3-progress.md`](v3-progress.md) and [`v3-design-traceability.md`](v3-design-traceability.md).
+
 ---
 
 ## 1. Executive summary

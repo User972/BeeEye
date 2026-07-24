@@ -85,6 +85,14 @@ public static class Permissions
     // ---- Governance & platform -------------------------------------------
     public const string AuditView = "audit.view";
     public const string IntegrationManage = "integration.manage";
+
+    /// <summary>
+    /// Read the platform's configuration — the risk weights, bands, horizon and analysis date — for the
+    /// read-only Settings transparency screen (V3-GOV-010). Deliberately distinct from
+    /// <see cref="SettingsManage"/>: editing configuration is state-changing and enforced in every
+    /// environment, while merely seeing it is a read that may be relaxed in Development.
+    /// </summary>
+    public const string SettingsView = "settings.view";
     public const string SettingsManage = "settings.manage";
     public const string PlatformAdminister = "platform.administer";
 
@@ -104,7 +112,7 @@ public static class Permissions
         AfterSalesView, SparePartsView,
         ModelView, ModelPublish,
         DataQualityView, DataQualityResolve,
-        AuditView, IntegrationManage, SettingsManage, PlatformAdminister,
+        AuditView, IntegrationManage, SettingsView, SettingsManage, PlatformAdminister,
     };
 
     /// <summary>
