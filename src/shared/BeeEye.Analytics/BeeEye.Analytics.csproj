@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Pure, framework-free port of the wireframe engine.js analytics. Deterministic
+       statistical + domain algorithms shared by the Forecasting (UC2) and Inventory
+       (UC5) modules. No EF / ASP.NET dependency, so it is exhaustively unit-testable. -->
+  <PropertyGroup>
+    <RootNamespace>BeeEye.Analytics</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../BeeEye.Shared/BeeEye.Shared.csproj" />
+  </ItemGroup>
+
+</Project>

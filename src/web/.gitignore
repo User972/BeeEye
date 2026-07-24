@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.vite/
+*.tsbuildinfo
+coverage/
+playwright-report/
+test-results/
+
+# Generated from the committed OpenAPI contract snapshot by `npm run gen:api`.
+# openapi/openapi.json itself is COMMITTED: it is the contract the CI `openapi`
+# job diffs a fresh export against, so API drift fails the build.
+src/lib/api/schema.d.ts

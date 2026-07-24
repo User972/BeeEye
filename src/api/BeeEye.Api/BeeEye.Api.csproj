@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <RootNamespace>BeeEye.Api</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+  </ItemGroup>
+
+  <!-- Composition root: the API host is the only assembly permitted to reference
+       every module. Modules never reference one another. -->
+  <ItemGroup>
+    <ProjectReference Include="../../shared/BeeEye.Shared.Web/BeeEye.Shared.Web.csproj" />
+    <ProjectReference Include="../../modules/Identity/BeeEye.Modules.Identity.csproj" />
+    <ProjectReference Include="../../modules/Organisation/BeeEye.Modules.Organisation.csproj" />
+    <ProjectReference Include="../../modules/MasterData/BeeEye.Modules.MasterData.csproj" />
+    <ProjectReference Include="../../modules/Integration/BeeEye.Modules.Integration.csproj" />
+    <ProjectReference Include="../../modules/DataQuality/BeeEye.Modules.DataQuality.csproj" />
+    <ProjectReference Include="../../modules/SalesActuals/BeeEye.Modules.SalesActuals.csproj" />
+    <ProjectReference Include="../../modules/Forecasting/BeeEye.Modules.Forecasting.csproj" />
+    <ProjectReference Include="../../modules/Inventory/BeeEye.Modules.Inventory.csproj" />
+    <ProjectReference Include="../../modules/Procurement/BeeEye.Modules.Procurement.csproj" />
+    <ProjectReference Include="../../modules/AfterSales/BeeEye.Modules.AfterSales.csproj" />
+    <ProjectReference Include="../../modules/SpareParts/BeeEye.Modules.SpareParts.csproj" />
+    <ProjectReference Include="../../modules/ModelsAndExperiments/BeeEye.Modules.ModelsAndExperiments.csproj" />
+    <ProjectReference Include="../../modules/Predictions/BeeEye.Modules.Predictions.csproj" />
+    <ProjectReference Include="../../modules/Recommendations/BeeEye.Modules.Recommendations.csproj" />
+    <ProjectReference Include="../../modules/DecisionsAndOutcomes/BeeEye.Modules.DecisionsAndOutcomes.csproj" />
+    <ProjectReference Include="../../modules/ExecutiveInsights/BeeEye.Modules.ExecutiveInsights.csproj" />
+    <ProjectReference Include="../../modules/Notifications/BeeEye.Modules.Notifications.csproj" />
+    <ProjectReference Include="../../modules/Audit/BeeEye.Modules.Audit.csproj" />
+    <ProjectReference Include="../../modules/PlatformAdministration/BeeEye.Modules.PlatformAdministration.csproj" />
+  </ItemGroup>
+
+</Project>

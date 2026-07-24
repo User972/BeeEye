@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>BeeEye.Modules.DecisionsAndOutcomes</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <!-- Persistence, the shared kernel, and the Analytics explainability contract only. This module must
+       never reference BeeEye.Modules.Recommendations: it reads the frozen Recommendation entity from the
+       shared persistence kernel, not from the module that generates them. An architecture test asserts
+       it. BeeEye.Analytics is a shared library (not a module), and holds IExplainabilityProvider — the
+       published seam this module explains its own frozen records through. -->
+  <ItemGroup>
+    <ProjectReference Include="../../shared/BeeEye.Shared.Web/BeeEye.Shared.Web.csproj" />
+    <ProjectReference Include="../../shared/BeeEye.Persistence/BeeEye.Persistence.csproj" />
+    <ProjectReference Include="../../shared/BeeEye.Analytics/BeeEye.Analytics.csproj" />
+  </ItemGroup>
+
+</Project>

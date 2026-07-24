@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>BeeEye.Modules.Recommendations</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../shared/BeeEye.Shared.Web/BeeEye.Shared.Web.csproj" />
+    <ProjectReference Include="../../shared/BeeEye.Analytics/BeeEye.Analytics.csproj" />
+    <ProjectReference Include="../../shared/BeeEye.Persistence/BeeEye.Persistence.csproj" />
+  </ItemGroup>
+
+</Project>

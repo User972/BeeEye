@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Web-coupled shared abstractions: the IModule composition contract. Depends on
+       the ASP.NET Core shared framework; referenced by every module and the API host. -->
+  <PropertyGroup>
+    <RootNamespace>BeeEye.Shared.Web</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../BeeEye.Shared/BeeEye.Shared.csproj" />
+  </ItemGroup>
+
+</Project>

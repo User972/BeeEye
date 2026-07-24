@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../../src/shared/BeeEye.Shared/BeeEye.Shared.csproj" />
+    <!-- The cockpit's aggregation service holds no data access, so it is unit-testable with
+         in-memory IDecisionSignalProvider fakes. -->
+    <ProjectReference Include="../../../src/modules/ExecutiveInsights/BeeEye.Modules.ExecutiveInsights.csproj" />
+    <!-- The decision workflow's rules that carry no data access — which action each state offers, and
+         what the engine actually recommended — are pure and belong in unit tests. Everything that
+         touches the database is covered end-to-end in BeeEye.IntegrationTests instead. -->
+    <ProjectReference Include="../../../src/modules/DecisionsAndOutcomes/BeeEye.Modules.DecisionsAndOutcomes.csproj" />
+    <!-- The explainability aggregation service is the same shape as the cockpit's: no data access,
+         so it is unit-testable with in-memory IExplainabilityProvider fakes. -->
+    <ProjectReference Include="../../../src/modules/Predictions/BeeEye.Modules.Predictions.csproj" />
+    <!-- S7 governance screens: the source composition (Data Health), the lineage catalogue and the
+         settings projection are all pure — the DB-touching read is covered in BeeEye.IntegrationTests. -->
+    <ProjectReference Include="../../../src/modules/DataQuality/BeeEye.Modules.DataQuality.csproj" />
+    <ProjectReference Include="../../../src/modules/ModelsAndExperiments/BeeEye.Modules.ModelsAndExperiments.csproj" />
+    <ProjectReference Include="../../../src/modules/PlatformAdministration/BeeEye.Modules.PlatformAdministration.csproj" />
+  </ItemGroup>
+
+</Project>

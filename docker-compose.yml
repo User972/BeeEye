@@ -1,0 +1,42 @@
+# ---------------------------------------------------------------------------
+# BeeEye — local development dependencies.
+#   docker compose up -d
+# Application services (API, web, workers, ML jobs) run on the host during
+# development; this file provides only the backing infrastructure so the
+# scaffold has a realistic local target. No production secrets belong here.
+# ---------------------------------------------------------------------------
+name: beeeye
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: beeeye-postgres
+    environment:
+      POSTGRES_USER: beeeye
+      POSTGRES_PASSWORD: beeeye_local_dev_only
+      POSTGRES_DB: beeeye
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U beeeye -d beeeye"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Azure Storage emulator — stands in for ADLS Gen2 / Blob during local dev.
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite:latest
+    container_name: beeeye-azurite
+    command: "azurite --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0 --loose"
+    ports:
+      - "10000:10000" # blob
+      - "10001:10001" # queue
+      - "10002:10002" # table
+    volumes:
+      - azuritedata:/data
+
+volumes:
+  pgdata:
+  azuritedata:
