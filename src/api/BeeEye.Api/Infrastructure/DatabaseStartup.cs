@@ -1,4 +1,5 @@
 using BeeEye.Persistence;
+using BeeEye.Persistence.Caching;
 using BeeEye.Persistence.Idempotency;
 using BeeEye.Persistence.SampleData;
 using BeeEye.Persistence.SyntheticData;
@@ -21,6 +22,15 @@ public static class DatabaseStartup
         // Idempotency-Key persistence (ADR 0007 §2.1). Scoped, sharing the request's DbContext, so
         // the key row and the effect it authorised commit inside one transaction.
         services.AddScoped<IIdempotencyStore, EfIdempotencyStore>();
+
+        // Data-versioned result cache for the two recompute-heavy UC6/UC7 summary paths (V3-PERF-001).
+        // The resolver is scoped (it reads through the request's DbContext); the cache is a singleton so
+        // its entries and per-key stampede gates outlive a request. It owns a private, size-bounded
+        // MemoryCache (see DataVersionedCache) rather than the shared app IMemoryCache, because the UC7
+        // key embeds arbitrary client scenario params — a bound belongs on it, and a global SizeLimit on
+        // the shared cache would force every other consumer to declare an entry Size.
+        services.AddScoped<DataVersionResolver>();
+        services.AddSingleton<DataVersionedCache>();
 
         // Readiness reflects actual database connectivity — /health/ready lies otherwise, because
         // InitialiseDatabaseAsync swallows an unreachable database so the process can still start.

@@ -12,6 +12,7 @@ import {
   ensureActiveAccount,
   installMsalTokenBridge,
 } from '@/lib/auth/msalBridge';
+import '@/styles/fonts.css';
 import '@/styles/global.css';
 import '@/styles/components.css';
 

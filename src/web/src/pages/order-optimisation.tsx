@@ -4,10 +4,11 @@ import { StatCard } from '@/components/ui/StatCard';
 import { Card, CardHeader } from '@/components/ui/Card';
 import { ScenarioSelect } from '@/components/ui/ScenarioSelect';
 import { LoadingState, ErrorState, EmptyState } from '@/components/ui/states';
+import { BarDistribution } from '@/components/charts/BarDistribution';
 import { ExplainButton, ExplainabilityDrawer } from '@/components/domain/ExplainabilityDrawer';
 import { useExplainabilityDrawer } from '@/components/domain/useExplainabilityDrawer';
 import { useOrderOptimisation, type OrderScenarioQuery } from '@/lib/api/orders';
-import { fmtInt, fmtPct, riskWordClass } from '@/lib/format';
+import { fmtInt, fmtNum, fmtPct, riskWordClass } from '@/lib/format';
 
 export default function OrderOptimisation() {
   const [horizon, setHorizon] = useState('3');
@@ -30,6 +31,7 @@ export default function OrderOptimisation() {
         title="Order Optimisation"
         summary="Recommended monthly vehicle orders — demand forecast, netted against supply, within business constraints."
         useCase="UC1"
+        wireframed
         meta={[
           { label: 'Separation', value: 'forecast → constraints → optimisation → recommendation' },
           { label: 'Assumptions', value: 'inbound/confirmed orders = 0 until PO data is integrated' },
@@ -60,6 +62,20 @@ export default function OrderOptimisation() {
           <div style={{ height: 'var(--gap)' }} />
 
           <Card>
+            <CardHeader title="Recommended order by configuration" subtitle="Top configurations by recommended units" />
+            <BarDistribution
+              rows={[...orders.data.items]
+                .sort((a, b) => b.recommendedQuantity - a.recommendedQuantity)
+                .slice(0, 12)
+                .map((r) => ({ key: `${r.model}|${r.variant}`, label: `${r.model} · ${r.variant}`, value: r.recommendedQuantity }))}
+              format={fmtInt}
+              caption="Recommended order units by configuration"
+            />
+          </Card>
+
+          <div style={{ height: 'var(--gap)' }} />
+
+          <Card>
             <CardHeader title="Recommended orders by configuration" subtitle="Model · variant grain. Hover a row for the rationale." />
             <div className="grid-scroll">
               <table className="data-table">
@@ -67,12 +83,15 @@ export default function OrderOptimisation() {
                   <tr>
                     <th>Configuration</th>
                     <th className="num">Forecast</th>
+                    <th className="num">Velocity</th>
                     <th className="num">Available</th>
+                    <th className="num">Safety</th>
                     <th className="num">Net need</th>
                     <th className="num">Order</th>
                     <th>Overstock</th>
                     <th>Understock</th>
                     <th>Confidence</th>
+                    <th>Chosen model</th>
                     <th className="num">WMAPE</th>
                     <th><span className="sr-only">Explanation</span></th>
                   </tr>
@@ -82,12 +101,15 @@ export default function OrderOptimisation() {
                     <tr key={`${r.model}|${r.variant}`} title={r.rationale}>
                       <td>{r.model} · {r.variant}</td>
                       <td className="num">{fmtInt(r.forecastDemand)}</td>
+                      <td className="num">{fmtNum(r.monthlyVelocity, 1)}</td>
                       <td className="num">{fmtInt(r.available)}</td>
+                      <td className="num">{fmtInt(r.safetyStock)}</td>
                       <td className="num">{fmtInt(r.netRequirement)}</td>
                       <td className="num"><strong>{fmtInt(r.recommendedQuantity)}</strong></td>
                       <td><span className={`badge ${riskWordClass(r.overstockRisk)}`}>{r.overstockRisk}</span></td>
                       <td><span className={`badge ${riskWordClass(r.understockRisk)}`}>{r.understockRisk}</span></td>
                       <td>{r.confidence}</td>
+                      <td style={{ color: 'var(--text-muted)' }}>{r.chosenModel}</td>
                       <td className="num">{fmtPct(r.wmape)}</td>
                       <td>
                         <ExplainButton

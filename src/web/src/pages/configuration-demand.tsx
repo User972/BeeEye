@@ -48,6 +48,7 @@ export default function ConfigurationDemand() {
         title="Configuration Insights"
         summary="Which model·variant·colour·interior combinations drive demand and which are becoming dead stock."
         useCase="UC3"
+        wireframed
         meta={[
           { label: 'Configurations', value: summary.data ? `${summary.data.meta.filteredConfigurations} of ${summary.data.meta.totalConfigurations}` : '—' },
           { label: 'Data source', value: 'Sample dataset (not live Oracle Fusion)' },
@@ -75,6 +76,7 @@ export default function ConfigurationDemand() {
             <StatCard label="Dead stock" value={fmtInt(s.deadCount)} icon="do_not_disturb_on" hint="no recent sales" />
             <StatCard label="Decay alerts" value={fmtInt(s.decayAlerts)} icon="trending_down" />
             <StatCard label="Stockout-suspected" value={fmtInt(s.stockoutSuspected)} icon="report" hint="no stock to sell" />
+            <StatCard label="Cold starts" value={fmtInt(s.coldStart)} icon="fiber_new" hint="new configurations" />
           </div>
 
           <div style={{ height: 'var(--gap)' }} />
@@ -113,6 +115,7 @@ export default function ConfigurationDemand() {
                         <SortHeader label="Units" active={sort === 'units'} onClick={() => sortBy('units')} />
                         <SortHeader label="Velocity" active={sort === 'velocity'} onClick={() => sortBy('velocity')} />
                         <SortHeader label="Decay" active={sort === 'decay'} dir="ascending" onClick={() => sortBy('decay')} />
+                        <th>Trend</th>
                         <th>Rotation</th>
                         <SortHeader label="Stock" active={sort === 'stock'} onClick={() => sortBy('stock')} />
                         <th>Flags</th>
@@ -126,6 +129,7 @@ export default function ConfigurationDemand() {
                           <td className="num">{fmtInt(c.totalUnits)}</td>
                           <td className="num">{fmtNum(c.recentVelocity, 1)}</td>
                           <td className="num">{fmtSignPct(c.decayPct)}</td>
+                          <td style={{ color: 'var(--text-muted)' }}>{c.trendDirection}</td>
                           <td><span className={`badge ${rotationClass(c.rotationClass)}`}>{c.rotationClass}</span></td>
                           <td className="num">{fmtInt(c.currentStock)}</td>
                           <td>

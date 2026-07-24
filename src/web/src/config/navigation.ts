@@ -46,7 +46,10 @@ export interface NavItem {
   /** Primary API module route prefix this screen reads from. */
   moduleRoute?: string;
   summary: string;
-  /** Whether a wireframe already exists for this screen (UC2, UC5). */
+  /**
+   * Whether the screen is aligned to its v3 high-fidelity layout. All seven intelligence screens
+   * (UC1–UC7) reached this in S8; the governance/platform screens did so in their own slices.
+   */
   wireframed: boolean;
   /** Headline capabilities, shown on the page and traceable to the use-case spec. */
   capabilities: string[];
@@ -92,7 +95,7 @@ export const navItems: NavItem[] = [
     useCase: 'UC1',
     moduleRoute: 'recommendations',
     summary: 'Monthly vehicle order quantities balancing demand and constraints.',
-    wireframed: false,
+    wireframed: true,
     capabilities: [
       'Separate demand forecast from business constraints and optimisation',
       'Account for current + inbound inventory, orders, lead times, MOQ, allocation',
@@ -126,7 +129,7 @@ export const navItems: NavItem[] = [
     useCase: 'UC3',
     moduleRoute: 'sales-actuals',
     summary: 'Configuration-level demand, clusters and dead-stock signals.',
-    wireframed: false,
+    wireframed: true,
     capabilities: [
       'Demand heatmaps across model / variant / colour / trim / options',
       'Identify high-demand clusters and demand decay',
@@ -143,7 +146,7 @@ export const navItems: NavItem[] = [
     useCase: 'UC4',
     moduleRoute: 'procurement',
     summary: 'Procurement quantities balancing demand, lead time and cost.',
-    wireframed: false,
+    wireframed: true,
     capabilities: [
       'Safety stock for configurable target service levels',
       'Lead-time variability, MOQ, order multiples and open POs',
@@ -177,7 +180,7 @@ export const navItems: NavItem[] = [
     useCase: 'UC6',
     moduleRoute: 'after-sales',
     summary: 'Sales-to-service correlation and service-intensity index.',
-    wireframed: false,
+    wireframed: true,
     capabilities: [
       'Correlate vehicle sales with service activity',
       'Service frequency by model, mileage band and time since sale',
@@ -194,7 +197,7 @@ export const navItems: NavItem[] = [
     useCase: 'UC7',
     moduleRoute: 'spare-parts',
     summary: 'Intermittent spare-parts demand and stocking ranges.',
-    wireframed: false,
+    wireframed: true,
     capabilities: [
       'Predict parts demand from vehicle population and sales mix',
       'Intermittent-demand methods (Croston / SBA / TSB)',

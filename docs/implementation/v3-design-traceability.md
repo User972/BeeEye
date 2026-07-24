@@ -37,7 +37,7 @@
 |----|-----------|-------------|----------|-----------------|----------|----|----|--------|-------|
 | V3-DS-001 | `:root` token block | OKLCH token set, light + dark | `styles/tokens.css` | Unchanged | — | — | — | **Implemented** (verified identical) | N/A |
 | V3-DS-002 | `LABELS` engine2 L28 | Eight AI-output label chips (Observed · Calculated · Forecast · Recommendation · Simulation · Demo Data · Low Confidence · **Data Quality**) with exact colour/icon | `ui/AiLabel.tsx` + `ui/aiLabels.ts`; colours in `components.css` | New component | P1 | S | S3 | **Implemented** — all eight; the three hand-rolled `badge--demo` spans migrated onto it | Covered (31 component) |
-| V3-DS-003 | fonts via Google CDN | Self-host IBM Plex Sans/Mono + Material Symbols (OFL-1.1 permits redistribution) rather than CDN | CDN today | Security impact (CSP) | P2 | S | S8 | Planned | None |
+| V3-DS-003 | fonts via Google CDN | Self-host IBM Plex Sans/Mono + Material Symbols rather than CDN | `styles/fonts.css` + `public/fonts/` (7 woff2 + licences); CDN link removed from `index.html` | Security impact (CSP) | P2 | S | S8 | **Implemented** — zero external font requests; IBM Plex now actually loads (was system-fallback); Material Symbols is Apache-2.0 (not OFL — brief corrected); icons-ready gate preserved | Covered (6 fonts.test + `dist/` grep) |
 | V3-DS-004 | `accent` prop | Accent variants (blue/teal/indigo) | — | Cosmetic | P3 | S | S9 | Deferred | None |
 | V3-DS-005 | `density` prop | Density variants (comfortable/compact) | — | Cosmetic | P3 | S | S9 | Deferred | None |
 | V3-DS-006 | drawer L1710 | Shared explainability drawer: 474px, 11 sections, footer workflow actions | `domain/ExplainabilityDrawer.tsx` on the shared `ui/Drawer`; `GET /api/v1/predictions/explain` behind `IExplainabilityProvider` | New component | P1 | L | S3 | **Implemented** | Covered (44 component + 32 integration + 38 unit) |
@@ -112,15 +112,15 @@
 
 | ID | Use case | Requirement | Existing | Change category | Priority | Cx | Slice | Status | Tests |
 |----|----------|-------------|----------|-----------------|----------|----|----|--------|-------|
-| V3-UC01-001 | UC1 | Order Optimisation aligned to v3 layout + explainability drawer entry | `pages/order-optimisation.tsx` (live) | Layout change | P2 | M | S8 | Planned | Partial |
-| V3-UC02-001 | UC2 | Forecast Accuracy aligned to v3 | `pages/sales-forecasting.tsx` (live) | Layout change | P2 | M | S8 | Planned | Partial |
-| V3-UC03-001 | UC3 | Configuration Insights aligned to v3 | `pages/configuration-demand.tsx` (live) | Layout change | P2 | M | S8 | Planned | Partial |
-| V3-UC04-001 | UC4 | Procurement Optimisation aligned to v3 + supplier demo banner | `pages/procurement.tsx` (live) | Layout change | P2 | M | S8 | Planned | Partial |
-| V3-UC05-001 | UC5 | Inventory Aging & Overstock aligned to v3 | `pages/inventory-intelligence.tsx` (live) | Layout change | P2 | M | S8 | Planned | Partial |
-| V3-UC06-001 | UC6 | Sales ↔ Service Correlation aligned to v3 | `pages/after-sales.tsx` (live) | Layout change | P2 | M | S8 | Planned | Partial |
-| V3-UC07-001 | UC7 | Spare Parts Prediction aligned to v3 | `pages/spare-parts.tsx` (live) | Layout change | P2 | M | S8 | Planned | Partial |
+| V3-UC01-001 | UC1 | Order Optimisation aligned to v3 layout + explainability drawer entry | `pages/order-optimisation.tsx` (live) | Layout change | P2 | M | S8 | **Implemented** — marker + recommended-order distribution card + velocity/safety/chosen-model columns (existing data) | Covered (alignment + wiring) |
+| V3-UC02-001 | UC2 | Forecast Accuracy aligned to v3 | `pages/sales-forecasting.tsx` (live) | Layout change | P2 | M | S8 | **Implemented** — reference screen; marker pre-existing | Covered (alignment + wiring) |
+| V3-UC03-001 | UC3 | Configuration Insights aligned to v3 | `pages/configuration-demand.tsx` (live) | Layout change | P2 | M | S8 | **Implemented** — marker + cold-starts tile + trend column | Covered (alignment + wiring) |
+| V3-UC04-001 | UC4 | Procurement Optimisation aligned to v3 + supplier demo banner | `pages/procurement.tsx` (live) | Layout change | P2 | M | S8 | **Implemented** — marker + supplier `SyntheticBanner` + on-hand/order-up-to/min·base·max columns | Covered (alignment + wiring) |
+| V3-UC05-001 | UC5 | Inventory Aging & Overstock aligned to v3 | `pages/inventory-intelligence.tsx` (live) | Layout change | P2 | M | S8 | **Implemented** — reference screen; marker pre-existing | Covered (alignment + wiring) |
+| V3-UC06-001 | UC6 | Sales ↔ Service Correlation aligned to v3 | `pages/after-sales.tsx` (live) | Layout change | P2 | M | S8 | **Implemented** — marker + vehicles-in-operation KPI tile | Covered (alignment + wiring) |
+| V3-UC07-001 | UC7 | Spare Parts Prediction aligned to v3 | `pages/spare-parts.tsx` (live) | Layout change | P2 | M | S8 | **Implemented** — marker + reorder column + drawer stocking-position rows | Covered (alignment + wiring) |
 | V3-UC0x-002 | all | Explainability drawer wired into each intelligence screen | All seven intelligence screens + the cockpit + the Decision Log | New interaction | P1 | L | S3 | **Implemented** (9 of 9 screens) | Covered (7 wiring + 1 cockpit + 1 Decision Log) |
-| V3-PERF-001 | UC6/UC7 | Fix per-request recomputation: `after-sales/service-intensity/summary` is 669 ms **warm** for a 479-byte payload | `AfterSalesReadService` | Performance impact | P1 | M | S8 | Planned | None |
+| V3-PERF-001 | UC6/UC7 | Fix per-request recomputation on the two slow summary endpoints | `AfterSalesReadService`, `SparePartsReadService` + `BeeEye.Persistence/Caching` (`DataVersionResolver`, `DataVersionedCache`) | Performance impact | P1 | M | S8 | **Implemented** — data-versioned stampede-safe cache: UC6 **669 → ~15 ms** warm, UC7 **275 → ~9 ms**, payloads unchanged; engines untouched | Covered (7 unit + 10 integration incl. deterministic hit-counter + resolver) |
 
 ## I. Quality gates (`V3-QA-*`)
 
@@ -163,7 +163,7 @@
 | **S5** | **Recommendation records & write path** | V3-GOV-002/003/005/011/012, V3-API-001/002/003 | **Complete** |
 | **S6** | **Decision Log & human decisions** | V3-GOV-001/004/006/007, V3-API-002/005, V3-AUTH-004, V3-DS-007, V3-PLAT-007 | **Complete** |
 | **S7** | **Data Health, Lineage, Settings** | V3-GOV-008/009/010, V3-PLAT-007 | **Complete** |
-| S8 | Intelligence-screen alignment + perf | V3-UC01..07-001, V3-PERF-001, V3-DS-003 | Planned |
+| S8 | Intelligence-screen alignment + perf | V3-UC01..07-001, V3-PERF-001, V3-DS-003 | **Implemented** |
 | S9 | Persona, accent, density | V3-NAV-005, V3-DS-004/005 | Planned |
 | S10 | Ask Decision Intelligence (AI) | V3-PLAT-001/002 | Planned |
 | S11 | Ingestion, Reports, Methodology, Integration | V3-PLAT-003…006 | Planned |

@@ -4,14 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light dark" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <!-- Icon font (same axes as the wireframe). display=block hides raw ligature names
-         while the font loads; main.tsx reveals icons only once the font is confirmed. -->
-    <link
-      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..24,400,0,0&display=block"
-      rel="stylesheet"
-    />
+    <!-- Fonts are self-hosted (V3-DS-003): IBM Plex Sans/Mono + Material Symbols are declared in
+         src/styles/fonts.css and served from /fonts/, so the app makes zero external font requests.
+         The icons-ready gate (main.tsx + the .icons-ready rule in components.css) is unchanged: the
+         @font-face for Material Symbols uses font-display: block, so no raw ligature text ever flashes. -->
     <title>BeeEye — AI Decision Intelligence</title>
   </head>
   <body>

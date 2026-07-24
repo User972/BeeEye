@@ -17,7 +17,7 @@
 | **S5** | **Recommendation records & write path** | P0 | **Complete** |
 | **S6** | **Decision Log & human decisions** | P1 | **Complete** |
 | **S7** | **Data Health, Lineage & Settings** | P2 | **Complete** |
-| S8 | Intelligence-screen alignment & performance | P2 | Not started |
+| **S8** | **Intelligence-screen alignment & performance** | P2 | **Complete** |
 | S9 | Persona, accent, density | P3 | Not started |
 | S10 | Ask Decision Intelligence | P2 | Not started |
 | S11 | Ingestion, Reports, Methodology, Integration | P3 | Not started |
@@ -37,6 +37,7 @@
 | **After S4b** | **885** | **234** | **1119** |
 | **After S12** | **885** | **244** | **1129** |
 | **After S7** | **982** | **276** | **1258** |
+| **After S8** | **998** | **295** | **1293** |
 
 S12 also introduces a **Playwright** suite (E2E journeys · route-level a11y · visual regression) that runs
 in its own CI job and is counted separately from the vitest totals above; the vitest column gained the
@@ -1112,3 +1113,189 @@ green against Docker.
 
 **Next action.** None for authoring — slice closed. Operational bootstrap: generate and commit the
 Linux `@visual` baselines for the three governance routes on the CI runner.
+
+## S8 — Intelligence-screen alignment & performance · **Complete**
+
+- **Requirements.** V3-PERF-001 (P1), V3-DS-003 (P2), V3-UC01..07-001 (P2).
+- **Three workstreams, in the order they shipped:** kill the per-request recomputation on the two slow
+  UC6/UC7 summary endpoints; self-host the fonts (no more Google CDN); align the seven intelligence
+  screens to their v3 layout and give UC4 its supplier synthetic-data banner. No `engine.js` formula was
+  touched — the **406 `BeeEye.Analytics` parity tests are unchanged and green**.
+
+### 1 — Performance (V3-PERF-001): a data-versioned result cache
+
+Both slow endpoints recomputed the whole history on every request (the baseline noted
+`after-sales/service-intensity/summary` at **669 ms warm** for a 479-byte payload — a pure recompute, not
+a cold-cache effect — and `spare-parts/demand/summary` at **275 ms**). There was **no caching seam
+anywhere in the backend**. S8 introduces one, entirely in the module read services; the analytics
+engines stay pure and deterministic, which is exactly what makes the cache safe.
+
+- **`DataVersion` + `DataVersionResolver`** (`BeeEye.Persistence/Caching/`) — the shared anchor: the last
+  month with sales + the newest ingestion checksum, from two cheap indexed reads. It lives in the shared
+  persistence kernel both modules already reference, so **module isolation holds** (no cross-module type
+  reference; `tests/architecture` still green).
+- **`DataVersionedCache`** (same folder) — a stampede-safe memoiser over a **private, size-bounded**
+  `MemoryCache`. A cache **hit avoids both the DB load and the compute**. Keyed on the `DataVersion` (and,
+  for UC7, the scenario), so a new ingestion → new checksum → new key → recompute; a superseded result is
+  simply never asked for again. A **sliding 15-minute expiration** is the safety net. **Stampede safety**
+  is a per-key `SemaphoreSlim`: N concurrent cold misses compute **once**, and a cancelled request
+  releases the gate without writing anything — it neither poisons the entry nor blocks the next caller
+  (which recomputes under its own request scope). A `ComputeCount` counter is exposed so a test can prove
+  a hit deterministically rather than by a flaky wall-clock threshold.
+- **Wiring.** `AfterSalesReadService.AnalyseAsync` and `SparePartsReadService.SummaryAsync` resolve the
+  `DataVersion`, build the key and `GetOrComputeAsync`. **One UC6 entry serves all four UC6 endpoints**
+  (`/summary`, `/by-model`, `/model/{model}` each take their slice of the same immutable analysis). The
+  UC7 key includes `serviceLevel`/`reviewPeriodMonths` (rounded to 6 dp and rendered invariantly so
+  float noise and culture cannot explode the key space).
+
+**Measured warm latencies** (localhost, warm Postgres, single-user — same method as the frozen
+baseline; `v3-baseline.md` is not edited):
+
+| Endpoint | Baseline warm | S8 cold | S8 warm | Payload |
+|----------|--------------:|--------:|--------:|---------|
+| `after-sales/service-intensity/summary` | 669 ms | 749 ms | **~15 ms** | 479 B (unchanged) |
+| `spare-parts/demand/summary` | 275 ms | 333 ms | **~9 ms** | 678 B (unchanged) |
+| `after-sales/.../by-model` (shared cached analysis) | — | — | **19 ms** | — |
+| `spare-parts/demand/summary?serviceLevel=0.9` (new scenario key) | — | 243 ms | **7 ms** | — |
+
+≈45× faster on UC6 and ≈30× on UC7 warm, the payloads **unchanged** — the response budget was **not**
+widened to hide the cost (the S3 note at `ExplainabilityApiTests.cs:957` warns against exactly that). The
+scenario row shows keying end-to-end: a fresh `serviceLevel` recomputes once (243 ms) then serves from
+its own entry (7 ms), never returning another scenario's result.
+
+**Decision — Recommendations left untouched.** `RecommendationRecordService.ResolveContextAsync` derives
+the same anchor for its **idempotency key**, so it was a refactor candidate. It was **not** refactored:
+that value must stay byte-identical, its fallback uses the injected `IClock`, and it returns a tuple, not
+the new record. The two cache sites use the shared resolver and accept **one duplicated pair of queries**
+in exchange for **zero risk to the governed write path** — its tests stay green because nothing changed.
+
+**Decision — a private, bounded cache (found by adversarial review).** The first cut kept the results on
+the shared app `IMemoryCache` (no `SizeLimit`, to avoid forcing every future consumer to declare an entry
+`Size`) and never pruned the per-key gates, on the assumption that "only a handful of keys ever exist."
+An adversarial review of the diff caught that the **UC7 key embeds arbitrary client scenario doubles**, so
+the key space is client-controlled and effectively unbounded — the gate registry would grow for the
+process lifetime. Fixed by (a) giving `DataVersionedCache` its **own private `MemoryCache` with a hard
+`SizeLimit`** (owning it lets us cap it without the shared-cache footgun) plus the sliding window, and
+(b) **pruning each gate the instant its compute finishes** (identity-checked, so a slow releaser can
+never evict a newer gate) — so the registry only ever holds in-flight computes. Entry creation is also
+throttled behind the expensive compute (a new key is always a miss → a full recompute), so the space
+cannot be flooded cheaply. A unit test asserts the gate registry returns to zero after 50 distinct-key
+computes.
+
+### 2 — Self-hosted fonts (V3-DS-003 / V3-CONFLICT-3)
+
+The app loaded **only** Material Symbols from the Google CDN; IBM Plex Sans/Mono were *declared* in
+`tokens.css` but **never loaded** (the app ran on system fallback). S8 self-hosts **both**, so the app
+makes **zero external font requests** — the prerequisite for the CSP proposed in
+`deployment-and-ip-protection.md`.
+
+- **Vendored** under `src/web/public/fonts/` (served at `/fonts/`, a stable path with no Vite base-path
+  surprises): 7 `.woff2` — IBM Plex Sans (one **variable** file per subset, covering weights 400–700),
+  IBM Plex Mono 400/600, and **Material Symbols Outlined the full icon set** (a static instance at the
+  wireframe's axes `opsz,wght,FILL,GRAD@20..24,400,0,0`; **not glyph-subset**, so a newly-referenced icon
+  cannot silently break). `@font-face` in a new `src/styles/fonts.css`, imported first; `font-display:
+  block` on Material Symbols (preserves the icons-ready behaviour — no flash of ligature text),
+  `font-display: swap` on IBM Plex. `unicode-range` mirrors Google's latin / latin-ext split.
+- **Removed** the two `preconnect`s and the CDN `<link>` from `index.html`.
+- **The `icons-ready` gate is unchanged** — a self-hosted `@font-face` still resolves through
+  `document.fonts.load('24px "Material Symbols Outlined"')`; the family name matches exactly.
+- **Correction to the brief.** The brief called both families OFL-1.1; **Material Symbols is Apache-2.0**,
+  not OFL. Each licence ships beside the fonts (`LICENSE-IBM-Plex-OFL.txt`,
+  `LICENSE-Material-Symbols-Apache-2.0.txt`) with a provenance `README.md`.
+- **Bundle / asset delta.** New vendored payload **847 KB `.woff2`** across 7 files — Material Symbols is
+  **713 KB** (84% of it), IBM Plex Sans 76.7 KB (latin+latin-ext), Mono 58 KB. These are separately
+  cached assets, **not** in the JS/CSS bundle; the CSS index bundle carries only the ~2 KB `@font-face`
+  block and the main JS chunk is unchanged. Material Symbols was already ~this size from the CDN; the net
+  new is the IBM Plex faces (previously never loaded), so **body text now renders in IBM Plex as
+  designed** rather than a system fallback.
+- **Proof.** A source-level test (`styles/fonts.test.ts`) asserts `index.html` and every stylesheet
+  reference **no** `fonts.googleapis.com`/`fonts.gstatic.com`, that every `@font-face` src is a local
+  `/fonts/*.woff2` **that exists on disk**, that all three families are declared, that Material Symbols
+  keeps `font-display: block`, and that both licences ship. `npm run build` output was grepped: **no CDN
+  request host anywhere in `dist/`**.
+
+### 3 — Layout alignment of the seven intelligence screens (V3-UC01..07-001)
+
+The explainability drawer was already wired on all seven (S3). UC2/UC5 already carried the `wireframed`
+marker; **UC1/UC3/UC4/UC6/UC7** are now aligned and marked. This is **presentational alignment only** —
+no number changed, no computation added, no new API field.
+
+Each screen was diffed against its v3 `.dc.html` block and its `engine2.js` compute function (a parallel
+per-UC gap analysis grounded in the actual wireframe). The finding: **UC3, UC6 and UC7 were already
+reference-quality** (filter bar → stat cards → distribution card → paged/sortable table → drawer); the
+gap was the marker. **UC1 and UC4 were single-table**. Where v3 shows a genuinely computed feature the
+API does not return (UC1 scenario-compare / coverage chart / regional matrix; UC3 heatmap/quadrant/
+cluster taxonomy; UC4 supplier-risk table / lead-time histogram / working-capital tiles; UC6 cohort
+heatmap / capacity forecast; UC7 waterfall / forecast line / transfer simulation), it was recorded as
+**out of scope (needs computation or a new API field)** and left for a later slice — not faked.
+
+What shipped, using data each hook **already returns**:
+
+- **All seven** — the `wireframed` PageHeader marker (registry flag flipped in `config/navigation.ts` and
+  the prop passed on each page).
+- **UC1** — a recommended-order **distribution card** (top configs by `recommendedQuantity`) filling the
+  missing distribution slot, plus `Velocity` / `Safety` / `Chosen model` columns.
+- **UC3** — a `Cold starts` KPI tile and a `Trend` column (echoing v3's momentum emphasis).
+- **UC4** — the **`<SyntheticBanner>`** worded for supplier/PO synthetic data (supplier master & PO
+  history not integrated — it must **not** claim the numbers are measured), a `Data source` meta line,
+  the range reformatted to v3's **min · base · max** (surfacing `recommendedQuantity`), and `On-hand` /
+  `Order-up-to` columns. `SyntheticBanner` was parameterised (optional `label` + `children`, default
+  unchanged) so UC6/UC7 keep their wording.
+- **UC6** — a sixth KPI tile, `Vehicles in operation`.
+- **UC7** — a `Reorder` column, stocking-position rows (`reorder / safety / order-up-to`, `on-hand /
+  recommended`) in the detail drawer, and an `On-hand` column in the by-location table.
+
+### Edge cases handled and tested
+
+Cache correctness (cached byte-identical to fresh, both endpoints); invalidation by data version (a new
+key recomputes — proven at the unit level rather than by mutating shared ingestion state that other
+integration tests count on); UC7 scenario keying (two scenarios never cross-contaminate, same scenario
+hits); **compute-once under 16 concurrent cold misses**; cancellation (cancelled request neither poisons
+the entry nor blocks the next caller); a failed compute not cached (next caller recovers); the UC6 shared
+entry serving all four endpoints; Recommendations' idempotency key byte-identical (untouched); fonts
+render with the CDN removed and no `googleapis`/`gstatic` in the built output; the seven `wireframed`
+markers and UC4's banner render regardless of load state.
+
+### Tests — 1293 total (was 1258)
+
+- **Backend unit +7** (328 → **335**): `DataVersionedCacheTests` — cached == fresh, different key
+  recomputes (invalidation), UC7 scenario is part of the key, compute-once under concurrency (counting
+  delegate), cancellation, failed-compute-not-cached, and **gate pruning** (the registry returns to zero
+  after 50 distinct-key computes, proving it is bounded by concurrency not key space). Mirrors the fake /
+  fixed-value style of `DecisionFeedServiceTests`.
+- **Backend integration +10** (242 → **251**): `AfterSalesApiTests` +4 (a warm summary recomputes nothing
+  via the `ComputeCount` delta; all four UC6 endpoints served from one cached analysis; the summary
+  byte-identical across requests; a warm-latency regression net < 2 s), `SparePartsApiTests` +4
+  (per-scenario keying end-to-end; byte-identical; warm budget), and `DataVersioningTests` +2 (the
+  resolver returns the latest sales month + newest ingestion checksum, and is stable across calls —
+  proven against the seeded store, per the repo's DB-testing convention). The hit-counter proof is the
+  assertion for the *fix*; the loose timing test is a regression guard only.
+- **Analytics unchanged at 406** (no formula edit); **architecture unchanged at 6** (isolation held).
+- **Web +19** (276 → **295**): `styles/fonts.test.ts` (6 — no CDN host, local existing `.woff2`, three
+  families, icon `font-display: block`, licences shipped); `pages/intelligence-alignment.test.tsx` (12 —
+  the `wireframed` marker on all seven, and the surfaced elements + UC4/UC6/UC7 `SyntheticBanner`);
+  `SyntheticBanner.test.tsx` +1 (custom label/children path, default copy not leaking). The S3
+  `explainability-wiring.test.tsx` (drawer/ExplainButton per screen) stays green — its fixtures already
+  carry every surfaced field.
+
+### Verification
+
+`dotnet build BeeEye.slnx` → **0 warnings, 0 errors**; backend **998/998** (`Analytics 406 · UnitTests
+335 · ArchitectureTests 6 · IntegrationTests 251`), the parity tests untouched. Web `lint` ✅ ·
+`typecheck` ✅ · **295/295 vitest** ✅ · **coverage gate** ✅ — measured **88.4 / 82.9 / 77.7 / 88.4**, and
+the floor was **ratcheted up** to **88 / 82 / 77 / 88** (from 86 / 80 / 74 / 86; never lowered) · `build`
+✅ · `dist/` grepped clean of CDN font hosts. OpenAPI drift gate unaffected (no endpoint shape changed).
+
+### Known gaps / follow-ups
+
+- **Visual baselines.** The seven intelligence routes changed content, so their `@visual` baselines must
+  be regenerated with `npm run e2e:update` **on the Linux CI runner** and committed under
+  `e2e/__screenshots__` — Windows-rendered PNGs would churn and be rejected, so they are **not** generated
+  on this box. The functional E2E + axe a11y gates do not depend on them; the `icons-ready` gate still
+  lands with self-hosted fonts (there is now no Google network dependency to be offline from).
+- **The v3 features that need computation or a new API field** (listed above per UC) are deferred to their
+  own slices rather than faked — the alignment surfaced only what the engines already return.
+- **Scenario-aware explainability references (TD-5)** are unchanged by S8.
+
+**Next action.** None for authoring — slice closed. Operational bootstrap: regenerate and commit the
+Linux `@visual` baselines for the seven intelligence routes on the CI runner.

@@ -13,6 +13,11 @@
 
   <ItemGroup>
     <ProjectReference Include="../../../src/shared/BeeEye.Shared/BeeEye.Shared.csproj" />
+    <!-- The data-versioned result cache (V3-PERF-001) is a pure stampede-safe memoiser over
+         IMemoryCache with no data access, so its keying/determinism/compute-once/cancellation
+         behaviour is unit-testable with a counting compute delegate. The resolver's DB read is
+         covered end-to-end in BeeEye.IntegrationTests. -->
+    <ProjectReference Include="../../../src/shared/BeeEye.Persistence/BeeEye.Persistence.csproj" />
     <!-- The cockpit's aggregation service holds no data access, so it is unit-testable with
          in-memory IDecisionSignalProvider fakes. -->
     <ProjectReference Include="../../../src/modules/ExecutiveInsights/BeeEye.Modules.ExecutiveInsights.csproj" />

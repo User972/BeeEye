@@ -121,6 +121,23 @@ npx playwright show-report        # open the last HTML report
   data-backed `governance.spec.ts` journey each. Their `@visual` baselines regenerate with the same
   `e2e:update` flow above; Data Health and Settings changed from scaffolds and Lineage is new, so all
   three need a Linux-runner baseline refresh.
+- **S8 intelligence screens**: the seven intelligence routes (UC1–UC7) were aligned to their v3 layout
+  in S8 (the `wireframed` marker on all seven, UC4's supplier `SyntheticBanner`, and existing-field
+  columns/tiles). Their content changed, so their `@visual` baselines **need a Linux-runner refresh**
+  via the same `e2e:update` flow. The functional E2E + axe gates do not depend on the baselines and stay
+  green; the `icons-ready` gate still lands with self-hosted fonts (there is no longer a Google network
+  dependency to be offline from).
+
+### Fonts (self-hosted — V3-DS-003)
+
+Fonts are vendored under [`public/fonts/`](public/fonts/) and declared in
+[`src/styles/fonts.css`](src/styles/fonts.css) — the app makes **zero external font requests** (no Google
+CDN), a prerequisite for a future CSP. To update a vendored font: replace the `.woff2` in `public/fonts/`,
+keep its licence file alongside (IBM Plex = OFL-1.1, Material Symbols = Apache-2.0), and keep the
+`@font-face` family name and Material Symbols' `font-display: block` unchanged (the `icons-ready` gate in
+`main.tsx` matches the family name exactly). **Do not glyph-subset Material Symbols** — a newly-referenced
+icon would silently break. `styles/fonts.test.ts` guards all of this (no CDN host, local files exist,
+licences shipped); a `dist/` grep after `npm run build` confirms the built output is CDN-free.
 
 ### CI matrix
 

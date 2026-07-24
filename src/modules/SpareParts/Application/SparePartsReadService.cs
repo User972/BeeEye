@@ -1,7 +1,9 @@
+using System.Globalization;
 using BeeEye.Analytics;
 using BeeEye.Analytics.SpareParts;
 using BeeEye.Modules.SpareParts.Contracts;
 using BeeEye.Persistence;
+using BeeEye.Persistence.Caching;
 using Microsoft.EntityFrameworkCore;
 
 namespace BeeEye.Modules.SpareParts.Application;
@@ -14,7 +16,13 @@ namespace BeeEye.Modules.SpareParts.Application;
 /// the synthetic catalogue holds one national stock figure). Orchestration only — the maths live in
 /// <c>BeeEye.Analytics</c>.
 /// </summary>
-public sealed class SparePartsReadService(BeeEyeDbContext db)
+/// <remarks>
+/// The portfolio summary forecasts every part × location on each request. It is now served through a
+/// <see cref="DataVersionedCache"/> (V3-PERF-001) keyed on the current <see cref="DataVersion"/> <b>and the
+/// scenario</b> — a different <c>serviceLevel</c> / <c>reviewPeriodMonths</c> is a genuinely different
+/// answer and gets its own entry, so the cache can never return one scenario's result for another.
+/// </remarks>
+public sealed class SparePartsReadService(BeeEyeDbContext db, DataVersionResolver dataVersion, DataVersionedCache cache)
 {
     /// <summary>A part × location recommendation plus the supply fields the table shows.</summary>
     public sealed record PartResult(
@@ -56,6 +64,21 @@ public sealed class SparePartsReadService(BeeEyeDbContext db)
     }
 
     public async Task<SparePartsSummary> SummaryAsync(SparePartsSettings settings, CancellationToken ct)
+    {
+        var version = await dataVersion.CurrentAsync(ct);
+        // Scenario is part of the key. Only ServiceLevel/ReviewPeriodMonths vary here (ToSettings leaves
+        // the smoothing/threshold constants at their defaults); both are rounded and rendered invariantly
+        // so query-string float noise cannot explode the key space or vary by culture.
+        var key = (
+            "spare-parts:summary",
+            version.AnalysisDate,
+            version.DatasetVersion,
+            Math.Round(settings.ServiceLevel, 6).ToString("R", CultureInfo.InvariantCulture),
+            Math.Round(settings.ReviewPeriodMonths, 6).ToString("R", CultureInfo.InvariantCulture));
+        return await cache.GetOrComputeAsync(key, c => ComputeSummaryAsync(settings, c), ct);
+    }
+
+    private async Task<SparePartsSummary> ComputeSummaryAsync(SparePartsSettings settings, CancellationToken ct)
     {
         var ctx = await LoadAsync(ct);
         var rows = BuildRows(ctx, settings).ToList();

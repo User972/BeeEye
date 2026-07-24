@@ -67,6 +67,7 @@ export default function SparePartsPage() {
         title="Spare Parts Prediction"
         summary="Intermittent spare-parts demand and stocking ranges per workshop — Croston/SBA/TSB where demand is lumpy, with honest confidence and low-data flags."
         useCase="UC7"
+        wireframed
         meta={[
           { label: 'Stocking grain', value: 'part × location' },
           { label: 'Service level', value: `${Math.round(Number(service) * 100)}%` },
@@ -161,6 +162,7 @@ export default function SparePartsPage() {
                         <th>Method</th>
                         <SortHeader label="Demand/mo" active={sort === 'demand'} onClick={() => { setSort('demand'); setPage(1); }} />
                         <th className="num">Range</th>
+                        <th className="num">Reorder</th>
                         <th className="num">Stock</th>
                         <th className="num">Lead (d)</th>
                         <SortHeader label="Risk" active={sort === 'risk'} onClick={() => { setSort('risk'); setPage(1); }} />
@@ -176,6 +178,7 @@ export default function SparePartsPage() {
                           <td>{r.method}</td>
                           <td className="num">{fmtNum(r.predictedMonthlyDemand, 2)}</td>
                           <td className="num">{fmtRange(r.stockingRangeLow, r.stockingRangeHigh)}</td>
+                          <td className="num">{fmtInt(r.reorderPoint)}</td>
                           <td className="num">{fmtInt(r.currentStock)}{r.inboundStock > 0 ? ` +${fmtInt(r.inboundStock)}` : ''}</td>
                           <td className="num">{fmtInt(r.leadTimeDays)}</td>
                           <td>{r.insufficientData ? '—' : <span className={`badge ${riskWordClass(r.stockoutRisk)}`}>{r.stockoutRisk}</span>}</td>
@@ -245,6 +248,10 @@ function PartDetail({ data }: { data: PartDetailResponse }) {
         <dt style={{ color: 'var(--text-muted)' }}>National demand</dt><dd style={{ margin: 0 }}>{fmtNum(n.predictedMonthlyDemand, 2)} /mo · method {n.method} ({n.confidence})</dd>
         <dt style={{ color: 'var(--text-muted)' }}>Intermittency</dt><dd style={{ margin: 0 }}>ADI {fmtNum(n.adi, 2)} · CV² {fmtNum(n.cv2, 2)} · {n.nonZeroPeriods}/{n.periods} months with demand</dd>
         <dt style={{ color: 'var(--text-muted)' }}>Lead time</dt><dd style={{ margin: 0 }}>{fmtNum(n.leadTimeMonths, 1)} months</dd>
+        <dt style={{ color: 'var(--text-muted)' }}>Stocking position</dt>
+        <dd style={{ margin: 0 }}>reorder {fmtInt(n.reorderPoint)} · safety {fmtInt(n.safetyStock)} · order-up-to {fmtInt(n.orderUpToLevel)}</dd>
+        <dt style={{ color: 'var(--text-muted)' }}>On-hand / recommended</dt>
+        <dd style={{ margin: 0 }}>{fmtInt(n.available)} on hand · {fmtInt(n.recommendedQuantity)} recommended</dd>
         <dt style={{ color: 'var(--text-muted)' }}>Compatible models</dt><dd style={{ margin: 0 }}>{data.compatibleModels.join(', ') || '—'}</dd>
       </dl>
 
@@ -289,7 +296,7 @@ function PartDetail({ data }: { data: PartDetailResponse }) {
         <div className="card__title" style={{ marginBottom: 8 }}>By location</div>
         <div className="grid-scroll">
           <table className="data-table">
-            <thead><tr><th>Location</th><th>Class</th><th>Method</th><th className="num">Demand/mo</th><th className="num">Range</th><th>Risk</th></tr></thead>
+            <thead><tr><th>Location</th><th>Class</th><th>Method</th><th className="num">Demand/mo</th><th className="num">Range</th><th className="num">On-hand</th><th>Risk</th></tr></thead>
             <tbody>
               {data.byLocation.map((r) => (
                 <tr key={r.location}>
@@ -298,6 +305,7 @@ function PartDetail({ data }: { data: PartDetailResponse }) {
                   <td>{r.method}</td>
                   <td className="num">{fmtNum(r.predictedMonthlyDemand, 2)}</td>
                   <td className="num">{fmtRange(r.stockingRangeLow, r.stockingRangeHigh)}</td>
+                  <td className="num">{fmtInt(r.currentStock)}{r.inboundStock > 0 ? ` +${fmtInt(r.inboundStock)}` : ''}</td>
                   <td>{r.insufficientData ? <span className="badge">low data</span> : <span className={`badge ${riskWordClass(r.stockoutRisk)}`}>{r.stockoutRisk}</span>}</td>
                 </tr>
               ))}

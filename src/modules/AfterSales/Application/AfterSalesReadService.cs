@@ -2,6 +2,7 @@ using BeeEye.Analytics;
 using BeeEye.Analytics.AfterSales;
 using BeeEye.Modules.AfterSales.Contracts;
 using BeeEye.Persistence;
+using BeeEye.Persistence.Caching;
 using Microsoft.EntityFrameworkCore;
 
 namespace BeeEye.Modules.AfterSales.Application;
@@ -11,11 +12,30 @@ namespace BeeEye.Modules.AfterSales.Application;
 /// <see cref="ServiceIntensity"/> analytics inputs, and returns the model-level intensity analysis. The
 /// module only orchestrates — all statistics live in <c>BeeEye.Analytics</c>.
 /// </summary>
-public sealed class AfterSalesReadService(BeeEyeDbContext db)
+/// <remarks>
+/// The intensity analysis is a per-request recompute over the whole service/sales history (an O(models ×
+/// months × maxLag) lagged correlation), and all four UC6 endpoints run it. It is now served through a
+/// <see cref="DataVersionedCache"/> keyed on the current <see cref="DataVersion"/>, so the expensive load
+/// and compute happen once per dataset version and a warm request is a cache read — see V3-PERF-001. The
+/// analysis is a pure function of the (deterministic) data, which is exactly what makes the cache safe.
+/// </remarks>
+public sealed class AfterSalesReadService(BeeEyeDbContext db, DataVersionResolver dataVersion, DataVersionedCache cache)
 {
     public async Task<bool> HasDataAsync(CancellationToken ct) => await db.ServiceEvents.AsNoTracking().AnyAsync(ct);
 
+    /// <summary>
+    /// The fleet intensity analysis for the current data version. A cache hit avoids both the DB load and
+    /// the correlation compute; a single cached entry serves <c>/summary</c>, <c>/by-model</c> and
+    /// <c>/model/{model}</c>, which each take their own slice of the same immutable result.
+    /// </summary>
     public async Task<ServiceIntensityAnalysis> AnalyseAsync(CancellationToken ct)
+    {
+        var version = await dataVersion.CurrentAsync(ct);
+        var key = ("after-sales:analysis", version.AnalysisDate, version.DatasetVersion);
+        return await cache.GetOrComputeAsync(key, ComputeAnalysisAsync, ct);
+    }
+
+    private async Task<ServiceIntensityAnalysis> ComputeAnalysisAsync(CancellationToken ct)
     {
         var events = await db.ServiceEvents.AsNoTracking()
             .Select(e => new

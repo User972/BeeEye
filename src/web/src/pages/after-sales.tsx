@@ -55,6 +55,7 @@ export default function AfterSalesPage() {
         title="Sales ↔ Service Correlation"
         summary="How much workshop and parts demand each vehicle sale generates — service intensity by model, mileage, age and service type."
         useCase="UC6"
+        wireframed
         meta={[
           { label: 'Models tracked', value: s ? fmtInt(s.modelsTracked) : '—' },
           { label: 'Months of history', value: s ? fmtInt(s.monthsOfHistory) : '—' },
@@ -86,6 +87,7 @@ export default function AfterSalesPage() {
         <>
           <div className="grid grid--stats">
             <StatCard label="Models tracked" value={fmtInt(s.modelsTracked)} icon="directions_car" />
+            <StatCard label="Vehicles in operation" value={fmtInt(s.totalVehiclesInOperation)} icon="groups" hint="fleet size" />
             <StatCard
               label="Avg. service-intensity"
               value={fmtNum(s.averageIntensityIndex, 2)}

@@ -1,5 +1,8 @@
+using System.Diagnostics;
 using System.Net;
 using System.Text.Json;
+using BeeEye.Persistence.Caching;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace BeeEye.IntegrationTests;
@@ -7,6 +10,8 @@ namespace BeeEye.IntegrationTests;
 [Collection(IntegrationCollection.Name)]
 public sealed class AfterSalesApiTests(IntegrationTestFactory factory)
 {
+    private const string SummaryUrl = "/api/v1/after-sales/service-intensity/summary";
+
     [Fact]
     public async Task Summary_returns_synthetic_provenance_and_fleet_metrics()
     {
@@ -74,5 +79,75 @@ public sealed class AfterSalesApiTests(IntegrationTestFactory factory)
         var response = await client.GetAsync("/api/v1/after-sales/service-intensity/model/DoesNotExist");
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         Assert.Contains("application/problem+json", response.Content.Headers.ContentType?.ToString());
+    }
+
+    // ---- V3-PERF-001: the data-versioned analysis cache -----------------------------------------
+
+    [Fact]
+    public async Task A_warm_summary_recomputes_nothing()
+    {
+        var client = factory.CreateClient();
+        var cache = factory.Services.GetRequiredService<DataVersionedCache>();
+
+        // Warm the entry first so the state is deterministic regardless of what other tests ran.
+        await client.GetStringAsync(SummaryUrl);
+
+        var before = cache.ComputeCount;
+        await client.GetStringAsync(SummaryUrl);
+
+        // The deterministic cache-hit proof: a second identical request runs no expensive compute.
+        Assert.Equal(before, cache.ComputeCount);
+    }
+
+    [Fact]
+    public async Task All_UC6_endpoints_are_served_from_one_cached_analysis()
+    {
+        var client = factory.CreateClient();
+        var cache = factory.Services.GetRequiredService<DataVersionedCache>();
+
+        // Warm the single shared analysis entry.
+        await client.GetStringAsync(SummaryUrl);
+        var before = cache.ComputeCount;
+
+        using var byModel = JsonDocument.Parse(
+            await client.GetStringAsync("/api/v1/after-sales/service-intensity/by-model?pageSize=1"));
+        var model = byModel.RootElement.GetProperty("page").GetProperty("items")[0].GetProperty("model").GetString()!;
+        await client.GetStringAsync($"/api/v1/after-sales/service-intensity/model/{Uri.EscapeDataString(model)}");
+        await client.GetStringAsync(SummaryUrl);
+
+        // /summary, /by-model and /model/{model} each take their slice of the one cached analysis.
+        Assert.Equal(before, cache.ComputeCount);
+    }
+
+    [Fact]
+    public async Task Summary_is_byte_identical_across_repeated_requests()
+    {
+        var client = factory.CreateClient();
+        var first = await client.GetStringAsync(SummaryUrl);
+        var second = await client.GetStringAsync(SummaryUrl);
+
+        // The envelope's provenance carries a per-request UTC timestamp; the analysed summary must not move.
+        Assert.Equal(SummaryOf(first), SummaryOf(second));
+    }
+
+    [Fact]
+    public async Task Warm_summary_stays_well_within_the_latency_budget()
+    {
+        var client = factory.CreateClient();
+        await client.GetStringAsync(SummaryUrl); // warm
+
+        var sw = Stopwatch.StartNew();
+        await client.GetStringAsync(SummaryUrl);
+        sw.Stop();
+
+        // Pre-cache warm baseline: 669 ms (docs/implementation/v3-baseline.md §4.4). This is a loose
+        // regression net only — the compute-count proof above is the real assertion that the cache works.
+        Assert.True(sw.ElapsedMilliseconds < 2_000, $"warm summary took {sw.ElapsedMilliseconds}ms");
+    }
+
+    private static string SummaryOf(string json)
+    {
+        using var doc = JsonDocument.Parse(json);
+        return doc.RootElement.GetProperty("summary").GetRawText();
     }
 }

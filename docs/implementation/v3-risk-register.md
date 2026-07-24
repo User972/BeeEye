@@ -26,7 +26,7 @@
 | R-03 | First write path introduces the platform's first mutation defects | High | **High** | V3-API-001…005 | **Closed** (S5, under test) |
 | R-04 | Effort wasted chasing numeric parity with v3's synthetic fixtures | Medium | Medium | V3-CONFLICT-4 | **Mitigating** |
 | R-05 | UC2/UC5 `engine.js` parity broken while restyling | Low | **High** | V3-UC02/05-001 | **Mitigating** |
-| R-06 | Cockpit inherits the 669 ms after-sales endpoint across six modules | High | Medium | V3-PERF-001, V3-UC08-003 | Open |
+| R-06 | Cockpit inherits the 669 ms after-sales endpoint across six modules | High | Medium | V3-PERF-001, V3-UC08-003 | **Closed** (S8) |
 
 ---
 
@@ -116,13 +116,17 @@
   full history. `spare-parts/demand/summary` is 275 ms. The cockpit composes six modules, so it would
   aggregate these costs.
 - **Probability / Impact.** High / Medium.
-- **Mitigation.** V3-PERF-001 addresses the underlying recomputation. The cockpit's decision feed
-  should compose already-computed module results rather than re-deriving them, and the feed itself is
-  a candidate for a request-scoped cache (v3 memoises it in `_decCache`).
-- **Detection.** Assert a cockpit response-time budget in integration tests; compare against the
-  §4.4 baseline table.
-- **Contingency.** Compute the feed asynchronously and serve the last completed snapshot.
-- **Owner.** Performance. **Status: Open.**
+- **Mitigation.** V3-PERF-001 resolved the underlying recomputation in S8: a data-versioned,
+  stampede-safe result cache (`BeeEye.Persistence/Caching`) took the two slow summary endpoints from
+  **669 ms → ~15 ms** (UC6) and **275 ms → ~9 ms** (UC7) warm, with payloads unchanged and the engines
+  untouched. The cockpit therefore no longer aggregates a per-request full-history recompute across those
+  contexts.
+- **Detection.** A cockpit response-time budget is asserted in integration tests (5 s), and each cached
+  endpoint now has a deterministic **compute-count** hit proof plus a loose warm-latency guard.
+- **Contingency.** If a future aggregation regresses, compute the feed asynchronously and serve the last
+  completed snapshot.
+- **Owner.** Performance. **Status: Closed (S8).** The cache proves cached == fresh and re-ingestion
+  invalidates; a residual perf-suite (formal load/soak testing) remains a standing follow-up (R-18).
 
 ---
 
@@ -136,7 +140,7 @@
 | R-10 | Functional regression | Medium | High | 432-test green baseline; full regression run after every slice (done for S1) | Mitigating |
 | R-11 | Accessibility regression | Medium | Medium | S1 added skip link, landmarks, `aria-current`, focus-visible, reduced motion; S12 adds automated scans (vitest-axe on components + @axe-core/playwright on every route, both themes) enforcing zero serious/critical except two baselined pre-existing rules (`color-contrast` palette debt, `scrollable-region-focusable`), each tracked for separate remediation; V3-DS-007 fixes the drawer focus trap | Mitigating |
 | R-12 | Known high-severity dependency advisories inherited into v3 work | High | Medium | 18 `NU1903` advisories recorded in the baseline as pre-existing; V3-QA-005 remediates in S0 | Open |
-| R-13 | CSP weakened by CDN fonts | Medium | Medium | V3-CONFLICT-3 — self-host (OFL-1.1 permits it) rather than allow-listing a third-party origin | Open |
+| R-13 | CSP weakened by CDN fonts | Medium | Medium | V3-CONFLICT-3 — **self-hosted in S8** (7 woff2 in `public/fonts/` with their licences; the two `preconnect`s and the CDN `<link>` removed from `index.html`), so the app makes zero external font requests and a future CSP needs no third-party font origin. A source test + a `dist/` grep assert no `googleapis`/`gstatic` host remains | **Closed** (S8) |
 | R-14 | AI cost / provider instability once V3-PLAT-001/002 land | Medium | Medium | ADR-0004 provider abstraction; deterministic engine is the **default** and the fallback, so AI failure degrades to a working experience | Open |
 | R-15 | AI alters figures when rewording | Medium | **High** | Contract from v3's METHODOLOGY: live AI may only reword a deterministic draft; structured-output validation discards any response that changes a number (ADR-0006 §7) | Open |
 | R-16 | Schema incompatibility / migration failure | Low | High | Expand-and-contract; new tables only (no destructive change to the 9 existing entities); Testcontainers already proves clean-DB migration | Mitigating |

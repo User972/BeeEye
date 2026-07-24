@@ -90,14 +90,14 @@ export default defineConfig({
         'dist/**',
         'node_modules/**',
       ],
-      // A floor the current suite already clears (measured: stmts 87.4 · branch 81.9 · funcs 75.5 ·
-      // lines 87.4), set just below so the gate holds without flaking and can only ratchet upward
-      // (S12 / V3-QA-004). Raise these as coverage grows; never lower them.
+      // A floor the current suite already clears (measured after S8: stmts 88.4 · branch 82.9 ·
+      // funcs 77.7 · lines 88.4), set just below so the gate holds without flaking and can only
+      // ratchet upward (S12 / V3-QA-004). Raise these as coverage grows; never lower them.
       thresholds: {
-        lines: 86,
-        functions: 74,
-        branches: 80,
-        statements: 86,
+        lines: 88,
+        functions: 77,
+        branches: 82,
+        statements: 88,
       },
     },
   },

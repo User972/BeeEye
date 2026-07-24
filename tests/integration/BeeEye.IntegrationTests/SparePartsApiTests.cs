@@ -1,5 +1,8 @@
+using System.Diagnostics;
 using System.Net;
 using System.Text.Json;
+using BeeEye.Persistence.Caching;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace BeeEye.IntegrationTests;
@@ -7,6 +10,7 @@ namespace BeeEye.IntegrationTests;
 [Collection(IntegrationCollection.Name)]
 public sealed class SparePartsApiTests(IntegrationTestFactory factory)
 {
+    private const string SummaryUrl = "/api/v1/spare-parts/demand/summary";
     [Fact]
     public async Task Summary_returns_synthetic_provenance_and_class_mix()
     {
@@ -96,5 +100,60 @@ public sealed class SparePartsApiTests(IntegrationTestFactory factory)
         var response = await client.GetAsync("/api/v1/spare-parts/demand/part/NOPE-404");
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         Assert.Contains("application/problem+json", response.Content.Headers.ContentType?.ToString());
+    }
+
+    // ---- V3-PERF-001: the data-versioned, scenario-keyed summary cache --------------------------
+
+    [Fact]
+    public async Task Summary_is_cached_per_scenario_and_scenarios_never_cross_contaminate()
+    {
+        var client = factory.CreateClient();
+        var cache = factory.Services.GetRequiredService<DataVersionedCache>();
+
+        // Two non-default scenarios used only here, both on the (cached) summary endpoint.
+        const string scenarioA = SummaryUrl + "?serviceLevel=0.9&reviewPeriodMonths=1";
+        const string scenarioB = SummaryUrl + "?serviceLevel=0.99&reviewPeriodMonths=1";
+
+        await client.GetStringAsync(scenarioA); // warm scenario A
+        var before = cache.ComputeCount;
+
+        await client.GetStringAsync(scenarioA); // same scenario -> cache hit, no recompute
+        Assert.Equal(before, cache.ComputeCount);
+
+        await client.GetStringAsync(scenarioB); // different scenario -> its own entry -> exactly one recompute
+        Assert.Equal(before + 1, cache.ComputeCount);
+    }
+
+    [Fact]
+    public async Task Summary_is_byte_identical_across_repeated_requests()
+    {
+        var client = factory.CreateClient();
+        var first = await client.GetStringAsync(SummaryUrl);
+        var second = await client.GetStringAsync(SummaryUrl);
+
+        // The scenario + summary must be stable across requests; only the provenance timestamp moves.
+        Assert.Equal(BodyWithoutMeta(first), BodyWithoutMeta(second));
+    }
+
+    [Fact]
+    public async Task Warm_summary_stays_well_within_the_latency_budget()
+    {
+        var client = factory.CreateClient();
+        await client.GetStringAsync(SummaryUrl); // warm
+
+        var sw = Stopwatch.StartNew();
+        await client.GetStringAsync(SummaryUrl);
+        sw.Stop();
+
+        // Pre-cache warm baseline: 275 ms (docs/implementation/v3-baseline.md §4.4). Loose regression net;
+        // the compute-count proof above is the real assertion.
+        Assert.True(sw.ElapsedMilliseconds < 2_000, $"warm summary took {sw.ElapsedMilliseconds}ms");
+    }
+
+    private static string BodyWithoutMeta(string json)
+    {
+        using var doc = JsonDocument.Parse(json);
+        var root = doc.RootElement;
+        return root.GetProperty("scenario").GetRawText() + "|" + root.GetProperty("summary").GetRawText();
     }
 }

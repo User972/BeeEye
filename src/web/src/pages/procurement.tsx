@@ -6,6 +6,7 @@ import { ScenarioSelect } from '@/components/ui/ScenarioSelect';
 import { LoadingState, ErrorState, EmptyState } from '@/components/ui/states';
 import { ExplainButton, ExplainabilityDrawer } from '@/components/domain/ExplainabilityDrawer';
 import { useExplainabilityDrawer } from '@/components/domain/useExplainabilityDrawer';
+import { SyntheticBanner } from '@/components/domain/SyntheticBanner';
 import { useProcurement, type ProcurementScenarioQuery } from '@/lib/api/orders';
 import { fmtInt, fmtNum, riskWordClass } from '@/lib/format';
 
@@ -30,11 +31,21 @@ export default function Procurement() {
         title="Procurement Optimisation"
         summary="How much to procure to balance demand, lead time and inventory cost — recommended as a range, not false precision."
         useCase="UC4"
+        wireframed
         meta={[
           { label: 'Lead time', value: lead ? `${lead} months (override)` : 'observed per-config average' },
           { label: 'Assumptions', value: 'inbound = 0; open POs not yet integrated' },
+          { label: 'Data source', value: 'Sample files; supplier & PO history synthetic demo' },
         ]}
       />
+
+      <SyntheticBanner label="Demo supplier data notice">
+        <strong>Demo supplier data.</strong> Supplier master and purchase-order history are{' '}
+        <strong>not</strong> yet integrated from Oracle Fusion. Lead times and safety stock here are
+        computed from the sample sales &amp; inventory data; supplier reliability, delivery performance
+        and open POs are <strong>not</strong> reflected. Treat these figures as an illustrative planning
+        aid, not a committed procurement order.
+      </SyntheticBanner>
 
       <div className="filter-bar">
         <ScenarioSelect label="Service level" value={service} onChange={setService} options={[{ value: '0.9', label: '90%' }, { value: '0.95', label: '95%' }, { value: '0.99', label: '99%' }]} />
@@ -68,9 +79,11 @@ export default function Procurement() {
                     <th>Configuration</th>
                     <th className="num">Demand/mo</th>
                     <th className="num">Lead (mo)</th>
+                    <th className="num">On-hand</th>
                     <th className="num">Safety stock</th>
                     <th className="num">Reorder pt</th>
-                    <th className="num">Recommended range</th>
+                    <th className="num">Order-up-to</th>
+                    <th className="num">Range (min · base · max)</th>
                     <th>Stockout risk</th>
                     <th>Confidence</th>
                     <th><span className="sr-only">Explanation</span></th>
@@ -82,9 +95,11 @@ export default function Procurement() {
                       <td>{r.model} · {r.variant}</td>
                       <td className="num">{fmtNum(r.demandMean, 1)}</td>
                       <td className="num">{fmtNum(r.leadTimeMonths, 1)}</td>
+                      <td className="num">{fmtInt(r.available)}</td>
                       <td className="num">{fmtInt(r.safetyStock)}</td>
                       <td className="num">{fmtInt(r.reorderPoint)}</td>
-                      <td className="num"><strong>{fmtInt(r.rangeLow)}–{fmtInt(r.rangeHigh)}</strong></td>
+                      <td className="num">{fmtInt(r.orderUpToLevel)}</td>
+                      <td className="num">{fmtInt(r.rangeLow)} · <strong>{fmtInt(r.recommendedQuantity)}</strong> · {fmtInt(r.rangeHigh)}</td>
                       <td><span className={`badge ${riskWordClass(r.stockoutRisk)}`}>{r.stockoutRisk}</span></td>
                       <td>{r.confidence}</td>
                       <td>
