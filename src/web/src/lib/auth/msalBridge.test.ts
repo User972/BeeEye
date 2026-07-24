@@ -7,7 +7,7 @@ import type {
   EventMessage,
   IPublicClientApplication,
 } from '@azure/msal-browser';
-import { installMsalTokenBridge } from './msalBridge';
+import { activateRedirectAccount, installMsalTokenBridge } from './msalBridge';
 import type { EntraAuthConfig } from './config';
 import { apiGet, resetAuthSeam } from '@/lib/api/client';
 import { identityKeys } from '@/lib/api/identity';
@@ -144,5 +144,59 @@ describe('installMsalTokenBridge', () => {
     fire(EventType.LOGIN_SUCCESS);
 
     expect(invalidate).toHaveBeenCalledWith({ queryKey: identityKeys.me });
+  });
+});
+
+describe('activateRedirectAccount', () => {
+  const bob = {
+    ...account,
+    homeAccountId: 'home-2',
+    localAccountId: 'local-2',
+    username: 'bob@admc.example',
+  } as AccountInfo;
+
+  it('makes the redirect-returned account active even when another is already active (switch account)', async () => {
+    // Alice is still the cached active account when Bob returns from the switch-account redirect.
+    let active: AccountInfo | null = account;
+    const pca = {
+      handleRedirectPromise: () =>
+        Promise.resolve({ account: bob } as unknown as AuthenticationResult),
+      getActiveAccount: () => active,
+      setActiveAccount: (next: AccountInfo) => {
+        active = next;
+      },
+    } as unknown as IPublicClientApplication;
+
+    await activateRedirectAccount(pca);
+
+    // Without setting it from the result, Alice would stay active and every later bearer/decision
+    // would be mis-attributed to her.
+    expect(active).toBe(bob);
+  });
+
+  it('leaves the active account untouched when the redirect return carries no account', async () => {
+    let active: AccountInfo | null = account;
+    const pca = {
+      handleRedirectPromise: () => Promise.resolve(null),
+      getActiveAccount: () => active,
+      setActiveAccount: (next: AccountInfo) => {
+        active = next;
+      },
+    } as unknown as IPublicClientApplication;
+
+    await activateRedirectAccount(pca);
+
+    expect(active).toBe(account);
+  });
+
+  it('swallows a malformed redirect return so the app falls through to the sign-in gate', async () => {
+    const setActiveAccount = vi.fn();
+    const pca = {
+      handleRedirectPromise: () => Promise.reject(new Error('bad redirect state')),
+      setActiveAccount,
+    } as unknown as IPublicClientApplication;
+
+    await expect(activateRedirectAccount(pca)).resolves.toBeUndefined();
+    expect(setActiveAccount).not.toHaveBeenCalled();
   });
 });

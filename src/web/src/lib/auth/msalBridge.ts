@@ -6,6 +6,27 @@ import { identityKeys } from '@/lib/api/identity';
 import type { EntraAuthConfig } from './config';
 
 /**
+ * Processes an MSAL redirect return and makes the returned account active.
+ *
+ * MSAL fires `LOGIN_SUCCESS` **synchronously inside** `handleRedirectPromise` — before any callback
+ * registered later in bootstrap (`installMsalTokenBridge`) or after mount (`EntraAuthInner`) can run —
+ * and it does not auto-set the active account on a redirect return. Set it from the result here, or a
+ * switch-account roundtrip signs the new account in while the previously-active one stays active, and
+ * every subsequent bearer and decision is mis-attributed to it (A.7.7). A malformed return resolves to
+ * `null` and falls through to the sign-in gate rather than dead-ending on a blank page (A.7.2, A.7.6).
+ */
+export async function activateRedirectAccount(pca: IPublicClientApplication): Promise<void> {
+  try {
+    const result = await pca.handleRedirectPromise();
+    if (result?.account) {
+      pca.setActiveAccount(result.account);
+    }
+  } catch {
+    /* the gate will offer sign-in again */
+  }
+}
+
+/**
  * Picks a deterministic active account so token acquisition is stable across reloads and tabs
  * (A.7.7). MSAL does not choose one for you when several are cached; without this the "active"
  * account would depend on call order.

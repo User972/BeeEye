@@ -7,7 +7,11 @@ import { PublicClientApplication } from '@azure/msal-browser';
 import { router } from './router';
 import { resolveAuthConfig, msalConfiguration } from '@/lib/auth/config';
 import { AppAuthProvider } from '@/lib/auth/AuthProvider';
-import { ensureActiveAccount, installMsalTokenBridge } from '@/lib/auth/msalBridge';
+import {
+  activateRedirectAccount,
+  ensureActiveAccount,
+  installMsalTokenBridge,
+} from '@/lib/auth/msalBridge';
 import '@/styles/global.css';
 import '@/styles/components.css';
 
@@ -80,13 +84,9 @@ async function bootstrap(): Promise<void> {
 
   const pca = new PublicClientApplication(msalConfiguration(config));
   await pca.initialize();
-  // A malformed redirect return must not dead-end the app on a blank page; log nothing sensitive and
-  // fall through to the sign-in gate (A.7.2, A.7.6).
-  try {
-    await pca.handleRedirectPromise();
-  } catch {
-    /* the gate will offer sign-in again */
-  }
+  // Process the redirect return exactly once and make the returned account active — the switch-account
+  // flow depends on this, and a malformed return falls through to the sign-in gate (A.7.2, A.7.6, A.7.7).
+  await activateRedirectAccount(pca);
   ensureActiveAccount(pca);
   installMsalTokenBridge(pca, config, queryClient);
 
