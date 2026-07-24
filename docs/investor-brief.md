@@ -85,8 +85,6 @@ Every figure is computed from the sample data; none is hard-coded.
 
 ## Honest limitations (what is *not* done)
 
-- **Browser sign-in (MSAL) is not yet wired.** The backend authentication and authorization are
-  complete and enforced; the SPA cannot yet acquire a token. This is the current work item.
 - **UC6/UC7 use synthetic-demo after-sales/parts data** (see above) — no real service history exists
   to integrate yet.
 - **Supplier / purchase-order data is not integrated**, so a supplier-delay decision (and any safety
@@ -98,9 +96,8 @@ Every figure is computed from the sample data; none is hard-coded.
 
 ## Roadmap (next)
 
-The remaining slices (S7–S12) are the browser sign-in flow, the Data Health / Lineage / Settings
-screens, background expiry & supersession jobs, live AI narration, and end-to-end/visual/accessibility
-hardening — tracked slice by slice in
+The remaining slices (S7–S11) are the Data Health / Lineage / Settings screens, background expiry &
+supersession jobs, and live AI narration — tracked slice by slice in
 [docs/implementation/v3-progress.md](implementation/v3-progress.md).
 
 ## Read more

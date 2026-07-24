@@ -80,8 +80,11 @@ export function installMsalTokenBridge(
         void queryClient.invalidateQueries({ queryKey: identityKeys.me });
         break;
       case EventType.LOGIN_SUCCESS:
-      case EventType.ACQUIRE_TOKEN_SUCCESS:
       case EventType.ACTIVE_ACCOUNT_CHANGED:
+        // Not ACQUIRE_TOKEN_SUCCESS: MSAL fires it on every silent token acquisition — i.e. on every
+        // `apiGet` in Entra mode, including cache hits and the hourly refresh — none of which is a
+        // sign-in boundary. Invalidating here would refetch `/identity/me`, whose own request fires
+        // the event again, into a self-sustaining loop (`useCurrentUser` stays mounted).
         void queryClient.invalidateQueries({ queryKey: identityKeys.me });
         break;
       default:

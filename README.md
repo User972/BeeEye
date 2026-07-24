@@ -110,8 +110,8 @@ PostgreSQL) via `WebApplicationFactory`. Run the full stack locally with `docker
 
 One coherent architecture throughout — no parallel stack per use case.
 
-> **Next (S7–S12):** the browser sign-in flow (MSAL token acquisition), the Data Health / Lineage /
-> Settings screens, background expiry & supersession jobs, and live AI narration inside the drawer —
+> **Next (S7–S11):** the Data Health / Lineage / Settings screens, background expiry & supersession
+> jobs, and live AI narration inside the drawer —
 > tracked slice by slice in [`docs/implementation/v3-progress.md`](docs/implementation/v3-progress.md).
 
 ## Documentation

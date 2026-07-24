@@ -16,14 +16,14 @@
 | End-to-end | — | **absent** | absent |
 | Visual regression | — | **absent** | absent |
 | Accessibility (automated) | — | **absent** | absent |
-
-> **Current totals (post-S6, 2026-07-24):** **885 backend** (297 kernel/domain unit · 384 analytics ·
-> 6 architecture · 198 integration) + **200 web** = **1085**, plus ~15 ML. The "After S1+S2" column
-> above is a historical checkpoint; live per-slice counts are in [`v3-progress.md`](v3-progress.md).
 | Contract | — | **absent** | absent |
 | Performance | — | **absent** | absent |
 | Security | — | **absent** | absent |
 | Coverage tooling | — | **absent** | absent |
+
+> **Current totals (post-S6, 2026-07-24):** **885 backend** (297 kernel/domain unit · 384 analytics ·
+> 6 architecture · 198 integration) + **200 web** = **1085**, plus ~15 ML. The "After S1+S2" column
+> above is a historical checkpoint; live per-slice counts are in [`v3-progress.md`](v3-progress.md).
 
 The four absent categories are introduced in **S12**; the gap is recorded honestly rather than
 papered over. No coverage percentage is quoted anywhere, because no coverage tool is configured —
