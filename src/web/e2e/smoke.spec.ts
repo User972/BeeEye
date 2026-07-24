@@ -1,12 +1,14 @@
 import { test, expect } from '@playwright/test';
+import { revealNav } from './helpers';
 
 /**
  * The application shell renders and is navigable (V3-QA-001). Runs at every viewport, since the shell
- * is where the responsive nav rail collapses.
+ * is where the responsive nav rail collapses — `revealNav` opens it at narrow widths.
  */
 test.describe('application shell', () => {
   test('renders the nav rail, header and a single main landmark', async ({ page }) => {
     await page.goto('/');
+    await revealNav(page);
 
     await expect(page.getByRole('navigation', { name: /primary navigation/i })).toBeVisible();
     await expect(page.getByRole('main')).toHaveCount(1);
@@ -17,6 +19,7 @@ test.describe('application shell', () => {
 
   test('the cockpit is the landing route and is marked current in the nav', async ({ page }) => {
     await page.goto('/');
+    await revealNav(page);
     const cockpitLink = page
       .getByRole('navigation', { name: /primary navigation/i })
       .getByRole('link', { name: /decision cockpit/i });

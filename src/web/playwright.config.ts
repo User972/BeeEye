@@ -28,6 +28,9 @@ const VIEWPORTS = [
 
 export default defineConfig({
   testDir: './e2e',
+  // Generates the recommendation records once before the suite, so the governed-workflow / CSV /
+  // decision-log journeys run against real rows instead of skipping on an empty log.
+  globalSetup: './e2e/global-setup.ts',
   // Baselines are committed under e2e/__screenshots__ and are OS/browser-pinned by the {platform}
   // segment, so a macOS/Windows render never churns the Linux-CI baseline (B.4).
   snapshotPathTemplate: 'e2e/__screenshots__/{testFilePath}/{arg}-{projectName}-{platform}{ext}',

@@ -1,3 +1,4 @@
+import { expect } from '@playwright/test';
 import type { Locator, Page } from '@playwright/test';
 
 /**
@@ -36,6 +37,36 @@ export async function stabilise(page: Page): Promise<void> {
     .catch(() => {
       /* offline/font blocked — text labels still carry meaning; snapshot proceeds */
     });
+}
+
+/**
+ * Opens the global explainability drawer on the current screen and returns it.
+ *
+ * Some screens expose the "Why this…" trigger directly (e.g. Forecast Accuracy); others reveal it
+ * inside a row detail (e.g. Inventory — "click a row for the full risk breakdown and recommendation"),
+ * so this clicks the first data row when the trigger is not already present. The returned dialog is
+ * scoped by its feedback section, so a stacked row-detail drawer is never mistaken for the explanation.
+ */
+export async function openExplainabilityDrawer(page: Page): Promise<Locator> {
+  const trigger = () => page.getByRole('button', { name: /why this/i }).first();
+  if (!(await trigger().isVisible().catch(() => false))) {
+    const firstRow = page.getByRole('row').nth(1); // nth(1): skip the header row
+    if ((await firstRow.count()) > 0) {
+      await firstRow.click();
+    }
+  }
+  await trigger().click();
+  const dialog = page.getByRole('dialog').filter({ hasText: /was this useful/i });
+  await expect(dialog).toBeVisible();
+  return dialog;
+}
+
+/** Opens the mobile navigation rail if it is collapsed behind the header toggle (narrow viewports). */
+export async function revealNav(page: Page): Promise<void> {
+  const toggle = page.getByRole('button', { name: /open navigation menu/i });
+  if (await toggle.isVisible().catch(() => false)) {
+    await toggle.click();
+  }
 }
 
 /** Toggles the app theme the same way the header control does — by stamping `data-theme` on `<html>`. */
