@@ -148,12 +148,12 @@ describe('installMsalTokenBridge', () => {
 });
 
 describe('activateRedirectAccount', () => {
-  const bob = {
+  const bob: AccountInfo = {
     ...account,
     homeAccountId: 'home-2',
     localAccountId: 'local-2',
     username: 'bob@admc.example',
-  } as AccountInfo;
+  };
 
   it('makes the redirect-returned account active even when another is already active (switch account)', async () => {
     // Alice is still the cached active account when Bob returns from the switch-account redirect.
