@@ -40,19 +40,36 @@ export async function stabilise(page: Page): Promise<void> {
 }
 
 /**
- * Waits until the full-page height stops changing, so a `fullPage` screenshot captures the settled
- * page rather than a mid-hydration one.
+ * Blocks until a data screen has finished loading and its layout has settled, so a `fullPage`
+ * screenshot captures the same fully-rendered page on every run.
  *
- * The data-heavy screens (decision log, after-sales, spare parts, …) load their tables asynchronously;
- * `stabilise` only waits for the heading and the icon font, so a shot taken before the rows arrive is
- * shorter than the loaded page. That is a screenshot *size* mismatch — a different image height, which
- * no mask and no `maxDiffPixelRatio` can absorb — and it makes the committed baseline disagree with a
- * later run purely on capture timing (seen first at the w360 viewport). Polling the document height
- * until it holds steady across consecutive checks pins every capture — baseline and verification alike
- * — to the same fully-rendered page. Condition-based, not an arbitrary sleep; it falls through after
- * the timeout rather than failing a legitimately slow screen.
+ * The data screens (decision log, after-sales, spare parts, …) render a `LoadingState` — a
+ * `role="status"` block of `.skeleton` bars — while their React Query fetches are in flight, then swap
+ * in the real table, which changes the page height. `stabilise` only waits for the heading and the icon
+ * font, so a shot taken mid-load captured the shorter skeleton page (≈ the viewport height): the
+ * committed baseline (e.g. 360×780, 768×1024) then disagreed with a later fully-loaded run (…×2481,
+ * …×1316) on the image *height* — a size mismatch no mask or `maxDiffPixelRatio` can absorb. A pure
+ * height-stability heuristic is fooled here, because the empty page sits at a *stable* skeleton height
+ * for a while before the fetch resolves. So wait first for the concrete data-loaded signal — every
+ * `.skeleton` gone (only `LoadingState` emits them; empty/error states do not) — then hold until the
+ * height stops changing to absorb a late reflow (web font, lazy image). Both waits are condition-based,
+ * not arbitrary sleeps, and fall through after their budget rather than failing a genuinely slow screen.
+ * Screens with no async data render no skeleton, so the first wait is a no-op.
  */
 export async function waitForStableLayout(page: Page): Promise<void> {
+  // 1) Data loaded: the LoadingState skeleton has left the DOM (React Query resolved, the table
+  //    rendered). This is the signal a height heuristic can't infer — the pre-fetch skeleton page is
+  //    itself a stable height, so height-stability alone would capture it too early.
+  await page
+    .waitForFunction(() => document.querySelectorAll('.skeleton').length === 0, null, {
+      timeout: 15_000,
+      polling: 100,
+    })
+    .catch(() => {
+      /* still loading after the budget — capture anyway rather than hang the visual gate */
+    });
+  // 2) Layout settled: the full-page height holds steady across consecutive checks, so a late reflow
+  //    can't shrink or grow the shot between the baseline run and a verification run.
   await page
     .waitForFunction(
       () => {
