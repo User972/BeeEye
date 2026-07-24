@@ -65,7 +65,7 @@ convention. No nav entries added for v3's 9 unbuilt screens — they would be de
 
 ---
 
-## S2 — UC8 Executive Decision Cockpit · P1 · L · **IN PROGRESS**
+## S2 — UC8 Executive Decision Cockpit · P1 · L · **COMPLETE**
 
 | Field | Value |
 |-------|-------|
@@ -102,7 +102,7 @@ v3's non-persisting "Was this useful?" control, which now writes to an append-on
 
 ---
 
-## S4 — Identity, roles & authorization · P0 · L
+## S4 — Identity, roles & authorization · P0 · L · **COMPLETE** (backend; SPA sign-in outstanding)
 
 | Field | Value |
 |-------|-------|
@@ -120,7 +120,7 @@ v3's non-persisting "Was this useful?" control, which now writes to an append-on
 
 ---
 
-## S5 — Recommendation records & the write path · P0 · L
+## S5 — Recommendation records & the write path · P0 · L · **COMPLETE**
 
 | Field | Value |
 |-------|-------|
@@ -137,7 +137,7 @@ v3's non-persisting "Was this useful?" control, which now writes to an append-on
 
 ---
 
-## S6 — Decision Log & human decisions · P1 · L
+## S6 — Decision Log & human decisions · P1 · L · **COMPLETE**
 
 | Field | Value |
 |-------|-------|

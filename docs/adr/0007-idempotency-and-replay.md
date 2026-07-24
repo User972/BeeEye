@@ -4,7 +4,7 @@
 
 | Field | Value |
 |-------|-------|
-| Status | **Accepted** |
+| Status | **Accepted** (API/write-path idempotency implemented; messaging outbox/inbox &amp; job leases pending) |
 | Date | 2026-07-22 |
 | Deciders | Platform architecture (BeeEye vendor team) |
 | Scope | Platform-wide cross-cutting concern; binds all 19 bounded contexts and the Python ML tier |

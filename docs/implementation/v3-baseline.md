@@ -1,8 +1,10 @@
 # V3 Implementation — Pre-Change Baseline
 
-> **Status: Implemented (measurement complete).** This document records the state of the repository
+> **Status: frozen pre-change snapshot.** This document records the state of the repository
 > **before** any v3-driven change. Every figure here was executed and observed, not estimated.
-> Any later regression is measured against this file.
+> Any later regression is measured against this file. **These figures are intentionally historical**
+> (e.g. 404 tests, 44 all-`GET` endpoints, no auth, ADR-0006 unimplemented) — for the **current** state
+> see [`v3-progress.md`](v3-progress.md) and [`v3-design-traceability.md`](v3-design-traceability.md).
 
 | Field | Value |
 |-------|-------|

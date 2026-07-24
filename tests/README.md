@@ -6,14 +6,14 @@ authorisation, calculations and idempotency.
 
 | Layer | Location | Status | Tooling |
 |-------|----------|--------|---------|
-| Unit (backend) | `tests/unit` | ✅ implemented (347: 329 analytics + 18 kernel) | xUnit |
-| Architecture | `tests/architecture` | ✅ implemented (4 tests) | xUnit + reflection |
-| Integration | `tests/integration` | ✅ implemented (33 tests) | xUnit + **Testcontainers** (real PostgreSQL) |
+| Unit (backend) | `tests/unit` | ✅ implemented (681: 384 analytics + 297 kernel/domain) | xUnit |
+| Architecture | `tests/architecture` | ✅ implemented (6 tests) | xUnit + reflection |
+| Integration | `tests/integration` | ✅ implemented (198 tests) | xUnit + **Testcontainers** (real PostgreSQL) |
 | Contract (Oracle adapters) | `tests/contract` | planned | xUnit + mock Oracle server / fixtures |
 | Performance | `tests/performance` | planned | synthetic 100k / 5M / 25M datasets |
 | Security | `tests/security` | planned | authz escalation, injection, CSV injection |
 | ML | `ml/tests` | ✅ implemented (15 tests) | pytest (+ `python tests/*.py` runner) |
-| Component / hooks (web) | `src/web/src/**/*.test.tsx` | ✅ implemented (17 tests) | Vitest + Testing Library |
+| Component / hooks (web) | `src/web/src/**/*.test.tsx` | ✅ implemented (200 tests) | Vitest + Testing Library |
 | E2E (web) | `tests/e2e` | planned | Playwright |
 
 ## Run

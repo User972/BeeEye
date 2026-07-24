@@ -45,12 +45,16 @@ that is the acceptance oracle; phase follows the delivery sequence in
 | **UC1** | Monthly Vehicle Order Optimisation | Forecast → demand-vs-cover order quantity (optimisation over UC2) | `recommend`, `demandVelocity` | P2 | Partial |
 | **UC4** | Procurement Quantity Optimisation | Demand + lead-time model → order quantity / reorder point | `demandVelocity`, `computeInventory` | P3 | Partial |
 | **UC3** | Configuration-Level Demand Insights | Segment demand model (location×model×variant×colour/interior) | `breakdown`, `demandTrend` | P3 | Partial |
-| **UC6** | Sales vs After-Sales Correlation | Statistical association (no predictive model yet) | new (no data) | P4 | New |
-| **UC7** | Spare Parts Demand Prediction | Intermittent-demand forecast (Croston/SBA, GBM) | new (no data) | P5 | New |
+| **UC6** | Sales ↔ After-Sales Correlation | Statistical association + service-intensity (no predictive model) | spec-driven (`ServiceIntensity`) | P4 | Synthetic-demo¹ |
+| **UC7** | Spare Parts Demand Prediction | Intermittent-demand forecast (Croston/SBA/TSB) | spec-driven (`Intermittent`, `SparePartsForecaster`) | P5 | Synthetic-demo¹ |
 
-UC6 and UC8 register **no** predictive model: UC8 aggregates and narrates already-validated UC2/UC5
-outputs; UC6 (until after-sales data lands) reports associations with explicit "association, not causation"
-language, consistent with the POC's forecast explanations.
+UC6 and UC8 register **no** predictive model: UC8 aggregates and narrates already-validated UC1–UC7
+outputs; UC6 reports associations with explicit "association, not causation" language, consistent with
+the platform's forecast explanations.
+
+¹ **UC6/UC7 are live end-to-end** on a labelled **synthetic-demo** after-sales/parts dataset derived
+from the real sales history. It is clearly marked in the UI and the API and is never presented as real
+Oracle Fusion data; a real after-sales/parts feed is still to be integrated.
 
 ---
 
@@ -171,13 +175,13 @@ those models' back-tests and the fallback hierarchy, and their outputs remain hu
 |-------|-------------------------------|-------------------------|
 | Target | Demand by fine segment (location×model×variant×colour/interior) | Monthly demand per part (intermittent, many zeros) |
 | Horizon | 3–6 months | 1–3 months |
-| Population | Segments with adequate history; else fallback | Parts with any movement history (no POC data yet) |
+| Population | Segments with adequate history; else fallback | Parts with any movement history (synthetic-demo dataset) |
 | Baseline | Seasonal-naive per segment; segment share of national | Croston / SBA (intermittent-demand baselines) |
 | Candidates | Hierarchical/pooled model; GBM (LightGBM) with segment features | Croston/SBA vs LightGBM with intermittency features |
 | Metrics | WMAPE per segment; coverage of aggregated forecast vs total | MASE / WMAPE tolerant of zeros; service-level attainment |
 | Leakage | Revenue/price excluded (as UC2); no future periods | No after-sales→sales reverse leakage; time-ordered only |
 | Cold-start | Sparse segments roll up via the fallback hierarchy | New parts use category priors; flagged low-confidence |
-| Limitations | Sample data has 5 models / VX-ZX-MX only | **No POC data** — model requirements are provisional until after-sales/parts feeds land |
+| Limitations | Sample data has 5 models / VX-ZX-MX only | Runs on a **synthetic-demo** parts dataset (derived from real sales); a real after-sales/parts feed is still to be integrated |
 
 ---
 

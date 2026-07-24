@@ -6,7 +6,7 @@
 
 | Field | Value |
 |-------|-------|
-| Status | **Accepted** |
+| Status | **Accepted &amp; Implemented** (S4; backend enforced, SPA sign-in outstanding) |
 | Date | 2026-07-23 |
 | Deciders | Platform Architecture, Security Architecture, ADMC IT |
 | Scope | Platform-wide; binds the API host, all 19 bounded contexts and the SPA |

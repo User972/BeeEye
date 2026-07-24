@@ -6,11 +6,11 @@ the `/code-review` conventions pass reads this file and flags changes that viola
 ## What this is
 
 **BeeEye** — an AI decision-intelligence platform for **ADMC** (automotive distribution). A .NET
-modular monolith + React SPA + Python ML, deployable to Azure. Seven use cases are live end-to-end:
+modular monolith + React SPA + Python ML, deployable to Azure. Eight use cases are live end-to-end:
 **UC1 (Order Optimisation — Recommendations)**, **UC2 (Sales Forecasting)**, **UC3 (Configuration
-Demand — SalesActuals)**, **UC4 (Procurement)**, **UC5 (Inventory Aging & Overstock Risk)**, and
+Demand — SalesActuals)**, **UC4 (Procurement)**, **UC5 (Inventory Aging & Overstock Risk)**,
 **UC6/UC7 (Sales↔After-Sales Correlation and Spare Parts Demand)** — the latter two on a
-clearly-labelled **synthetic-demo** dataset derived from the real sales — plus **UC8 (Executive
+clearly-labelled **synthetic-demo** dataset derived from the real sales — and **UC8 (Executive
 Decision Cockpit)**.
 
 The analytics are read-only. The **write path is the governed decision workflow** (ADR 0006): engine
