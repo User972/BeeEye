@@ -40,6 +40,41 @@ export async function stabilise(page: Page): Promise<void> {
 }
 
 /**
+ * Waits until the full-page height stops changing, so a `fullPage` screenshot captures the settled
+ * page rather than a mid-hydration one.
+ *
+ * The data-heavy screens (decision log, after-sales, spare parts, …) load their tables asynchronously;
+ * `stabilise` only waits for the heading and the icon font, so a shot taken before the rows arrive is
+ * shorter than the loaded page. That is a screenshot *size* mismatch — a different image height, which
+ * no mask and no `maxDiffPixelRatio` can absorb — and it makes the committed baseline disagree with a
+ * later run purely on capture timing (seen first at the w360 viewport). Polling the document height
+ * until it holds steady across consecutive checks pins every capture — baseline and verification alike
+ * — to the same fully-rendered page. Condition-based, not an arbitrary sleep; it falls through after
+ * the timeout rather than failing a legitimately slow screen.
+ */
+export async function waitForStableLayout(page: Page): Promise<void> {
+  await page
+    .waitForFunction(
+      () => {
+        const marker = window as unknown as { __beeHeight?: number; __beeStable?: number };
+        const height = document.documentElement.scrollHeight;
+        if (marker.__beeHeight === height) {
+          marker.__beeStable = (marker.__beeStable ?? 0) + 1;
+        } else {
+          marker.__beeHeight = height;
+          marker.__beeStable = 0;
+        }
+        return (marker.__beeStable ?? 0) >= 3;
+      },
+      null,
+      { timeout: 10_000, polling: 150 },
+    )
+    .catch(() => {
+      /* height never settled within budget — capture anyway rather than fail on a slow screen */
+    });
+}
+
+/**
  * Opens the global explainability drawer on the current screen and returns it.
  *
  * Some screens expose the "Why this…" trigger directly (e.g. Forecast Accuracy); others reveal it

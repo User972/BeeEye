@@ -1,0 +1,96 @@
+# TEMPORARY — regenerate the platform-pinned Linux visual baselines (S12 @visual gate).
+#
+# The first bootstrap captured a few data-heavy screens mid-hydration (a fullPage size mismatch at
+# w360), so the visual spec now waits for the page height to settle (waitForStableLayout) before the
+# shot. This regenerates all 154 baselines with that fix IN the same ubuntu-latest image the ci.yml
+# `e2e` job verifies against, proves them self-consistent with a clean @visual re-run in the same
+# runner, then commits them back. Delete this workflow once the baselines are committed; the standing
+# gate lives in ci.yml.
+name: visual-baselines-bootstrap
+
+on:
+  push:
+    branches: ['claude/s12-linux-visual-baselines-1ma3u7']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  baselines:
+    name: Regenerate + verify + commit Linux visual baselines
+    runs-on: ubuntu-latest # same image as ci.yml `e2e`, so the {platform}-pinned baselines match
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 'claude/s12-linux-visual-baselines-1ma3u7'
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: src/web/package-lock.json
+      - name: Start seeded Postgres + Azurite
+        run: docker compose up -d
+      - name: Restore & build the API
+        run: |
+          dotnet restore BeeEye.slnx
+          dotnet build src/api/BeeEye.Api/BeeEye.Api.csproj -c Release --no-restore
+      - name: Install web deps
+        working-directory: src/web
+        run: npm ci
+      - name: Install Playwright browser
+        working-directory: src/web
+        run: npx playwright install --with-deps chromium
+      - name: Regenerate visual baselines (--update-snapshots)
+        working-directory: src/web
+        env:
+          ASPNETCORE_ENVIRONMENT: Development
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: '5432'
+          POSTGRES_DB: beeeye
+          POSTGRES_USER: beeeye
+          POSTGRES_PASSWORD: beeeye_local_dev_only
+        run: npm run e2e:update
+      - name: Verify baseline count (expect 154)
+        working-directory: src/web
+        run: |
+          count=$(find e2e/__screenshots__ -type f -name '*-linux.png' | wc -l)
+          echo "Generated ${count} Linux baselines"
+          test "${count}" -eq 154
+      # Keep the regenerated baselines retrievable even if the verify or push step is blocked.
+      - name: Upload baselines artifact
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-baselines-linux
+          path: src/web/e2e/__screenshots__
+          if-no-files-found: error
+      # Prove the freshly written baselines pass a clean (no-update) @visual run in this same runner —
+      # if the stable-layout fix is insufficient and a size race remains, this fails BEFORE any commit,
+      # so the branch never gets a bad baseline set.
+      - name: Verify baselines pass a clean @visual run
+        working-directory: src/web
+        env:
+          ASPNETCORE_ENVIRONMENT: Development
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: '5432'
+          POSTGRES_DB: beeeye
+          POSTGRES_USER: beeeye
+          POSTGRES_PASSWORD: beeeye_local_dev_only
+        run: npm run e2e -- --grep @visual
+      - name: Commit & push baselines
+        run: |
+          git config user.name "Claude"
+          git config user.email "noreply@anthropic.com"
+          git add src/web/e2e/__screenshots__
+          if git diff --cached --quiet; then
+            echo "No baseline changes to commit"; exit 0
+          fi
+          git commit \
+            -m "test(e2e): regenerate Linux visual baselines with settled-layout capture (S12 @visual)" \
+            -m "Regenerated in the CI ubuntu-latest runner after the visual spec learned to wait for the full-page height to settle (waitForStableLayout), fixing the w360 size mismatch on data-heavy screens (decision log, after-sales, spare parts). All 154 baselines proven self-consistent by a clean @visual re-run in the same runner before this commit." \
+            -m "Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>"
+          git push origin HEAD:refs/heads/claude/s12-linux-visual-baselines-1ma3u7

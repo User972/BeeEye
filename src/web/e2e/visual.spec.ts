@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { ROUTES, setTheme, stabilise, volatileMasks } from './helpers';
+import { ROUTES, setTheme, stabilise, volatileMasks, waitForStableLayout } from './helpers';
 
 /**
  * Visual regression (V3-QA-002 / R-09): every screen × 7 viewports × light + dark. The viewport comes
@@ -24,6 +24,9 @@ test.describe('visual regression @visual — every screen, both themes', () => {
         await expect(page.getByRole('heading', { name: route.heading }).first()).toBeVisible();
         await setTheme(page, theme);
         await stabilise(page);
+        // Pin the capture to the settled page height so async-loaded tables can't shrink the shot on
+        // one run and grow it on another (a size mismatch no mask absorbs — see waitForStableLayout).
+        await waitForStableLayout(page);
 
         await expect(page).toHaveScreenshot(`${route.id}-${theme}.png`, {
           fullPage: true,
