@@ -121,7 +121,9 @@ public static class DataQualityCalculator
             new("lead", "Lead-time reconciliation mismatches (>2d)", ltBad, ltBad > 0 ? "medium" : "ok",
                 "lead_time_days = purchase − manufacture verified."),
             new("neg", "Negative quantities / amounts", negS + negI, negS + negI > 0 ? "high" : "ok",
-                "No negative units, prices, revenue or holding costs."),
+                negS + negI > 0
+                    ? $"{negS + negI} negative units, prices, revenue or holding costs."
+                    : "No negative units, prices, revenue or holding costs."),
             new("dates", "Invalid / unparseable dates", badDates, badDates > 0 ? "high" : "ok",
                 "All dates parsed to valid calendar dates."),
             new("loc", "Sales locations absent from inventory", mismatch.Count, mismatch.Count > 0 ? "medium" : "ok",

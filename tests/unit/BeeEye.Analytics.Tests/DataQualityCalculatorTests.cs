@@ -38,6 +38,7 @@ public sealed class DataQualityCalculatorTests
         Assert.Equal("Healthy", report.ScoreBand);
         Assert.All(report.Issues, i => Assert.Equal("ok", i.Severity));
         Assert.All(report.Issues, i => Assert.Equal(0, i.Count));
+        Assert.Equal("No negative units, prices, revenue or holding costs.", Issue(report, "neg").Note);
         Assert.Empty(report.Mismatch);
     }
 
@@ -89,6 +90,7 @@ public sealed class DataQualityCalculatorTests
         var issue = Issue(report, "neg");
         Assert.Equal(2, issue.Count); // one negative sale + one negative inventory row
         Assert.Equal("high", issue.Severity);
+        Assert.Equal("2 negative units, prices, revenue or holding costs.", issue.Note);
         Assert.Equal(90, report.Score); // 100 − 2×5
     }
 
