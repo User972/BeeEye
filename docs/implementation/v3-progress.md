@@ -13,6 +13,7 @@
 | **S2** | **UC8 Executive Decision Cockpit** | P1 | **Complete** |
 | **S3** | **Explainability drawer & AI label system** | P1 | **Complete** |
 | **S4** | **Identity, roles & authorization** | P0 | **Complete** (backend) |
+| **S4b** | **SPA sign-in flow (MSAL, 401/refresh, route gate)** | P0 | **Complete** |
 | **S5** | **Recommendation records & write path** | P0 | **Complete** |
 | **S6** | **Decision Log & human decisions** | P1 | **Complete** |
 | S7 | Data Health, Lineage & Settings | P2 | Not started |
@@ -33,6 +34,7 @@
 | **After S4 + S5** | **615** | **67** | **682** |
 | **After S6** | **814** | **116** | **930** |
 | **After S3** | **885** | **200** | **1085** |
+| **After S4b** | **885** | **234** | **1119** |
 
 Backend breakdown after S5: `BeeEye.UnitTests` **129** (was 18) · `BeeEye.Analytics.Tests` **384**
 (was 332) · `BeeEye.ArchitectureTests` 4 · `BeeEye.IntegrationTests` **98** (was 33).
@@ -713,3 +715,129 @@ no new build warnings. Bundle: the Decision Log is its own 16.58 kB chunk (5.36 
 index chunk is unchanged at ~325 kB.
 
 **Next action.** None — slice closed. The expiry/supersession jobs and `AuditEvent` are separate work.
+
+## S4b — SPA sign-in flow (MSAL) · **Complete**
+
+- **Requirements.** `V3-AUTH-001` — its *named removal condition* (ADR 0008 §2.4, §Consequences). The
+  browser must obtain and refresh an Entra access token, attach it to every API call, recover from a
+  401, and sign out, so a deployed host can run with `Auth:RequireAuthenticatedReads = true` instead of
+  serving reads anonymously.
+- **Outcome.** The backend was already complete and enforced (S4); this slice makes the browser produce
+  the tokens. No backend code changed — S4b is web + docs only.
+- **Unblocked by** S4 (identity, roles, `/identity/me`, JWT validation, LocalDev provider).
+
+### What changed
+
+An **auth-provider abstraction with two implementations, selected by configuration, not by environment
+guesswork** (ADR 0008 §2.4):
+
+- **`local` mode** — the default when `VITE_AAD_CLIENT_ID` is absent. No bearer, no gate, no MSAL; the
+  app renders anonymously exactly as it did before this slice, mirroring the backend's LocalDev posture.
+  `npm run dev` still needs no Entra tenant.
+- **`entra` mode** — real MSAL (`@azure/msal-browser` + `@azure/msal-react`, pinned exact). PKCE
+  authorization-code flow, redirect as the primary interaction, `sessionStorage` cache.
+
+Mode is chosen by a single `VITE_AUTH_MODE` (`entra` | `local`), defaulting to `local` when no client
+id is set. A **production `vite build` fails fast** (`beeeye-auth-build-guard`) when the app is meant
+for Entra but is missing any of `VITE_AAD_CLIENT_ID` / `VITE_AAD_AUTHORITY` / `VITE_AAD_API_SCOPE`, so a
+deployment can never boot into accidental anonymous mode. The guard reuses the runtime
+`resolveAuthConfig`, so build-time and runtime enforcement cannot diverge.
+
+### The single subtlest edge case — the idempotency key across a 401 replay
+
+The transport layer (`lib/api/client.ts`) stays free of React and MSAL. It gained a token-provider
+seam and recovers from **exactly one** 401 by refreshing the token and replaying the *identical*
+request. The key resolves **once**, before the first attempt, and both the original POST and the replay
+carry the same `Idempotency-Key` (ADR 0007 §2.1) — minting a fresh key on the retry would let the
+server record a second, unrelated decision worth millions of SAR. A 403 is authenticated-but-forbidden
+and is left untouched (never refreshed, never a sign-in prompt). This auth retry lives *below* TanStack
+Query and is distinct from Query's transport retry. There is a direct test asserting header equality on
+the original and replayed POST.
+
+### Two decisions taken under ambiguity
+
+1. **The transport refresher does silent-only; interactive sign-in is UI-driven.** A full-page
+   `acquireTokenRedirect` fired from inside a *background* request's 401 handler would discard unsaved
+   work and could race the replay. So `refreshAccessToken` performs `acquireTokenSilent({forceRefresh})`
+   only, returns `null` on `InteractionRequiredAuthError`, and the route gate / header / session-ended
+   state drive the interactive redirect. This still recovers the common "access token expired, refresh
+   token valid" case silently (no interaction), keeps the retry loop-free and the transport layer
+   unit-testable, and never turns a 403 into a prompt.
+2. **The `Auth:RequireAuthenticatedReads` flag is retained, not removed.** Its removal condition (SPA
+   sign-in ships) is now met for *deployed* environments, but the flag keeps the Development relaxation
+   that lets a local run work without a tenant, and stays as a safety net (with the
+   `RelaxedReadPostureAnnouncer` warning on any deployed host that lowers it). Retiring it entirely is
+   called out as a separate backend follow-up rather than done silently here.
+
+### Frontend
+
+- **`lib/auth/config.ts`** — `resolveAuthConfig` (mode selection + fail-fast) and `msalConfiguration`
+  (PKCE, `sessionStorage`).
+- **`lib/auth/msalBridge.ts`** — installs the token provider/refresher into the transport seam and
+  invalidates `identity.me` across every sign-in boundary; on sign-out it also clears the token
+  provider so nothing signed-out keeps sending a bearer.
+- **`lib/auth/context.ts` + `AuthProvider.tsx`** — the `AppAuth` surface (`signIn`/`signOut`/
+  `switchAccount`) and `<AppAuthProvider>` (wraps `<MsalProvider>` in entra mode; a no-op in local).
+- **`components/layout/AuthGate.tsx`** — the route gate: no gate in local mode; in entra mode an
+  anonymous user gets a sign-in screen that preserves the deep-link `returnTo`, and the shell holds a
+  `LoadingState` while identity resolves so no control flashes in and out. Whether the app renders is
+  decided by the *server's* `/identity/me`, never by decoding the token.
+- **`AppHeader`** — account chip (display name from `/identity/me`, never the token) + sign-out +
+  switch-account when authenticated, a sign-in button when not; theme toggle and read-only badge kept.
+  Rendered only in entra mode, so local mode is byte-for-byte as before.
+- **`main.tsx`** — MSAL is initialised, the redirect return is processed **once** in imperative
+  bootstrap (StrictMode-safe), and the token bridge is installed *before* the router renders, so the
+  first `apiGet` in entra mode already carries a bearer.
+- **Permission-aware rendering** — the explainability feedback control now reads
+  `useHasPermission('explanation-feedback.submit')` and degrades to an explanatory line when hidden,
+  matching the S6/S3 pattern.
+
+### Edge cases handled (and tested)
+
+Silent SSO on cold load · `consent_required`/`interaction_required` → redirect, not a dead 401 · popup
+blocked → redirect primary path · third-party cookies blocked → redirect + PKCE, no iframe-silent
+dependency · access token expires mid-session → silent refresh → replay with the **same idempotency
+key** · session expired (`login_required`) → sign-in screen, no redirect loop · account switch →
+deterministic active account · multiple tabs → next token use recovers or prompts · sign-out → provider
+cleared, `identity.me` invalidated, signed-out state · StrictMode double-invoke → redirect handling is
+idempotent (imperative bootstrap, not an effect) · first query before MSAL init → provider installed
+pre-render · local-mode parity → no bearer, no gate, renders as today · secure-context fallback for
+`newIdempotencyKey` → unchanged.
+
+### Tests — 234 total (was 200)
+
+34 web tests added: `client.test.ts` (10 — bearer attach/omit, 401→single silent refresh→retry,
+401→refresh fails→typed `ApiError(401)` and no loop, **same `Idempotency-Key` on the original and the
+replayed POST**, 403 never a sign-in prompt, AbortSignal forwarding) · `config.test.ts` (9 — mode
+selection, fail-fast on missing/typo'd entra config, redirect defaulting, `sessionStorage`) ·
+`msalBridge.test.ts` (5 — token install, no-account, interaction-required → no token/no loop, sign-out
+clears the provider + invalidates identity, login invalidates identity) · `signin-flow.test.tsx` (9 —
+account chip + sign-out/switch, sign-in when anonymous, route gate redirects anonymous and preserves
+`returnTo`, `LoadingState` with no control flash, **local-mode parity**) · `ExplainabilityDrawer`
+(+1 — feedback control hidden without its permission, with the explanatory line). The existing
+`NavRail` shell test was updated to provide the `QueryClient` the shell now needs (it integrates
+identity) — a correct update, not a relaxation.
+
+### Backend / config
+
+No backend code changed. The recommended staging-like verification recipe (run the API with
+`Auth:Provider = EntraId`, real `Authority`/`Audience`, `RequireAuthenticatedReads = true`, and the SPA
+in `entra` mode) is documented in [`src/web/README.md`](../../src/web/README.md). New `VITE_` variables
+are documented in [`src/web/.env.example`](../../src/web/.env.example).
+
+### Known gaps
+
+- **Real-token end-to-end** of the redirect/callback/token-attach path is not exercised here (no live
+  tenant; unit/component tests mock MSAL at the module boundary). S12 covers the sign-in UI wiring
+  end-to-end; a real-token E2E against a test JWKS is a tracked follow-up.
+- **Bundle size** — MSAL adds ~250 kB (min) to the shared index chunk. Code-splitting it so `local`
+  builds never load it is a follow-up optimisation; the build passes with only Vite's existing
+  chunk-size *warning*.
+- **Full removal of `Auth:RequireAuthenticatedReads`** is a separate backend follow-up (see decision 2).
+
+### Verification
+
+typecheck ✅ · lint ✅ · web build (local mode) ✅ · build guard fails a misconfigured entra build ✅ ·
+**234/234 web** ✅ · **885/885 backend** unaffected (no backend change) · architecture unaffected.
+
+**Next action.** None — slice closed. Real-token E2E and MSAL code-splitting are tracked follow-ups.

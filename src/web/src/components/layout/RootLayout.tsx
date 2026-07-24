@@ -2,6 +2,7 @@ import { Suspense, useCallback, useEffect, useState } from 'react';
 import { Outlet, useRouterState } from '@tanstack/react-router';
 import { NavRail } from './NavRail';
 import { AppHeader } from './AppHeader';
+import { AuthGate } from './AuthGate';
 import { LoadingState } from '@/components/ui/states';
 
 /** Root route shell: dark nav rail + main column. A single Suspense boundary
@@ -43,9 +44,11 @@ export function RootLayout() {
       <div className="app-main">
         <AppHeader navOpen={navOpen} onToggleNav={toggleNav} />
         <main className="app-content" id="main-content" tabIndex={-1}>
-          <Suspense fallback={<LoadingState label="Loading screen…" />}>
-            <Outlet />
-          </Suspense>
+          <AuthGate>
+            <Suspense fallback={<LoadingState label="Loading screen…" />}>
+              <Outlet />
+            </Suspense>
+          </AuthGate>
         </main>
       </div>
     </div>

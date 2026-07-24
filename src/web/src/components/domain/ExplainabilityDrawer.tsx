@@ -7,7 +7,7 @@ import { LoadingState, ErrorState } from '@/components/ui/states';
 import { EvidenceChart } from '@/components/charts/EvidenceChart';
 import { DecisionFooter } from '@/components/domain/DecisionFooter';
 import { ApiError, apiErrorMessage } from '@/lib/api/client';
-import { useCurrentUser } from '@/lib/api/identity';
+import { permissions, useCurrentUser, useHasPermission } from '@/lib/api/identity';
 import {
   explainQuestion,
   feedbackVerdicts,
@@ -274,6 +274,11 @@ function FeedbackSection({ subject, current, caveat }: FeedbackSectionProps) {
   const [confirmed, setConfirmed] = useState<string | null>(null);
   const noteId = useId();
 
+  // Hiding the control is a courtesy — the server enforces the same permission on the write. When the
+  // caller cannot submit, an explanatory line replaces the buttons rather than a dead control that
+  // 403s on click (the S6/S3 pattern, A.6).
+  const canSubmit = useHasPermission(permissions.explanationFeedbackSubmit);
+
   const submit = useSubmitFeedback();
 
   const send = (verdict: FeedbackVerdict) => {
@@ -288,6 +293,17 @@ function FeedbackSection({ subject, current, caveat }: FeedbackSectionProps) {
       })
       .catch((e: unknown) => setError(apiErrorMessage(e)));
   };
+
+  if (!canSubmit) {
+    return (
+      <Section title="Was this useful?">
+        <p className="ex__caption">
+          Recording feedback needs the <code>explanation-feedback.submit</code> permission. Ask an
+          administrator to grant it.
+        </p>
+      </Section>
+    );
+  }
 
   return (
     <Section title="Was this useful?">

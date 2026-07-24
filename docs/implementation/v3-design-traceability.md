@@ -79,7 +79,7 @@
 
 | ID | Driver | Requirement | Existing | Change category | Priority | Cx | Slice | Status | Tests |
 |----|--------|-------------|----------|-----------------|----------|----|----|--------|-------|
-| V3-AUTH-001 | ADR-0006 `decided_by` | Authenticated user identity, so a decision can name the human accountable | Entra ID OIDC/PKCE + guarded dev provider | New permission requirement | P0 | L | S4 | **Implemented** (backend; SPA sign-in outstanding) | Covered (18 integration) |
+| V3-AUTH-001 | ADR-0006 `decided_by` | Authenticated user identity, so a decision can name the human accountable | Entra ID OIDC/PKCE + guarded dev provider | New permission requirement | P0 | L | S4 · S4b | **Implemented** (backend + SPA sign-in; flag removal condition met for deployed envs) | Covered (18 integration · 34 web) |
 | V3-AUTH-002 | ADR-0006 liability | Server-enforced authorization on every state-changing endpoint | Permission policies, unconditional for state-changing | Security impact | P0 | M | S4 | **Implemented** | Covered (18 integration) |
 | V3-AUTH-003 | threat model §3.2 | Role model: Executive / Analyst / IT-Admin mapped to 25 permissions | — | New permission requirement | P1 | M | S4 | **Implemented** | Covered (64 unit) |
 | V3-AUTH-004 | ADR-0006 §6 | Segregation of duties: no role holds both sides of an author/approve pair, **and no person approves their own decision** | `RolePermissions.AuthorApprovePairs`, `SubjectIds.Same`, `DecisionService.SignOffAsync` | New validation behaviour | P1 | S | S4 + S6 | **Implemented** (all three layers: permission, actor, and a documented exemption for outcome recording) | Covered (unit + integration) |

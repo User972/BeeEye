@@ -7,15 +7,15 @@
 
 > **Update (post-S6, 2026-07-24):** R-01, R-02 and R-03 are now **Closed** — the governed Decision Log
 > (S6), identity & authorization (S4) and the frozen append-only write path (S5) all shipped as designed
-> and under test. Any test-count figures below predate S3–S6; current totals are **885 backend + 200
-> web = 1085** (see [`v3-progress.md`](v3-progress.md)).
+> and under test. Any test-count figures below predate S3–S6; current totals are **885 backend + 234
+> web = 1119** (S4b added 34 web tests; see [`v3-progress.md`](v3-progress.md)).
 
 ## Top risks
 
 | ID | Risk | Prob. | Impact | Affects | Status |
 |----|------|-------|--------|---------|--------|
 | R-01 | Decision Log implemented as v3 draws it, discarding the audit trail | Medium | **High** | V3-GOV-001/011/012 | **Closed** (S6) |
-| R-02 | Human decisions land before identity exists, producing unattributable records | Medium | **High** | V3-AUTH-001, V3-GOV-004 | **Closed** (S4→S6) |
+| R-02 | Human decisions land before identity exists, producing unattributable records | Medium | **High** | V3-AUTH-001, V3-GOV-004 | **Closed** (S4→S6; SPA sign-in S4b) |
 | R-03 | First write path introduces the platform's first mutation defects | High | **High** | V3-API-001…005 | **Closed** (S5, under test) |
 | R-04 | Effort wasted chasing numeric parity with v3's synthetic fixtures | Medium | Medium | V3-CONFLICT-4 | **Mitigating** |
 | R-05 | UC2/UC5 `engine.js` parity broken while restyling | Low | **High** | V3-UC02/05-001 | **Mitigating** |
@@ -58,7 +58,10 @@
   integration test asserting an anonymous request is rejected.
 - **Contingency.** Hold S6 until S4 completes. Do **not** substitute a placeholder actor — that is
   precisely the fake-logic failure mode the delivery rules forbid.
-- **Owner.** Security Architecture. **Status: Mitigating.**
+- **Owner.** Security Architecture. **Status: Closed** (S4 identity → S6 human decisions, with the SPA
+  sign-in flow completing the client side in S4b — the browser can now obtain, attach and refresh an
+  Entra token, so a deployed host can require authentication and no decision is recorded without a
+  named, accountable human).
 
 ### R-03 — First-ever write path introduces mutation defects
 

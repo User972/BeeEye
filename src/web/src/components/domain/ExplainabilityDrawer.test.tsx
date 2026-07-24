@@ -611,6 +611,25 @@ describe('ExplainabilityDrawer — feedback is recorded, and says it changes not
     }
   });
 
+  it('hides the verdicts and explains why when the caller lacks the submit permission (A.6)', async () => {
+    // A viewer who can read the explanation but not record feedback — the same shape the server
+    // enforces. Hiding the control is a courtesy; an explanatory line replaces it rather than a dead
+    // button that 403s on click (the S6/S3 permission-rendering pattern).
+    serve({ identity: { ...viewer, permissions: ['recommendation.review'] } });
+    renderScreen();
+    await openDrawer();
+
+    // The "Was this useful?" section is still there, but as an explanation of the missing permission.
+    expect(await screen.findByRole('heading', { name: 'Was this useful?' })).toBeInTheDocument();
+    expect(screen.getByText(/explanation-feedback\.submit/i)).toBeInTheDocument();
+
+    // The verdict controls are absent from the DOM, not merely disabled.
+    expect(
+      screen.queryByRole('group', { name: /was this explanation useful/i }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Useful' })).not.toBeInTheDocument();
+  });
+
   it('sends the verdict and the note to the server', async () => {
     // Captured rather than read back off the mock, so the request is inspected as a typed
     // RequestInit instead of through a cast.

@@ -6,9 +6,47 @@ import {
   createRoute,
   createRouter,
 } from '@tanstack/react-router';
-import { describe, expect, it } from 'vitest';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { RootLayout } from './RootLayout';
 import { navGroups, navItems } from '@/config/navigation';
+
+// The shell now integrates identity (AuthGate + the header account control both read
+// `/identity/me`), so it needs a QueryClient. In local mode — the default when no AppAuthProvider is
+// mounted — the gate renders children immediately and the header shows no account UI, so an anonymous
+// identity keeps these navigation tests behaving exactly as before.
+function json(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'content-type': 'application/json' },
+  });
+}
+
+const anonymousIdentity = {
+  isAuthenticated: false,
+  subjectId: null,
+  displayName: null,
+  roles: [],
+  permissions: [],
+};
+
+const fetchMock = vi.fn();
+
+beforeEach(() => {
+  vi.stubGlobal('fetch', fetchMock);
+  fetchMock.mockReset();
+  fetchMock.mockImplementation((input: string) => {
+    const url = String(input);
+    if (url.includes('/identity/me')) {
+      return Promise.resolve(json(anonymousIdentity));
+    }
+    return Promise.resolve(json({}));
+  });
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 /**
  * Matches a group heading by its leading label. Anchored because several v3
@@ -38,7 +76,12 @@ async function renderShell(initialPath = '/') {
     history: createMemoryHistory({ initialEntries: [initialPath] }),
   });
 
-  const result = render(<RouterProvider router={router} />);
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
+  const result = render(
+    <QueryClientProvider client={client}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>,
+  );
   await screen.findByRole('navigation', { name: /primary navigation/i });
   return result;
 }
