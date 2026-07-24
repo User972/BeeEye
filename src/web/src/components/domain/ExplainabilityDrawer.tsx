@@ -413,9 +413,10 @@ function Body({ subject, query }: { subject: ExplainSubject; query: ReturnType<t
     );
   }
 
-  // *The caller's own* current verdict — matched on the stable subject id, not simply the newest
-  // row. The API returns the latest verdict per submitter, so highlighting `feedback[0]` would show
-  // a colleague's answer as though it were yours.
+  // *The caller's own* current verdict. The server already scopes the feedback it returns to the
+  // caller (`MineAsync`), so this is normally the single row in the payload; the stable-subject-id
+  // match is kept as defence-in-depth, so a future change that ever widened the response could not
+  // surface a colleague's verdict as though it were yours.
   const mine = data.feedback.find((f) => f.submittedBy === subjectId)?.verdict ?? null;
 
   return (

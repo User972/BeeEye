@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace BeeEye.Modules.Predictions;
 
@@ -52,6 +53,7 @@ internal static class ExplainabilityEndpoints
                 ExplainabilityFeedbackService feedback,
                 ClaimsPrincipal user,
                 IClock clock,
+                ILoggerFactory loggerFactory,
                 CancellationToken ct) =>
             {
                 if (string.IsNullOrWhiteSpace(kind))
@@ -98,6 +100,32 @@ internal static class ExplainabilityEndpoints
                 // and a candid note is not something to hand every colleague who can view the figure.
                 var actor = user.SubjectId()?.Trim() ?? string.Empty;
 
+                // The reader's own past verdict is a *courtesy*, not the payload. A failure of this
+                // secondary read must not fail the whole response: the explanation was already
+                // assembled (Explained), or the endpoint is deliberately answering 200-with-a-gap
+                // (Failed), and turning either into a 500 over a "your last answer" lookup would break
+                // the very "a failed provider is a gap, never a 500" contract this route is built on.
+                // The exception detail goes to the log; the drawer simply opens with an empty control.
+                IReadOnlyList<FeedbackEntryDto> mine;
+                try
+                {
+                    mine = await feedback.MineAsync(trimmedKind, trimmedRef, actor, ct);
+                }
+                catch (OperationCanceledException) when (ct.IsCancellationRequested)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    loggerFactory.CreateLogger("Predictions.Explain").LogError(
+                        ex,
+                        "Reading the caller's own explanation feedback failed for {Kind}/{Ref}; the "
+                        + "explanation still ships with no recorded verdict.",
+                        trimmedKind,
+                        trimmedRef);
+                    mine = [];
+                }
+
                 // Explained, or Failed. A failed provider is a *gap*, never a 500 and never a silent
                 // omission: the drawer says what is missing. Exception detail stayed in the log.
                 return Results.Ok(new ExplanationResponse(
@@ -105,7 +133,7 @@ internal static class ExplainabilityEndpoints
                     trimmedRef,
                     outcome.Explanation is null ? null : ExplanationDto.From(outcome.Explanation),
                     [.. outcome.Gaps.Select(ExplanationGapDto.From)],
-                    await feedback.MineAsync(trimmedKind, trimmedRef, actor, ct),
+                    mine,
                     ExplainabilityFeedbackService.RetrainingCaveat,
                     clock.UtcNow));
             })

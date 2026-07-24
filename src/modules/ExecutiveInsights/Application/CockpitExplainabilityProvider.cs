@@ -115,7 +115,8 @@ public sealed class CockpitExplainabilityProvider(DecisionFeedService feed, IClo
 
             // Ownership is what makes the drawer render its workflow footer, and a cockpit decision is
             // exactly the kind of subject that has one.
-            Ownership: new Ownership(decision.OwnerRole, $"{decision.Severity} · due in {decision.DueDays} days"),
+            Ownership: new Ownership(
+                decision.OwnerRole, $"{decision.Severity} · due in {ExplanationFormat.Days(decision.DueDays)}"),
             IsDemoData: decision.IsDemo);
     }
 
