@@ -52,15 +52,23 @@ public sealed class DataHealthApiTests(IntegrationTestFactory factory)
     }
 
     [Fact]
-    public async Task Only_current_ingestion_batches_are_counted()
+    public async Task Startup_seed_has_only_current_batches_so_health_counts_current_rows()
     {
+        // Data Health counts SalesFact/InventoryItem rows directly; the importer guarantees those are the
+        // *current* rows by deleting a superseded batch's rows at ingestion. This pins that guarantee at
+        // the source: the fresh seed carries three batches and none is superseded, so the row counts
+        // asserted in Real_row_counts_match_the_seeded_dataset_profile can never include stale,
+        // double-counted rows from a re-seed.
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<BeeEyeDbContext>();
 
-        // The seed loads three current batches (sales, inventory, synthetic after-sales/parts); none are
-        // superseded on a fresh seed, so counting only "completed" gives the documented three.
+        var total = await db.IngestionBatches.CountAsync();
         var completed = await db.IngestionBatches.CountAsync(b => b.Status == "completed");
+        var superseded = await db.IngestionBatches.CountAsync(b => b.Status == "superseded");
+
         Assert.Equal(3, completed);
+        Assert.Equal(total, completed); // every seeded batch is current
+        Assert.Equal(0, superseded);
     }
 
     [Fact]

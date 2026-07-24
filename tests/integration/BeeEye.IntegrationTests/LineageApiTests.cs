@@ -88,16 +88,17 @@ public sealed class LineageApiTests(IntegrationTestFactory factory)
         var feed = JsonDocument.Parse(
             await factory.CreateClient().GetStringAsync("/api/v1/executive-insights/decision-feed")).RootElement;
 
-        foreach (var d in feed.GetProperty("decisions").EnumerateArray())
-        {
-            var area = d.GetProperty("area").GetString();
-            if (area is "After-Sales" or "Parts")
-            {
-                Assert.True(
-                    d.GetProperty("isDemo").GetBoolean(),
-                    $"{area} is synthetic-demo per the platform, so its lineage metric stays demo");
-            }
-        }
+        var afterSalesAndParts = feed.GetProperty("decisions").EnumerateArray()
+            .Where(d => d.GetProperty("area").GetString() is "After-Sales" or "Parts")
+            .ToList();
+
+        // The cross-check is only meaningful if the seed actually produces UC6/UC7 signals — assert it
+        // does, so this can never pass vacuously and silently stop guarding against drift.
+        Assert.NotEmpty(afterSalesAndParts);
+        Assert.All(afterSalesAndParts, d =>
+            Assert.True(
+                d.GetProperty("isDemo").GetBoolean(),
+                $"{d.GetProperty("area").GetString()} is synthetic-demo per the platform, so its lineage metric stays demo"));
     }
 
     [Fact]
