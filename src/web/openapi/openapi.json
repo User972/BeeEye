@@ -140,6 +140,47 @@
         }
       }
     },
+    "/api/v1/data-quality/health": {
+      "get": {
+        "tags": [
+          "Data Quality"
+        ],
+        "summary": "Data Health: governed sources, data-quality score and issues (V3-GOV-008)",
+        "operationId": "DataQuality_Health",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataHealthResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/sales-actuals": {
       "get": {
         "tags": [
@@ -1595,6 +1636,47 @@
         }
       }
     },
+    "/api/v1/models/lineage": {
+      "get": {
+        "tags": [
+          "Models and Experiments"
+        ],
+        "summary": "Lineage: source-to-decision pipeline and per-metric provenance (V3-GOV-009)",
+        "operationId": "ModelsAndExperiments_Lineage",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LineageResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/predictions": {
       "get": {
         "tags": [
@@ -3021,6 +3103,47 @@
           }
         }
       }
+    },
+    "/api/v1/platform-admin/settings": {
+      "get": {
+        "tags": [
+          "Platform Administration"
+        ],
+        "summary": "The platform's current risk configuration, read-only (V3-GOV-010)",
+        "operationId": "PlatformAdministration_Settings",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -3278,6 +3401,31 @@
           }
         }
       },
+      "BandDto": {
+        "required": [
+          "label",
+          "threshold",
+          "range"
+        ],
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "threshold": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "range": {
+            "type": "string"
+          }
+        }
+      },
       "ConfidenceDto": {
         "required": [
           "band",
@@ -3342,6 +3490,152 @@
             "items": {
               "type": "string"
             }
+          }
+        }
+      },
+      "DataHealthResponse": {
+        "required": [
+          "score",
+          "scoreBand",
+          "salesRows",
+          "invRows",
+          "coverage",
+          "models",
+          "locations",
+          "sources",
+          "issues",
+          "generatedAtUtc"
+        ],
+        "type": "object",
+        "properties": {
+          "score": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "scoreBand": {
+            "type": "string"
+          },
+          "salesRows": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "invRows": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "coverage": {
+            "type": "string"
+          },
+          "models": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "locations": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DataSourceDto"
+            }
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DataQualityIssueDto"
+            }
+          },
+          "generatedAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "DataQualityIssueDto": {
+        "required": [
+          "id",
+          "label",
+          "count",
+          "severity",
+          "note"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "count": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "severity": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          }
+        }
+      },
+      "DataSourceDto": {
+        "required": [
+          "name",
+          "system",
+          "status",
+          "statusKind",
+          "rows",
+          "coverage",
+          "note"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "system": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "statusKind": {
+            "type": "string"
+          },
+          "rows": {
+            "type": "string"
+          },
+          "coverage": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
           }
         }
       },
@@ -4856,6 +5150,29 @@
           }
         }
       },
+      "LineageMetricDto": {
+        "required": [
+          "metric",
+          "source",
+          "basis",
+          "state"
+        ],
+        "type": "object",
+        "properties": {
+          "metric": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "basis": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          }
+        }
+      },
       "LineageNodeDto": {
         "required": [
           "label",
@@ -4868,6 +5185,27 @@
           },
           "kind": {
             "type": "string"
+          }
+        }
+      },
+      "LineageResponse": {
+        "required": [
+          "pipeline",
+          "metrics"
+        ],
+        "type": "object",
+        "properties": {
+          "pipeline": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PipelineStageDto"
+            }
+          },
+          "metrics": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LineageMetricDto"
+            }
           }
         }
       },
@@ -5333,6 +5671,29 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "PipelineStageDto": {
+        "required": [
+          "title",
+          "description",
+          "icon",
+          "kind"
+        ],
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "icon": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
           }
         }
       },
@@ -5917,6 +6278,122 @@
             "format": "double"
           },
           "detail": {
+            "type": "string"
+          }
+        }
+      },
+      "RiskWeightsDto": {
+        "required": [
+          "cover",
+          "aging",
+          "demand",
+          "holding",
+          "lead",
+          "sum",
+          "note"
+        ],
+        "type": "object",
+        "properties": {
+          "cover": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "aging": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "demand": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "holding": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "lead": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "sum": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "note": {
+            "type": "string"
+          }
+        }
+      },
+      "SettingsResponse": {
+        "required": [
+          "weights",
+          "riskBands",
+          "agingBands",
+          "analysisDate",
+          "trailingMonths",
+          "coverMax",
+          "note"
+        ],
+        "type": "object",
+        "properties": {
+          "weights": {
+            "$ref": "#/components/schemas/RiskWeightsDto"
+          },
+          "riskBands": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BandDto"
+            }
+          },
+          "agingBands": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BandDto"
+            }
+          },
+          "analysisDate": {
+            "type": "string"
+          },
+          "trailingMonths": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "coverMax": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "note": {
             "type": "string"
           }
         }

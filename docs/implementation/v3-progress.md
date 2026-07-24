@@ -16,7 +16,7 @@
 | **S4b** | **SPA sign-in flow (MSAL, 401/refresh, route gate)** | P0 | **Complete** |
 | **S5** | **Recommendation records & write path** | P0 | **Complete** |
 | **S6** | **Decision Log & human decisions** | P1 | **Complete** |
-| S7 | Data Health, Lineage & Settings | P2 | Not started |
+| **S7** | **Data Health, Lineage & Settings** | P2 | **Complete** |
 | S8 | Intelligence-screen alignment & performance | P2 | Not started |
 | S9 | Persona, accent, density | P3 | Not started |
 | S10 | Ask Decision Intelligence | P2 | Not started |
@@ -36,6 +36,7 @@
 | **After S3** | **885** | **200** | **1085** |
 | **After S4b** | **885** | **234** | **1119** |
 | **After S12** | **885** | **244** | **1129** |
+| **After S7** | **982** | **276** | **1258** |
 
 S12 also introduces a **Playwright** suite (E2E journeys · route-level a11y · visual regression) that runs
 in its own CI job and is counted separately from the vitest totals above; the vitest column gained the
@@ -970,3 +971,144 @@ of it.
 
 **Next action.** None for authoring — slice closed. Operational bootstrap: generate and commit the
 Linux visual baselines on the CI runner, then the `@visual` gate goes green.
+
+## S7 — Data Health, Lineage & Settings · **Complete**
+
+- **Requirements.** V3-GOV-008, V3-GOV-009, V3-GOV-010, V3-PLAT-007.
+- **Outcome.** Governance transparency across three screens — `/data` (Data Health), `/lineage`
+  (Model & Data Lineage) and `/settings` (Settings) — answering *which data is real vs demo, how each
+  metric is derived, and what thresholds drive the platform*. Read-only throughout: **no new table, no
+  migration, no write path, no delete path.** It reads existing entities and existing analytics
+  constants only.
+
+### The single-source-of-truth discipline this slice is really about
+
+A transparency screen exists to stop two places disagreeing about the truth, so nothing here re-asserts
+a value the platform already owns:
+
+- **Real counts and coverage** come from the store — `SalesFact`/`InventoryItem` row counts and the
+  `SaleMonth` range — never a literal.
+- **The risk constants** on Settings are projected from `RiskSettings.Default`, `RiskWeights` and
+  `Bands` by reflection/reference; a unit test asserts every surfaced value **equals** the C# constant,
+  so the screen cannot silently drift from the engine it describes.
+- **A metric's confirmed/demo state on Lineage is derived from its basis** (demo ⇔ the basis names a
+  *synthetic fixture*), not stored a second time — and UC6/UC7's demo tags are additionally
+  cross-checked against the platform's authoritative `Decision.IsDemo` flag in an integration test.
+
+### Decisions taken under ambiguity
+
+- **Settings ships read-only; editable Settings is deliberately deferred.** An editable global risk
+  configuration recomputes every UC5 score and demands its own governance — a versioned
+  `SettingsRecord` + migration, `settings.manage` + `.WithIdempotency()`, a recompute/snapshot story and
+  an ADR, mirroring how ADR-0006 governs decisions. That is a separate slice. This screen therefore
+  *says* the values are read-only rather than implying an editor that does nothing.
+- **No `coverTarget`.** The wireframe's `coverTarget` (JS `2`) was never ported to `RiskSettings`, and
+  the engine does not use it. Surfacing an invented number on the one screen whose job is provenance is
+  the exact failure it exists to prevent, so it is **absent** — asserted by a reflection test on
+  `RiskSettings` and a served-response test. If the team wants it, port it (with a parity test) first.
+- **Procurement's Lineage tag is `demo`, following the v3 wireframe** — an explicit product decision
+  taken during the slice. The platform's runtime demo flag (`Explanation.IsDemoData`) marks **only
+  UC6/UC7** demo and marks UC4 *not* demo (its recommendation runs on real sales + real lead times; the
+  missing supplier feed is a stated gap). The two are reconciled honestly: Lineage is a **data-level**
+  provenance view, and Procurement's *basis is the synthetic supplier & PO fixture* — a genuinely
+  synthetic source, matching the Procurement provider's `LineageKind.Demo` node — so tagging it demo is
+  true at the data level even though the output-level `IsDemoData` is false. UC6/UC7 (the metrics the
+  platform authoritatively flags) stay bound to that flag so they can never drift.
+- **Demo sources on Data Health are labelled synthetic/illustrative, never a measured count.** The
+  seeded store has no Procurement rows and one *combined* synthetic after-sales/parts batch, so a
+  per-source measured number would be a misattribution. The four demo rows and the one blocked row are
+  honest declarative rows; only the two real sources report measured counts. This also keeps the
+  `DataQuality` module clear of any other module's types (rule 3).
+- **"Data Management" → "Data Health".** The existing platform nav item (`/data`, `data-quality`) *is*
+  the v3 "Data Health" screen; its label and page title are reconciled to v3. The nav item id is
+  unchanged, so the router key and the cockpit's drill-down contract are untouched.
+- **Branch base.** Written against `main`, but local `main` holds only the two Init commits — the whole
+  platform (UC1–UC8, S4b, S12) lives on the `feature/spa-sign-in-test-hardening` tip. The S7 branch was
+  cut from that tip (S4b + S12 landed), which is the intended baseline the prompt assumes; cutting from
+  the literal empty `main` would have dropped every module and the Playwright infra S7 extends.
+
+### Backend
+
+- **`DataQualityCalculator`** (`BeeEye.Analytics/DataQuality/`) — a faithful port of `engine.js`
+  `dataQuality()`: duplicate stock/chassis, revenue-reconciliation (>1%, in `decimal`), lead-time
+  reconciliation (>2d), negatives, location mismatch, the exact score formula and its 0–100 clamp with
+  `engine.js`'s round-half-up, plus a `ScoreBand` helper (≥85 Healthy · ≥70 Warning · <70 Critical).
+- **Three scaffold modules promoted to `operational`** — `DataQuality` (`GET /data-quality/health`,
+  `data-quality.view`), `ModelsAndExperiments` (`GET /models/lineage`, `model.view`),
+  `PlatformAdministration` (`GET /platform-admin/settings`, new `settings.view`). Each adds a
+  `Status => "operational"` override **and** fixes the inline `"scaffolded"` in its `ModuleInfo`.
+- **New read permission `settings.view`** in `Permissions.All` (not `StateChanging` — `settings.manage`
+  is state-changing and would throw if handed to `RequireReadPermission`), mapped to **Analyst + IT-Admin**,
+  matching the `DataQualityView`/`ModelView` audience of the sibling governance screens. The
+  permission-catalogue reflection and threat-model tests were extended.
+- **`DataHealthReadService`** counts current (`"completed"`) batches only, derives coverage, and composes
+  the seven sources via a **pure** static helper (unit-testable without a DB); the DB-reading path is
+  covered end-to-end at the integration layer. `LineageCatalog` is declarative static data;
+  `SettingsReadService` projects the constants.
+
+### Frontend
+
+- Three typed clients (`lib/api/{dataHealth,lineage,settings}.ts`) mirroring `executive.ts`, and three
+  screens replacing the scaffolds / adding `/lineage`: score + band chip, the seven-source table with
+  **word+icon+colour** status chips (demo via `<AiLabel kind="demo" />`, blocked as a first-class
+  state), the DQ issues, a six-stage pipeline, an eight-metric provenance table, and the read-only
+  configuration cards badged "current configuration · read-only". **Never colour alone** — every status
+  and band renders its word. CSV export (V3-PLAT-007) on the Data Health sources and the Lineage
+  metrics, reusing `lib/csv.ts` (formula-injection-safe). The `lineage` nav item joins the registry and
+  the header comment drops Data Health & Lineage from the "not built yet" list.
+
+### Edge cases handled and tested
+
+Superseded batches (count only current); empty database (coherent zeroed state, score well-defined,
+demo/blocked rows still list); mismatch present/absent flips Inventory Ready ↔ Ready-with-assumptions in
+lock-step with the `loc` issue; score-band boundaries at exactly 85 and 70 and the 0/100 clamp;
+single-month and no-sales coverage; the blocked source distinct from a demo source; no synthetic count
+presented as measured; Settings drift and the `coverTarget` absence; Lineage demo/confirmed cross-check;
+auth posture (401 anon deployed / 403 wrong role / 200 right role / relaxed in Dev); CSV injection;
+culture-invariant formatting; and **no `DELETE` and no new table** under the three routes.
+
+### Tests — 1258 total (was 1129)
+
+- **Analytics +22** (384 → **406**): `DataQualityCalculatorTests` — each issue type, the exact penalty
+  formula, the 0-clamp, round-half-up, and the band boundaries at ≥85/≥70.
+- **Backend unit +31** (297 → **328**): the Data Health source composer (status derivation, demo/blocked
+  rows, empty DB), `LineageCatalog` (6 stages in order, 8 metrics, state ⇔ synthetic-basis, the demo
+  set), `SettingsReadService` (values equal `RiskSettings.Default`/`RiskWeights` by reflection, labels
+  from `Bands`, **no cover-target**), and the extended permission-model tests.
+- **Integration +40** (→ **242**): three API suites — `operational` status; the 7 sources and their
+  statuses; real counts **291 / 3120 / 3 current batches**; score in band; coverage parses; the 6 stages
+  and 8 metrics with the UC6/UC7 demo tags cross-checked against the cockpit's `isDemo`; weights
+  30/25/20/15/10, bands 34/59/79, aging 30/60/90/120, analysisDate, trailingMonths 3, coverMax 6, no
+  cover-target; per-route 401/403/200 added to `SecurityApiTests`; **no `DELETE`** (live + served
+  document) and **the table set unchanged** (S7 adds none).
+- **Web +32** (244 → **276**): three page tests (loading / empty / error+retry / populated; status and
+  band by **word**; demo `AiLabel`s; the 6 stages; the 8 metrics; invariant-formatted settings;
+  CSV-export formula-injection neutralised) plus the three screens added to the `vitest-axe` component
+  scans (both themes, zero serious/critical).
+- **Playwright**: a `governance.spec.ts` journey per screen (data-backed, labelled) and the three routes
+  added to the route-level a11y and visual matrices. The three journeys and the six route-a11y scans
+  (both themes) were run green in a real browser against the seeded Docker backend.
+
+### Verification
+
+`dotnet build BeeEye.slnx` → **0 warnings, 0 errors**; backend **982/982** (`Analytics 406 · UnitTests
+328 · ArchitectureTests 6 · IntegrationTests 242`), the 384 `engine.js` parity tests untouched.
+Web `lint` ✅ · `typecheck` ✅ · **276/276 vitest** ✅ · **coverage gate** ✅ (88.3 / 83.0 / 77.7 / 88.3
+over the 86 / 80 / 74 / 86 floor) · `build` ✅. `tests/architecture` green (no cross-module type
+references). OpenAPI snapshot regenerated (`data-quality/health`, `models/lineage`,
+`platform-admin/settings` present; `schema.d.ts` is git-ignored). Playwright governance + route-a11y run
+green against Docker.
+
+### Known gaps / follow-ups
+
+- **Visual baselines** — the three screens joined the `@visual` matrix (Data Health & Settings changed
+  content; Lineage is new). Baselines are platform-pinned and CI-bootstrapped: run `npm run e2e:update`
+  on the Linux runner and commit under `e2e/__screenshots__`. Not generated on this Windows box (they
+  would churn). The functional E2E + a11y gates do not depend on them and are green.
+- **Editable Settings** — deferred as above (its own slice: versioned record + migration +
+  `settings.manage` + recompute story + ADR).
+- **`coverTarget`** — not ported; if wanted, add it to `RiskSettings` with a parity test before
+  surfacing it here.
+
+**Next action.** None for authoring — slice closed. Operational bootstrap: generate and commit the
+Linux `@visual` baselines for the three governance routes on the CI runner.

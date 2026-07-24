@@ -10,6 +10,13 @@
 > and under test. Any test-count figures below predate S3–S6; current totals are **885 backend + 234
 > web = 1119** (S4b added 34 web tests; see [`v3-progress.md`](v3-progress.md)).
 
+> **Update (post-S7, 2026-07-24):** the governance-transparency screens shipped — Data Health, Model &
+> Data Lineage and read-only Settings (S7). This **reinforces R-04**: the real-vs-demo boundary is now
+> surfaced *in the product* (every synthetic source and metric carries its label; UC6/UC7's demo tags are
+> cross-checked against the platform's `IsDemo` flag), so a synthetic figure can no longer be mistaken
+> for a measured one on-screen. S7 added no table, no write and no delete path. Current totals are **982
+> backend + 276 web = 1258** (plus the Playwright suite; the three routes joined the a11y/visual matrix).
+
 ## Top risks
 
 | ID | Risk | Prob. | Impact | Affects | Status |

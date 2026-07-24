@@ -116,6 +116,11 @@ npx playwright show-report        # open the last HTML report
   bootstrap, not a defect. An unreviewed pixel change fails CI thereafter (like the OpenAPI drift gate).
 - **Flake policy**: no `waitForTimeout`; web-first assertions only; CI retries capped at one
   (`on-first-retry` trace). A test that passes only on retry is quarantined and tracked, not left green.
+- **S7 governance screens**: Data Health (`/data`), Model & Data Lineage (`/lineage`) and Settings
+  (`/settings`) are in the `ROUTES` matrix (route-level a11y + visual, both themes) and have a
+  data-backed `governance.spec.ts` journey each. Their `@visual` baselines regenerate with the same
+  `e2e:update` flow above; Data Health and Settings changed from scaffolds and Lineage is new, so all
+  three need a Linux-runner baseline refresh.
 
 ### CI matrix
 

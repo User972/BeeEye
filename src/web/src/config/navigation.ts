@@ -10,11 +10,11 @@
  *
  * Registry invariant: a nav item is listed here only when a real screen exists
  * for it. v3 groups also contain screens that are not built yet (Executive
- * Overview, Data Health, Model & Data Lineage, Ask Decision Intelligence,
- * Reports & Exports, Data Ingestion, Methodology, Integration Blueprint);
- * those are added by their own vertical slices so the rail never shows a link
- * that goes nowhere. The Decision Log joined the registry with S6, when the
- * screen behind it became real.
+ * Overview, Ask Decision Intelligence, Reports & Exports, Data Ingestion,
+ * Methodology, Integration Blueprint); those are added by their own vertical
+ * slices so the rail never shows a link that goes nowhere. The Decision Log
+ * joined the registry with S6; Data Health and Model & Data Lineage joined with
+ * S7, when the screens behind them became real.
  */
 
 /** v3 navigation groups, in v3's display order. */
@@ -219,35 +219,51 @@ export const navItems: NavItem[] = [
     ],
   },
   {
+    id: 'lineage',
+    path: '/lineage',
+    label: 'Model & Data Lineage',
+    icon: 'account_tree',
+    group: 'governance',
+    moduleRoute: 'models',
+    summary: 'How data flows from Oracle Fusion to a decision, and what each metric is derived from.',
+    wireframed: true,
+    capabilities: [
+      'Six-stage source-to-decision pipeline, read-only from Oracle Fusion',
+      'Per-metric source and basis for every decision figure',
+      'Each metric tagged confirmed or synthetic-demo, cross-checked against the platform',
+      'CSV export of the metric provenance',
+    ],
+  },
+  {
     id: 'platform-settings',
     path: '/settings',
     label: 'Settings',
     icon: 'settings',
     group: 'governance',
     moduleRoute: 'platform-admin',
-    summary: 'Feature flags, licensing, thresholds and configuration.',
+    summary: "The platform's live risk configuration, shown read-only.",
     wireframed: true,
     capabilities: [
-      'Configurable thresholds by business unit or category',
-      'Feature flags and module entitlement',
-      'Licensing status and grace-period handling',
-      'Analysis-date and model-version configuration',
+      'Risk-factor weights the engine renormalises by their sum',
+      'Risk and aging bands with their thresholds and labels',
+      'Analysis date, trailing-month horizon and cover ceiling',
+      'Read-only transparency — configuration edits are governed separately',
     ],
   },
   {
     id: 'data-management',
     path: '/data',
-    label: 'Data Management',
+    label: 'Data Health',
     icon: 'database',
     group: 'platform',
     moduleRoute: 'data-quality',
-    summary: 'Ingestion runs, data-quality rules and issue resolution.',
+    summary: 'Which sources are real vs demo, and how clean the data behind every decision is.',
     wireframed: true,
     capabilities: [
-      'Oracle Fusion ingestion runs and reconciliation counts',
-      'Data-quality rules across nine categories',
-      'Critical-quality gates that block model runs',
-      'Issue triage, ownership and override policy',
+      'Seven governed data sources with an honest real / demo / blocked status',
+      'Data-quality score with its Healthy / Warning / Critical band',
+      'Itemised data-quality checks with counts and severity',
+      'CSV export of the governed data sources',
     ],
   },
 ];

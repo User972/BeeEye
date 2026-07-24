@@ -82,6 +82,8 @@ public static class RolePermissions
                 Permissions.ModelPublish,
                 Permissions.DataQualityView,
                 Permissions.DataQualityResolve,
+                // Read-only view of the risk configuration the Analyst tunes elsewhere (V3-GOV-010).
+                Permissions.SettingsView,
             },
 
             [PlatformRoles.ItAdmin] = new HashSet<string>(StringComparer.Ordinal)
@@ -92,6 +94,8 @@ public static class RolePermissions
                 Permissions.DataQualityResolve,
                 Permissions.AuditView,
                 Permissions.IntegrationManage,
+                // The steward who administers configuration can also read the transparency screen.
+                Permissions.SettingsView,
                 Permissions.SettingsManage,
                 Permissions.PlatformAdminister,
             },

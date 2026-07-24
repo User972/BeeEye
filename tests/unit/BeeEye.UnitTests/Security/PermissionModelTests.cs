@@ -78,6 +78,7 @@ public sealed class PermissionModelTests
     [InlineData(Permissions.AuditView)]
     [InlineData(Permissions.ModelView)]
     [InlineData(Permissions.DataQualityView)]
+    [InlineData(Permissions.SettingsView)]
     public void View_permissions_are_not_state_changing(string permission)
     {
         Assert.False(Permissions.IsStateChanging(permission));
@@ -313,6 +314,12 @@ public sealed class PermissionModelTests
     [InlineData(PlatformRoles.ItAdmin, Permissions.ExplanationFeedbackSubmit, false)]
     [InlineData(PlatformRoles.Executive, Permissions.ExplanationFeedbackSubmit, true)]
     [InlineData(PlatformRoles.Analyst, Permissions.ExplanationFeedbackSubmit, true)]
+    // settings.view — the read-only governance/config transparency screen (V3-GOV-010). Held by the
+    // Analyst and IT-Admin (the stewards), not the Executive — matching the DataQualityView/ModelView
+    // audience of the sibling Data Health and Lineage screens.
+    [InlineData(PlatformRoles.ItAdmin, Permissions.SettingsView, true)]
+    [InlineData(PlatformRoles.Analyst, Permissions.SettingsView, true)]
+    [InlineData(PlatformRoles.Executive, Permissions.SettingsView, false)]
     public void Role_mapping_matches_the_threat_model(string role, string permission, bool granted)
     {
         Assert.Equal(granted, RolePermissions.Grants([role], permission));

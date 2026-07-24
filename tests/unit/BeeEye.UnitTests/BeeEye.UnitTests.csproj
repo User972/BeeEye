@@ -23,6 +23,11 @@
     <!-- The explainability aggregation service is the same shape as the cockpit's: no data access,
          so it is unit-testable with in-memory IExplainabilityProvider fakes. -->
     <ProjectReference Include="../../../src/modules/Predictions/BeeEye.Modules.Predictions.csproj" />
+    <!-- S7 governance screens: the source composition (Data Health), the lineage catalogue and the
+         settings projection are all pure — the DB-touching read is covered in BeeEye.IntegrationTests. -->
+    <ProjectReference Include="../../../src/modules/DataQuality/BeeEye.Modules.DataQuality.csproj" />
+    <ProjectReference Include="../../../src/modules/ModelsAndExperiments/BeeEye.Modules.ModelsAndExperiments.csproj" />
+    <ProjectReference Include="../../../src/modules/PlatformAdministration/BeeEye.Modules.PlatformAdministration.csproj" />
   </ItemGroup>
 
 </Project>

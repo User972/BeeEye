@@ -19,6 +19,7 @@ const pages: Record<string, ReturnType<typeof lazy>> = {
   'after-sales': lazy(() => import('@/pages/after-sales')),
   'spare-parts': lazy(() => import('@/pages/spare-parts')),
   'decision-log': lazy(() => import('@/pages/decision-log')),
+  lineage: lazy(() => import('@/pages/lineage')),
   'data-management': lazy(() => import('@/pages/data-management')),
   'platform-settings': lazy(() => import('@/pages/platform-settings')),
 };
