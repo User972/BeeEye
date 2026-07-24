@@ -129,7 +129,14 @@ Plus **Governance**: Decision Log, Data Health, AI Model & Data Lineage, Setting
 - Grouped navigation (Executive / Sales / Supply / After-Sales / Governance / Platform) with subtle phase labels.
 - A reusable **"Why this recommendation?" explainability drawer** (recommendation, expected impact,
   confidence + reasons, ranked drivers, historical evidence, assumptions, data lineage, model info, feedback).
-- Consistent AI output labels: Observed · Calculated · Forecast · Recommendation · Simulation · Demo Data · Low Confidence.
+- Consistent AI output labels — **eight**: Observed · Calculated · Forecast · Recommendation ·
+  Simulation · Demo Data · Low Confidence · **Data Quality**.
+  <!-- V3-CONFLICT-8, resolved in S3: this line previously listed seven and omitted Data Quality,
+       while `engine2.js`'s LABELS table (L28–37) defines eight. The code was the source of truth, so
+       all eight ship in `components/ui/AiLabel.tsx` and this line was corrected to match. -->
+- A **"Was this useful?"** control on the drawer whose answer is genuinely recorded. The prototype's
+  `explainFeedback()` writes to component state and loses it on reload despite its own caption saying
+  otherwise; S3 persists it to an append-only table, and the caption stays true.
 - Persistent demo-data disclosure banners on the after-sales, parts and procurement (supplier) modules.
 - A shared Decision Log — accepting a recommendation anywhere routes to a governed audit trail (no Oracle write-back).
 

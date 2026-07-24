@@ -10,6 +10,9 @@
 
   <ItemGroup>
     <ProjectReference Include="../../shared/BeeEye.Shared.Web/BeeEye.Shared.Web.csproj" />
+    <!-- Analytics only: the cockpit aggregates decisions published by other contexts through
+         IDecisionSignalProvider, so it needs no data access and references no module. -->
+    <ProjectReference Include="../../shared/BeeEye.Analytics/BeeEye.Analytics.csproj" />
   </ItemGroup>
 
 </Project>

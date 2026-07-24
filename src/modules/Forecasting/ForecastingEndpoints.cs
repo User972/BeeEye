@@ -1,3 +1,5 @@
+using BeeEye.Shared.Web.Security;
+using BeeEye.Shared.Security;
 using BeeEye.Analytics.Forecasting;
 using BeeEye.Modules.Forecasting.Application;
 using BeeEye.Modules.Forecasting.Contracts;
@@ -16,7 +18,8 @@ internal static class ForecastingEndpoints
 
     public static void Map(IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup($"{ApiRoutes.V1}/forecasting").WithTags("Forecasting");
+        var group = app.MapGroup($"{ApiRoutes.V1}/forecasting").WithTags("Forecasting")
+            .RequireReadPermission(Permissions.ForecastView);
 
         group.MapGet("/", () => new ModuleInfo(
                 "Forecasting", "forecasting", "Forecast plans, versions, snapshots and accuracy metrics (UC2).", "operational"))

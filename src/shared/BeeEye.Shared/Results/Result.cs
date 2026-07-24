@@ -10,6 +10,13 @@ public sealed record Error(string Code, string Message)
     public static Error Validation(string message) => new("validation", message);
     public static Error NotFound(string message) => new("not_found", message);
     public static Error Conflict(string message) => new("conflict", message);
+
+    /// <summary>
+    /// The request is well-formed and understood, but its content cannot be acted on — a value
+    /// outside a mandated bound, or a client working from a stale copy of the record. Distinct from
+    /// <see cref="Validation"/>, which means the request itself is malformed.
+    /// </summary>
+    public static Error Unprocessable(string message) => new("unprocessable", message);
     public static Error Forbidden(string message) => new("forbidden", message);
     public static Error Unavailable(string message) => new("unavailable", message);
 }

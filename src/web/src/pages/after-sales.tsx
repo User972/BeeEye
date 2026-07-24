@@ -3,10 +3,13 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { StatCard } from '@/components/ui/StatCard';
 import { Card, CardHeader } from '@/components/ui/Card';
 import { Drawer } from '@/components/ui/Drawer';
+import { ExplainButton, ExplainabilityDrawer } from '@/components/domain/ExplainabilityDrawer';
+import { useExplainabilityDrawer } from '@/components/domain/useExplainabilityDrawer';
 import { FilterSelect } from '@/components/ui/FilterSelect';
 import { LoadingState, ErrorState, EmptyState } from '@/components/ui/states';
 import { BarDistribution } from '@/components/charts/BarDistribution';
 import { SyntheticBanner } from '@/components/domain/SyntheticBanner';
+import { DecisionFooter } from '@/components/domain/DecisionFooter';
 import {
   useAfterSalesSummary,
   useAfterSalesByModel,
@@ -37,6 +40,7 @@ export default function AfterSalesPage() {
   };
   const byModel = useAfterSalesByModel(query);
   const detail = useAfterSalesModel(selected);
+  const explain = useExplainabilityDrawer();
 
   const reset = <T,>(setter: (v: T) => void) => (v: T) => {
     setter(v);
@@ -48,7 +52,7 @@ export default function AfterSalesPage() {
   return (
     <>
       <PageHeader
-        title="After-Sales Correlation"
+        title="Sales ↔ Service Correlation"
         summary="How much workshop and parts demand each vehicle sale generates — service intensity by model, mileage, age and service type."
         useCase="UC6"
         meta={[
@@ -179,15 +183,29 @@ export default function AfterSalesPage() {
         </>
       )}
 
-      <Drawer open={selected !== null} title="Model service intensity" onClose={() => setSelected(null)}>
+      <Drawer
+        open={selected !== null}
+        title="Model service intensity"
+        onClose={() => setSelected(null)}
+        footer={detail.data ? <DecisionFooter subjectRef={detail.data.model.model} /> : null}
+      >
         {detail.isLoading ? (
           <LoadingState />
         ) : detail.isError || !detail.data ? (
           <ErrorState title="Could not load model" />
         ) : (
-          <ModelDetail data={detail.data.model} />
+          <>
+            <ExplainButton
+              kind="service-model"
+              label={detail.data.model.model}
+              onClick={() => explain.open({ kind: 'service-model', ref: detail.data.model.model })}
+            />
+            <ModelDetail data={detail.data.model} />
+          </>
         )}
       </Drawer>
+
+      <ExplainabilityDrawer subject={explain.subject} onClose={explain.close} />
     </>
   );
 }

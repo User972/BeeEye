@@ -1,3 +1,5 @@
+using BeeEye.Shared.Web.Security;
+using BeeEye.Shared.Security;
 using BeeEye.Analytics.AfterSales;
 using BeeEye.Modules.AfterSales.Application;
 using BeeEye.Modules.AfterSales.Contracts;
@@ -16,7 +18,8 @@ internal static class AfterSalesEndpoints
 
     public static void Map(IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup($"{ApiRoutes.V1}/after-sales").WithTags("After-Sales");
+        var group = app.MapGroup($"{ApiRoutes.V1}/after-sales").WithTags("After-Sales")
+            .RequireReadPermission(Permissions.AfterSalesView);
 
         group.MapGet("/", () => new ModuleInfo(
                 "After-Sales", "after-sales", "Sales-to-service correlation and service-intensity analysis (UC6).", "operational"))

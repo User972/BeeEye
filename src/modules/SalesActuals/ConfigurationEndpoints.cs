@@ -1,3 +1,5 @@
+using BeeEye.Shared.Web.Security;
+using BeeEye.Shared.Security;
 using BeeEye.Analytics.Configuration;
 using BeeEye.Modules.SalesActuals.Application;
 using BeeEye.Modules.SalesActuals.Contracts;
@@ -14,7 +16,8 @@ internal static class ConfigurationEndpoints
 {
     public static void Map(IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup($"{ApiRoutes.V1}/sales-actuals").WithTags("Configuration Demand");
+        var group = app.MapGroup($"{ApiRoutes.V1}/sales-actuals").WithTags("Configuration Demand")
+            .RequireReadPermission(Permissions.SalesActualsView);
 
         group.MapGet("/", () => new ModuleInfo(
                 "Sales Actuals", "sales-actuals", "Configuration-level demand insights and dead-stock signals (UC3).", "operational"))

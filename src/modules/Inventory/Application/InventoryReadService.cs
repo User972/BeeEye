@@ -56,4 +56,24 @@ public sealed class InventoryReadService(BeeEyeDbContext db)
     /// </summary>
     public async Task<DateOnly?> LatestDataDateAsync(CancellationToken ct)
         => await db.InventoryItems.AsNoTracking().MaxAsync(i => (DateOnly?)i.DateOfPurchase, ct);
+
+    /// <summary>
+    /// The risk settings every UC5 caller must use. Without an explicit
+    /// <paramref name="analysisDate"/> the model runs as of the latest observed data date: the
+    /// API contract forbids a silent wall-clock "now" (docs/architecture/api-design.md
+    /// "never a silent server now"), and the frozen <see cref="RiskSettings.Default"/> date — kept
+    /// only for wireframe-parity tests and the empty-database case — would freeze aging and produce
+    /// negative ages once newer stock is ingested.
+    /// <para>
+    /// This lives on the read service rather than in the endpoints so that every consumer (the UC5
+    /// endpoints and the UC8 cockpit signal provider) anchors on the same date and cannot drift.
+    /// </para>
+    /// </summary>
+    public async Task<RiskSettings> BuildSettingsAsync(DateOnly? analysisDate, CancellationToken ct)
+        => RiskSettings.Default with
+        {
+            AnalysisDate = analysisDate
+                ?? await LatestDataDateAsync(ct)
+                ?? RiskSettings.Default.AnalysisDate,
+        };
 }

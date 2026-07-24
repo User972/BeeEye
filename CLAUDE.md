@@ -6,12 +6,19 @@ the `/code-review` conventions pass reads this file and flags changes that viola
 ## What this is
 
 **BeeEye** — an AI decision-intelligence platform for **ADMC** (automotive distribution). A .NET
-modular monolith + React SPA + Python ML, deployable to Azure. The current implementation is
-**read-only analytics** with seven use cases live end-to-end: **UC1 (Order Optimisation —
-Recommendations)**, **UC2 (Sales Forecasting)**, **UC3 (Configuration Demand — SalesActuals)**,
-**UC4 (Procurement)**, **UC5 (Inventory Aging & Overstock Risk)**, and **UC6/UC7 (Sales↔After-Sales
-Correlation and Spare Parts Demand)** — the latter two on a clearly-labelled **synthetic-demo** dataset
-derived from the real sales. The remaining bounded contexts are scaffolded. See [README.md](README.md) and
+modular monolith + React SPA + Python ML, deployable to Azure. Seven use cases are live end-to-end:
+**UC1 (Order Optimisation — Recommendations)**, **UC2 (Sales Forecasting)**, **UC3 (Configuration
+Demand — SalesActuals)**, **UC4 (Procurement)**, **UC5 (Inventory Aging & Overstock Risk)**, and
+**UC6/UC7 (Sales↔After-Sales Correlation and Spare Parts Demand)** — the latter two on a
+clearly-labelled **synthetic-demo** dataset derived from the real sales — plus **UC8 (Executive
+Decision Cockpit)**.
+
+The analytics are read-only. The **write path is the governed decision workflow** (ADR 0006): engine
+recommendations are frozen at generation, and the human layer — who claimed it, what they decided,
+what they changed, who signed off, what resulted — is appended around the original. The one other
+write is **explainability feedback**, append-only and equally undeletable; it retrains nothing.
+Nothing is ever edited or deleted; **BeeEye never writes to Oracle Fusion**. The remaining bounded
+contexts are scaffolded. See [README.md](README.md) and
 [docs/architecture/overview.md](docs/architecture/overview.md).
 
 ## Repository map
@@ -19,7 +26,8 @@ derived from the real sales. The remaining bounded contexts are scaffolded. See 
 - `src/api/BeeEye.Api` — ASP.NET Core **minimal-API host** (composition root, OpenAPI, health). No business logic.
 - `src/modules/<Context>` — 19 bounded-context module libraries; each implements `IModule`.
   Live: Forecasting (UC2), Inventory (UC5), Recommendations (UC1), SalesActuals (UC3), Procurement (UC4),
-  AfterSales (UC6), SpareParts (UC7).
+  AfterSales (UC6), SpareParts (UC7), ExecutiveInsights (UC8), DecisionsAndOutcomes (the governed
+  decision log), Predictions (the global explainability drawer), Identity (`/identity/me`).
 - `src/shared/BeeEye.Analytics` — pure numeric engine. The UC2/UC5 formulas (forecasting, demand,
   inventory risk) are a **faithful C# port of `docs/wireframes/engine.js`**; the UC1/UC3/UC4
   optimisers (`OrderOptimiser`, `ProcurementOptimiser`, `ConfigurationDemand`) and the UC6/UC7 engines
@@ -63,8 +71,11 @@ cd ml && pip install -e ".[dev]" && pytest
 2. **No generic repository** over EF Core (`DbContext` is the unit-of-work, `DbSet` the repository).
    The read-store seam is deferred — see `docs/architecture/tech-debt.md` (TD-1).
 3. **Module isolation.** A module never references another module's implementation types;
-   cross-context communication goes through published contracts. Enforced by `tests/architecture` —
-   run it after changing module structure.
+   cross-context communication goes through published contracts — today `IDecisionSignalProvider`
+   (the cockpit) and `IExplainabilityProvider` (the drawer), both in `BeeEye.Analytics`. A subject
+   kind is claimed by **exactly one** explainability provider, and a duplicate claim fails at
+   start-up rather than at request time. Enforced by `tests/architecture` — run it after changing
+   module structure.
 4. **New endpoints** belong to a module implementing `IModule` (`Name`, `RoutePrefix`, `Description`,
    `Status`, `RegisterServices`, `MapEndpoints`), mounted under `/api/v1/{RoutePrefix}`.
 5. **Analytics parity.** The UC2/UC5 formulas in `BeeEye.Analytics` mirror
@@ -74,6 +85,15 @@ cd ml && pip install -e ".[dev]" && pytest
 6. **Money is `decimal`, never floating point** (`BeeEye.Shared.Primitives.Money`); persist with explicit precision.
 7. **Culture-invariant.** `InvariantGlobalization` is on; format/parse with `CultureInfo.InvariantCulture`
    (month keys, numbers, money).
+8. **One writer of lifecycle state.** A recommendation's status is only ever changed by
+   `DecisionsAndOutcomes/Application/RecommendationTransitionService`, which only ever decides via
+   `BeeEye.Shared/Decisions/RecommendationLifecycle`. No direct `CurrentStatus` update, and no second
+   copy of the rules (ADR 0006 §6). **No delete path exists** for a recommendation, a decision or a
+   piece of explainability feedback, at any layer — terminal states end a record's life, and changing
+   your mind appends a row.
+9. **State-changing endpoints** use `RequirePermission` (never `RequireReadPermission`, which throws at
+   start-up if handed a state-changing permission) and `.WithIdempotency()`, which requires and
+   enforces an `Idempotency-Key` (ADR 0007 §2.1).
 
 ## Conventions
 

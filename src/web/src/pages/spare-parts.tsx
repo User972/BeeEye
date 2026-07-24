@@ -3,11 +3,14 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { StatCard } from '@/components/ui/StatCard';
 import { Card, CardHeader } from '@/components/ui/Card';
 import { Drawer } from '@/components/ui/Drawer';
+import { ExplainButton, ExplainabilityDrawer } from '@/components/domain/ExplainabilityDrawer';
+import { useExplainabilityDrawer } from '@/components/domain/useExplainabilityDrawer';
 import { FilterSelect } from '@/components/ui/FilterSelect';
 import { ScenarioSelect } from '@/components/ui/ScenarioSelect';
 import { LoadingState, ErrorState, EmptyState } from '@/components/ui/states';
 import { BarDistribution } from '@/components/charts/BarDistribution';
 import { SyntheticBanner } from '@/components/domain/SyntheticBanner';
+import { DecisionFooter } from '@/components/domain/DecisionFooter';
 import {
   useSparePartsSummary,
   useSpareParts,
@@ -49,6 +52,7 @@ export default function SparePartsPage() {
   };
   const list = useSpareParts(listQuery);
   const detail = useSparePart(selected, scenario);
+  const explain = useExplainabilityDrawer();
 
   const reset = <T,>(setter: (v: T) => void) => (v: T) => {
     setter(v);
@@ -60,7 +64,7 @@ export default function SparePartsPage() {
   return (
     <>
       <PageHeader
-        title="Spare Parts"
+        title="Spare Parts Prediction"
         summary="Intermittent spare-parts demand and stocking ranges per workshop — Croston/SBA/TSB where demand is lumpy, with honest confidence and low-data flags."
         useCase="UC7"
         meta={[
@@ -198,15 +202,29 @@ export default function SparePartsPage() {
         </>
       )}
 
-      <Drawer open={selected !== null} title="Part demand & stocking" onClose={() => setSelected(null)}>
+      <Drawer
+        open={selected !== null}
+        title="Part demand & stocking"
+        onClose={() => setSelected(null)}
+        footer={detail.data ? <DecisionFooter subjectRef={detail.data.national.name} /> : null}
+      >
         {detail.isLoading ? (
           <LoadingState />
         ) : detail.isError || !detail.data ? (
           <ErrorState title="Could not load part" />
         ) : (
-          <PartDetail data={detail.data} />
+          <>
+            <ExplainButton
+              kind="part"
+              label={`${detail.data.national.partNumber} ${detail.data.national.name}`}
+              onClick={() => explain.open({ kind: 'part', ref: detail.data.national.partNumber })}
+            />
+            <PartDetail data={detail.data} />
+          </>
         )}
       </Drawer>
+
+      <ExplainabilityDrawer subject={explain.subject} onClose={explain.close} />
     </>
   );
 }

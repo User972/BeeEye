@@ -1,3 +1,5 @@
+using BeeEye.Analytics.Decisions;
+using BeeEye.Analytics.Explainability;
 using BeeEye.Modules.AfterSales.Application;
 using BeeEye.Shared.Modularity;
 using Microsoft.AspNetCore.Routing;
@@ -17,6 +19,12 @@ public sealed class AfterSalesModule : IModule
     public void RegisterServices(IServiceCollection services, IConfiguration configuration)
     {
         services.AddScoped<AfterSalesReadService>();
+
+        // Contributes this context's material exceptions to the Executive Decision Cockpit (UC8).
+        services.AddScoped<IDecisionSignalProvider, AfterSalesDecisionSignalProvider>();
+
+        // Answers "why is this model service-heavy?" for the explainability drawer (S3).
+        services.AddScoped<IExplainabilityProvider, AfterSalesExplainabilityProvider>();
     }
 
     public void MapEndpoints(IEndpointRouteBuilder endpoints)

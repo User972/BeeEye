@@ -1,12 +1,37 @@
 /**
  * Single source of truth for the application's screens. Drives the navigation
- * rail, the router, and each use-case page's scaffold content. Screens and the
- * visual language derive from the Meridian BI wireframe
- * (docs/architecture/wireframe-analysis/screen-inventory.md); the missing
- * use-case workflows are specified under docs/product/use-cases/.
+ * rail, the router, and each use-case page's scaffold content.
+ *
+ * The information architecture follows the v3 high-fidelity designs
+ * (`docs/wireframes-v3/Meridian BI.dc.html`, `navGroupsDef()`): six navigation
+ * groups, each with an optional delivery-phase label. See
+ * `docs/implementation/v3-design-inventory.md` §1 for the full v3 inventory and
+ * `docs/implementation/v3-design-traceability.md` for requirement IDs.
+ *
+ * Registry invariant: a nav item is listed here only when a real screen exists
+ * for it. v3 groups also contain screens that are not built yet (Executive
+ * Overview, Data Health, Model & Data Lineage, Ask Decision Intelligence,
+ * Reports & Exports, Data Ingestion, Methodology, Integration Blueprint);
+ * those are added by their own vertical slices so the rail never shows a link
+ * that goes nowhere. The Decision Log joined the registry with S6, when the
+ * screen behind it became real.
  */
 
-export type NavSection = 'overview' | 'intelligence' | 'platform';
+/** v3 navigation groups, in v3's display order. */
+export type NavGroupId =
+  | 'executive'
+  | 'sales'
+  | 'supply'
+  | 'after-sales'
+  | 'governance'
+  | 'platform';
+
+export interface NavGroup {
+  id: NavGroupId;
+  label: string;
+  /** Subtle delivery-phase label shown beside the group heading in v3. */
+  phase?: string;
+}
 
 export interface NavItem {
   /** Stable id; matches the lazy page module file name under src/pages. */
@@ -15,7 +40,7 @@ export interface NavItem {
   label: string;
   /** Material Symbols Outlined icon name. */
   icon: string;
-  section: NavSection;
+  group: NavGroupId;
   /** Use-case code, e.g. "UC5". Undefined for platform screens. */
   useCase?: string;
   /** Primary API module route prefix this screen reads from. */
@@ -27,13 +52,26 @@ export interface NavItem {
   capabilities: string[];
 }
 
+/**
+ * Groups in v3's order. Phase labels are taken verbatim from the v3
+ * `navGroupsDef()`; Governance and Platform carry no phase label there.
+ */
+export const navGroups: NavGroup[] = [
+  { id: 'executive', label: 'Executive', phase: 'Phase 5' },
+  { id: 'sales', label: 'Sales Intelligence', phase: 'Phase 1' },
+  { id: 'supply', label: 'Supply Intelligence', phase: 'Phase 2–3' },
+  { id: 'after-sales', label: 'After-Sales Intelligence', phase: 'Phase 4' },
+  { id: 'governance', label: 'Governance' },
+  { id: 'platform', label: 'Platform' },
+];
+
 export const navItems: NavItem[] = [
   {
     id: 'executive-cockpit',
     path: '/',
-    label: 'Executive Cockpit',
+    label: 'Decision Cockpit',
     icon: 'dashboard',
-    section: 'overview',
+    group: 'executive',
     useCase: 'UC8',
     moduleRoute: 'executive-insights',
     summary: 'Material exceptions from every module, prioritised for decision.',
@@ -46,45 +84,11 @@ export const navItems: NavItem[] = [
     ],
   },
   {
-    id: 'sales-forecasting',
-    path: '/forecasting',
-    label: 'Sales Forecasting',
-    icon: 'insights',
-    section: 'intelligence',
-    useCase: 'UC2',
-    moduleRoute: 'forecasting',
-    summary: 'Forecast accuracy, bias detection and correction factors.',
-    wireframed: true,
-    capabilities: [
-      'Compare versioned forecasts with actuals (WMAPE, MAE, RMSE, bias)',
-      'Detect consistent optimism / conservatism and repeated bias',
-      'Accuracy by horizon, product hierarchy and region',
-      'Recommend explainable correction factors',
-    ],
-  },
-  {
-    id: 'inventory-intelligence',
-    path: '/inventory',
-    label: 'Inventory Intelligence',
-    icon: 'inventory_2',
-    section: 'intelligence',
-    useCase: 'UC5',
-    moduleRoute: 'inventory',
-    summary: 'Aging, overstock risk and explainable risk scoring.',
-    wireframed: true,
-    capabilities: [
-      'Inventory age and probability of crossing age thresholds',
-      'Explainable additive risk score (Low / Medium / High / Critical)',
-      'Overstock by configuration and location, value exposed',
-      'Recommended actions with contributing factors',
-    ],
-  },
-  {
     id: 'order-optimisation',
     path: '/order-optimisation',
     label: 'Order Optimisation',
-    icon: 'tune',
-    section: 'intelligence',
+    icon: 'shopping_cart_checkout',
+    group: 'sales',
     useCase: 'UC1',
     moduleRoute: 'recommendations',
     summary: 'Monthly vehicle order quantities balancing demand and constraints.',
@@ -97,11 +101,28 @@ export const navItems: NavItem[] = [
     ],
   },
   {
+    id: 'sales-forecasting',
+    path: '/forecasting',
+    label: 'Forecast Accuracy',
+    icon: 'trending_up',
+    group: 'sales',
+    useCase: 'UC2',
+    moduleRoute: 'forecasting',
+    summary: 'Forecast accuracy, bias detection and correction factors.',
+    wireframed: true,
+    capabilities: [
+      'Compare versioned forecasts with actuals (WMAPE, MAE, RMSE, bias)',
+      'Detect consistent optimism / conservatism and repeated bias',
+      'Accuracy by horizon, product hierarchy and region',
+      'Recommend explainable correction factors',
+    ],
+  },
+  {
     id: 'configuration-demand',
     path: '/configuration-demand',
-    label: 'Configuration Demand',
+    label: 'Configuration Insights',
     icon: 'grid_view',
-    section: 'intelligence',
+    group: 'sales',
     useCase: 'UC3',
     moduleRoute: 'sales-actuals',
     summary: 'Configuration-level demand, clusters and dead-stock signals.',
@@ -116,9 +137,9 @@ export const navItems: NavItem[] = [
   {
     id: 'procurement',
     path: '/procurement',
-    label: 'Procurement',
+    label: 'Procurement Optimisation',
     icon: 'local_shipping',
-    section: 'intelligence',
+    group: 'supply',
     useCase: 'UC4',
     moduleRoute: 'procurement',
     summary: 'Procurement quantities balancing demand, lead time and cost.',
@@ -131,11 +152,28 @@ export const navItems: NavItem[] = [
     ],
   },
   {
+    id: 'inventory-intelligence',
+    path: '/inventory',
+    label: 'Inventory Aging & Overstock',
+    icon: 'inventory_2',
+    group: 'supply',
+    useCase: 'UC5',
+    moduleRoute: 'inventory',
+    summary: 'Aging, overstock risk and explainable risk scoring.',
+    wireframed: true,
+    capabilities: [
+      'Inventory age and probability of crossing age thresholds',
+      'Explainable additive risk score (Low / Medium / High / Critical)',
+      'Overstock by configuration and location, value exposed',
+      'Recommended actions with contributing factors',
+    ],
+  },
+  {
     id: 'after-sales',
     path: '/after-sales',
-    label: 'After-Sales Correlation',
-    icon: 'build',
-    section: 'intelligence',
+    label: 'Sales ↔ Service Correlation',
+    icon: 'handyman',
+    group: 'after-sales',
     useCase: 'UC6',
     moduleRoute: 'after-sales',
     summary: 'Sales-to-service correlation and service-intensity index.',
@@ -150,9 +188,9 @@ export const navItems: NavItem[] = [
   {
     id: 'spare-parts',
     path: '/spare-parts',
-    label: 'Spare Parts',
-    icon: 'settings',
-    section: 'intelligence',
+    label: 'Spare Parts Prediction',
+    icon: 'settings_suggest',
+    group: 'after-sales',
     useCase: 'UC7',
     moduleRoute: 'spare-parts',
     summary: 'Intermittent spare-parts demand and stocking ranges.',
@@ -165,27 +203,27 @@ export const navItems: NavItem[] = [
     ],
   },
   {
-    id: 'data-management',
-    path: '/data',
-    label: 'Data Management',
-    icon: 'database',
-    section: 'platform',
-    moduleRoute: 'data-quality',
-    summary: 'Ingestion runs, data-quality rules and issue resolution.',
+    id: 'decision-log',
+    path: '/decisions',
+    label: 'Decision Log',
+    icon: 'gavel',
+    group: 'governance',
+    moduleRoute: 'decisions',
+    summary: 'A governed audit trail of every recommendation and the human decision on it.',
     wireframed: true,
     capabilities: [
-      'Oracle Fusion ingestion runs and reconciliation counts',
-      'Data-quality rules across nine categories',
-      'Critical-quality gates that block model runs',
-      'Issue triage, ownership and override policy',
+      'Every recommendation with what the engine advised, frozen at generation',
+      'Who claimed it, what they decided, what they changed, and why',
+      'Guard-validated transitions — no free status editing, no delete',
+      'Approval chain, status-event timeline and realised outcome',
     ],
   },
   {
     id: 'platform-settings',
     path: '/settings',
-    label: 'Platform & Settings',
-    icon: 'admin_panel_settings',
-    section: 'platform',
+    label: 'Settings',
+    icon: 'settings',
+    group: 'governance',
     moduleRoute: 'platform-admin',
     summary: 'Feature flags, licensing, thresholds and configuration.',
     wireframed: true,
@@ -196,14 +234,29 @@ export const navItems: NavItem[] = [
       'Analysis-date and model-version configuration',
     ],
   },
-];
-
-export const navSections: { id: NavSection; label: string }[] = [
-  { id: 'overview', label: 'Overview' },
-  { id: 'intelligence', label: 'Intelligence Modules' },
-  { id: 'platform', label: 'Platform' },
+  {
+    id: 'data-management',
+    path: '/data',
+    label: 'Data Management',
+    icon: 'database',
+    group: 'platform',
+    moduleRoute: 'data-quality',
+    summary: 'Ingestion runs, data-quality rules and issue resolution.',
+    wireframed: true,
+    capabilities: [
+      'Oracle Fusion ingestion runs and reconciliation counts',
+      'Data-quality rules across nine categories',
+      'Critical-quality gates that block model runs',
+      'Issue triage, ownership and override policy',
+    ],
+  },
 ];
 
 export function navItemById(id: string): NavItem | undefined {
   return navItems.find((item) => item.id === id);
+}
+
+/** Items belonging to a group, in registry order. */
+export function navItemsInGroup(group: NavGroupId): NavItem[] {
+  return navItems.filter((item) => item.group === group);
 }

@@ -23,7 +23,9 @@ public static class ConfigurationDemand
             return [];
         }
 
-        var lastMonth = sales.Max(s => s.MonthKey);
+        // Max over a reference-typed selector is declared string? because the sequence may be empty.
+        // It cannot be here — the guard above returned — and SalesRow.MonthKey is non-nullable.
+        var lastMonth = sales.Max(s => s.MonthKey)!;
         var recentMonths = MonthKey.Trailing(settings.TrailingMonths, lastMonth).ToHashSet();
         var priorMonths = MonthKey.Trailing(settings.TrailingMonths, MonthKey.Add(lastMonth, -settings.TrailingMonths)).ToHashSet();
 
@@ -59,7 +61,8 @@ public static class ConfigurationDemand
 
             results.Add(new ConfigDemandResult(
                 first.Model, first.Variant, first.Colour, first.Interior,
-                totalUnits, monthsWithSales, rows.Min(r => r.MonthKey), rows.Max(r => r.MonthKey),
+                // A LINQ grouping always holds at least one row, so neither bound can be null.
+                totalUnits, monthsWithSales, rows.Min(r => r.MonthKey)!, rows.Max(r => r.MonthKey)!,
                 recentVelocity, priorVelocity, decayPct, trend, rotation,
                 DecayAlert: decayPct < settings.DecayAlertPct && priorVelocity > 0,
                 IsColdStart: monthsWithSales < settings.ColdStartMinMonths,

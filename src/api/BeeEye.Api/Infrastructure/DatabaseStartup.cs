@@ -1,6 +1,8 @@
 using BeeEye.Persistence;
+using BeeEye.Persistence.Idempotency;
 using BeeEye.Persistence.SampleData;
 using BeeEye.Persistence.SyntheticData;
+using BeeEye.Shared.Idempotency;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
@@ -15,6 +17,10 @@ public static class DatabaseStartup
         services.AddDbContext<BeeEyeDbContext>(options => options.UseNpgsql(connectionString));
         services.AddScoped<SampleDataImporter>();
         services.AddScoped<SyntheticAfterSalesImporter>();
+
+        // Idempotency-Key persistence (ADR 0007 §2.1). Scoped, sharing the request's DbContext, so
+        // the key row and the effect it authorised commit inside one transaction.
+        services.AddScoped<IIdempotencyStore, EfIdempotencyStore>();
 
         // Readiness reflects actual database connectivity — /health/ready lies otherwise, because
         // InitialiseDatabaseAsync swallows an unreachable database so the process can still start.

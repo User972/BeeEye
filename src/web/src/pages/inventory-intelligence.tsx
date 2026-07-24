@@ -3,8 +3,11 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { StatCard } from '@/components/ui/StatCard';
 import { Card, CardHeader } from '@/components/ui/Card';
 import { Drawer } from '@/components/ui/Drawer';
+import { ExplainButton, ExplainabilityDrawer } from '@/components/domain/ExplainabilityDrawer';
+import { useExplainabilityDrawer } from '@/components/domain/useExplainabilityDrawer';
 import { FilterSelect } from '@/components/ui/FilterSelect';
 import { LoadingState, ErrorState, EmptyState } from '@/components/ui/states';
+import { DecisionFooter } from '@/components/domain/DecisionFooter';
 import { BarDistribution } from '@/components/charts/BarDistribution';
 import { InventoryTable } from '@/components/domain/InventoryTable';
 import {
@@ -38,6 +41,7 @@ export default function InventoryIntelligence() {
   const summary = useInventorySummary(filter);
   const items = useInventoryItems({ ...filter, page, pageSize: PAGE_SIZE, sort });
   const detail = useInventoryItem(selected);
+  const explain = useExplainabilityDrawer();
 
   const reset = <T,>(setter: (v: T) => void) => (v: T) => {
     setter(v);
@@ -49,7 +53,7 @@ export default function InventoryIntelligence() {
   return (
     <>
       <PageHeader
-        title="Inventory Intelligence"
+        title="Inventory Aging & Overstock"
         summary="Aging, overstock risk and explainable risk scoring across the vehicle stock."
         useCase="UC5"
         wireframed
@@ -145,15 +149,29 @@ export default function InventoryIntelligence() {
         </>
       )}
 
-      <Drawer open={selected !== null} title="Inventory unit" onClose={() => setSelected(null)}>
+      <Drawer
+        open={selected !== null}
+        title="Inventory unit"
+        onClose={() => setSelected(null)}
+        footer={detail.data ? <DecisionFooter subjectRef={`${detail.data.model} ${detail.data.variant}`} /> : null}
+      >
         {detail.isLoading ? (
           <LoadingState />
         ) : detail.isError || !detail.data ? (
           <ErrorState title="Could not load unit" />
         ) : (
-          <UnitDetail data={detail.data} />
+          <>
+            <ExplainButton
+              kind="inventory-unit"
+              label={`${detail.data.model} ${detail.data.variant} · ${detail.data.stockId}`}
+              onClick={() => explain.open({ kind: 'inventory-unit', ref: detail.data.stockId })}
+            />
+            <UnitDetail data={detail.data} />
+          </>
         )}
       </Drawer>
+
+      <ExplainabilityDrawer subject={explain.subject} onClose={explain.close} />
     </>
   );
 }

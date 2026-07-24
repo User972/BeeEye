@@ -12,7 +12,13 @@ function readStoredTheme(): Theme | null {
   }
 }
 
-export function AppHeader() {
+interface AppHeaderProps {
+  /** Mobile only: current expanded state of the navigation rail. */
+  navOpen: boolean;
+  onToggleNav: () => void;
+}
+
+export function AppHeader({ navOpen, onToggleNav }: AppHeaderProps) {
   const [theme, setTheme] = useState<Theme | null>(readStoredTheme);
 
   useEffect(() => {
@@ -32,6 +38,16 @@ export function AppHeader() {
 
   return (
     <header className="app-header">
+      <button
+        className="icon-btn nav-toggle"
+        type="button"
+        aria-label={navOpen ? 'Close navigation menu' : 'Open navigation menu'}
+        aria-expanded={navOpen}
+        aria-controls="nav-rail"
+        onClick={onToggleNav}
+      >
+        <Icon name={navOpen ? 'close' : 'menu'} />
+      </button>
       <strong>BeeEye Platform</strong>
       <span className="badge">Read-only analytics</span>
       <div className="app-header__spacer" />
