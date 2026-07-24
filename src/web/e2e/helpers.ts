@@ -15,8 +15,9 @@ export const ROUTES: ReadonlyArray<{ id: string; path: string; heading: RegExp }
   { id: 'after-sales', path: '/after-sales', heading: /sales .* service correlation/i },
   { id: 'spare-parts', path: '/spare-parts', heading: /spare parts prediction/i },
   { id: 'decision-log', path: '/decisions', heading: /decision log/i },
+  { id: 'lineage', path: '/lineage', heading: /model .* data lineage/i },
   { id: 'platform-settings', path: '/settings', heading: /settings/i },
-  { id: 'data-management', path: '/data', heading: /data management/i },
+  { id: 'data-management', path: '/data', heading: /data health/i },
 ];
 
 /**

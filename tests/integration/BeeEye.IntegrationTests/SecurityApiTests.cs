@@ -148,6 +148,9 @@ public sealed class SecurityApiTests(IntegrationTestFactory factory)
     [InlineData("/api/v1/after-sales/service-intensity/summary", PlatformRoles.Analyst)]
     [InlineData("/api/v1/spare-parts/demand/summary", PlatformRoles.Analyst)]
     [InlineData("/api/v1/executive-insights/decision-feed", PlatformRoles.Executive)]
+    [InlineData("/api/v1/data-quality/health", PlatformRoles.Analyst)]
+    [InlineData("/api/v1/models/lineage", PlatformRoles.Analyst)]
+    [InlineData("/api/v1/platform-admin/settings", PlatformRoles.ItAdmin)]
     public async Task Every_protected_module_admits_a_correctly_permissioned_caller(string url, string role)
     {
         using var secured = SecuredAs(role);
@@ -165,12 +168,30 @@ public sealed class SecurityApiTests(IntegrationTestFactory factory)
     [InlineData("/api/v1/after-sales/service-intensity/summary")]
     [InlineData("/api/v1/spare-parts/demand/summary")]
     [InlineData("/api/v1/executive-insights/decision-feed")]
+    [InlineData("/api/v1/data-quality/health")]
+    [InlineData("/api/v1/models/lineage")]
+    [InlineData("/api/v1/platform-admin/settings")]
     public async Task Every_protected_module_rejects_an_anonymous_caller(string url)
     {
         using var secured = SecuredWithBearer();
         var response = await secured.CreateClient().GetAsync(url);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Theory]
+    [InlineData("/api/v1/data-quality/health")]
+    [InlineData("/api/v1/models/lineage")]
+    [InlineData("/api/v1/platform-admin/settings")]
+    public async Task Governance_reads_reject_a_user_without_the_permission(string url)
+    {
+        // The Executive holds none of the steward read permissions (data-quality.view, model.view,
+        // settings.view), so every S7 governance screen is a 403 for them — matching the Data Health
+        // and Lineage audience the sibling screens already enforce.
+        using var secured = SecuredAs(PlatformRoles.Executive);
+        var response = await secured.CreateClient().GetAsync(url);
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 
     // ---------------------------------------------------------------- rollout compatibility
